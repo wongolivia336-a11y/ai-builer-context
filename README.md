@@ -1,4 +1,3 @@
-Warning: fs was declared with const; use let for reassignable variables.
 # 声景漫游 · Soundscape Roam
 
 **走进街道，捕捉留在这里的声音。**
@@ -6,6 +5,8 @@ Warning: fs was declared with const; use let for reassignable variables.
 声景漫游是一款结合手机 AR 与实体声音装置的城市探索体验。用户在街道中发现由其他人留下的声音泡泡，用手机瞄准，再按下装置上的实体按键完成捕捉；装置随即播放声音并吹出真实泡泡。用户也可以录下一句话，绑定当前位置，留给后来经过的人。
 
 > 当前仓库提供可交互的浏览器演示和 SwiftUI 视觉原型。GPS、ARKit、ESP32、真实录音与声纹处理、机械吹泡装置尚未接入；演示中的相关反馈是交互模拟。
+
+![泡泡首页与现场镜像预览](./docs/assets/home-preview.png)
 
 ## 体验流程
 
@@ -59,6 +60,8 @@ npm run build
 - `native/SoundscapeDemoView.swift`：使用 SwiftUI Liquid Glass 的原生界面视图，要求 iOS 26+。当前仓库未包含 Xcode 工程，且该文件尚未在 Xcode 中编译验证。
 - `docs/product-context.md`：产品目标、交互规则、游戏循环和软硬件分工。
 - `docs/demo-scope.md`：当前可演示能力与真实设备能力的边界。
+- `docs/visual-direction.md`：泡泡材质、Liquid Glass 与页面色彩方向。
+- `docs/ui-generation-prompts.md`：用于延展 App 组图的统一母提示词与逐屏提示词。
 - `AGENTS.md`：供 coding agent 使用的项目约束和协作说明。
 
 ## 一起完善
