@@ -27,8 +27,7 @@ flowchart LR
 
 ## 界面结构
 
-- **泡泡**：查看附近声音与个人收藏，点击泡泡试听。
-- **泡泡**：戳破声音泡泡，观看薄膜破裂和回弹；按共鸣热度、距离或新鲜度排序。收藏较多的泡泡有柔和光晕，可打开回声榜参与共选。
+- **泡泡**：查看附近声音，戳破泡泡试听；按共鸣热度、距离或新鲜度排序。收藏较多的泡泡有柔和光晕，可打开回声榜参与共选；个人收藏可从泡泡盒回听。
 - **漫游**：在真实街道照片上进行 AR 风格瞄准，缩放并选中不同距离或高度的泡泡；按装置实体键触发捕捉。
 - **共创**：选择“给下一位”或“留在此刻”，录音、试听、绑定位置并发布。
 - **设备状态**：显示声景装置连接与播放状态。
@@ -61,6 +60,7 @@ npm run build
 - `src/`：Vite + React 的可交互演示；GSAP/Flip 页面动效、Three.js 装置模型和街景资源都在 `src/`。
 - `native/SoundscapeDemoView.swift`：使用 SwiftUI Liquid Glass 的原生界面视图，要求 iOS 26+。当前仓库未包含 Xcode 工程，且该文件尚未在 Xcode 中编译验证。
 - `docs/product-context.md`：产品目标、交互规则、游戏循环和软硬件分工。
+- `docs/app-information-architecture.md`：可讨论的 App Mind Map、导航规则、Demo 分层和关键决策。
 - `docs/demo-scope.md`：当前可演示能力与真实设备能力的边界。
 - `docs/visual-direction.md`：泡泡材质、Liquid Glass 与页面色彩方向。
 - `docs/open-source-references.md`：泡泡物理、材质和点击破裂的开源参考与取舍。
