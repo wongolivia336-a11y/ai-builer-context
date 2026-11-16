@@ -52,7 +52,7 @@ private struct SoundscapeBackdrop: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(red: 0.94, green: 0.98, blue: 0.97), Color(red: 0.82, green: 0.93, blue: 0.91), Color(red: 0.93, green: 0.96, blue: 0.93)],
+                colors: [Color(red: 0.95, green: 0.97, blue: 0.99), Color(red: 0.84, green: 0.9, blue: 0.96), Color(red: 0.94, green: 0.96, blue: 0.98)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -62,7 +62,7 @@ private struct SoundscapeBackdrop: View {
                 .blur(radius: 34)
                 .offset(x: -90, y: 250)
             Ellipse()
-                .fill(Color(red: 0.72, green: 0.87, blue: 0.85).opacity(0.28))
+                .fill(Color(red: 0.72, green: 0.82, blue: 0.9).opacity(0.28))
                 .frame(height: 150)
                 .blur(radius: 28)
                 .offset(x: 100, y: 330)
@@ -76,11 +76,11 @@ private struct SoapBubble: View {
 
     private let rim = [
         Color.white.opacity(0.95),
-        Color(red: 0.38, green: 0.78, blue: 0.84).opacity(0.8),
+        Color(red: 0.47, green: 0.7, blue: 0.86).opacity(0.8),
         Color.white.opacity(0.28),
         Color(red: 0.84, green: 0.55, blue: 0.78).opacity(0.7),
         Color(red: 0.88, green: 0.75, blue: 0.45).opacity(0.72),
-        Color(red: 0.44, green: 0.76, blue: 0.72).opacity(0.76),
+        Color(red: 0.53, green: 0.71, blue: 0.82).opacity(0.76),
         Color.white.opacity(0.95)
     ]
 
@@ -102,7 +102,7 @@ private struct SoapBubble: View {
                     .offset(x: size * 0.2, y: size * 0.19)
             }
             .frame(width: size, height: size)
-            .shadow(color: Color(red: 0.6, green: 0.79, blue: 0.8).opacity(0.12), radius: size * 0.12, y: size * 0.06)
+            .shadow(color: Color(red: 0.6, green: 0.72, blue: 0.82).opacity(0.12), radius: size * 0.12, y: size * 0.06)
     }
 }
 
@@ -132,7 +132,7 @@ private struct BubbleHome: View {
                 Text("泡泡")
                     .font(.system(size: 34, weight: .light))
                     .tracking(6)
-                    .foregroundStyle(Color(red: 0.2, green: 0.36, blue: 0.37).opacity(0.72))
+                    .foregroundStyle(Color(red: 0.2, green: 0.31, blue: 0.41).opacity(0.72))
             }
 
             BubbleConstellation()
@@ -316,7 +316,7 @@ private struct WaveBars: View {
         HStack(alignment: .center, spacing: 2) {
             ForEach(Array(heights.enumerated()), id: \.offset) { index, height in
                 Capsule()
-                    .fill(Color(red: 0.4, green: 0.68, blue: 0.68).opacity(0.7))
+                    .fill(Color(red: 0.4, green: 0.62, blue: 0.78).opacity(0.7))
                     .frame(width: 2, height: active ? height : max(5, height * 0.45))
                     .animation(.easeInOut(duration: 0.34).delay(Double(index) * 0.025).repeatForever(autoreverses: true), value: active)
             }
@@ -336,7 +336,7 @@ private struct SoundscapeTabBar: View {
                         Image(systemName: item.symbol).font(.system(size: 15, weight: .regular))
                         Text(item.rawValue).font(.system(size: 9, weight: .regular))
                     }
-                    .foregroundStyle(selection == item ? Color(red: 0.2, green: 0.48, blue: 0.47) : .secondary)
+                    .foregroundStyle(selection == item ? Color(red: 0.27, green: 0.43, blue: 0.59) : .secondary)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
                     .background {

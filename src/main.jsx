@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { gsap } from 'gsap';
+import Flip from 'gsap/Flip';
 import { Phone } from './kit/phone';
+import streetBackground from './assets/roam-street.png';
 import './styles.css';
+import './styles-v2.css';
+
+gsap.registerPlugin(Flip);
+
+const DeviceViewer = lazy(() => import('./DeviceViewer'));
 
 const initialScreen = new URLSearchParams(location.search).get('screen');
 
@@ -28,8 +36,8 @@ function Waveform({ active = false, small = false }) {
   );
 }
 
-function Scene({ children, className = '' }) {
-  return <div className={`scene ${className}`}><div className="scene-sky" /><div className="scene-water" /><div className="scene-horizon" />{children}</div>;
+function Scene({ children, className = '', style }) {
+  return <div className={`scene ${className}`} style={style}><div className="scene-sky" /><div className="scene-water" /><div className="scene-horizon" />{children}</div>;
 }
 
 function GlassButton({ children, className = '', onClick, disabled = false }) {
@@ -63,57 +71,214 @@ function DevicePill({ playing }) {
   );
 }
 
-function HomeScreen({ onRoam, onPlay, playing, published, onPageChange }) {
+const SOUND_BUBBLES = [
+  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 116, accent: 'rose', age: 5 },
+  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 72, accent: 'blue', age: 3 },
+  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 52, accent: 'gold', age: 1 },
+  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 43, accent: 'rose', age: 2 },
+  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 34, accent: 'blue', age: 0 },
+];
+
+const HOME_SLOTS = ['bubble-slot-center', 'bubble-slot-left', 'bubble-slot-right', 'bubble-slot-low', 'bubble-slot-high'];
+
+function HomeBubble({ bubble, index, popped, onPop }) {
+  const buttonRef = useRef(null);
+  const [burst, setBurst] = useState(false);
+  const isResonant = bubble.saves >= 50;
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (!button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const float = gsap.to(button, {
+      y: index % 2 ? -7 : 8,
+      rotation: index % 2 ? 1.6 : -1.4,
+      duration: 2.8 + index * 0.32,
+      delay: index * -0.42,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
+    });
+    return () => float.kill();
+  }, [index]);
+
+  const pop = (event) => {
+    const button = buttonRef.current;
+    if (!button || popped) return;
+    const particles = button.querySelectorAll('.pop-bit');
+    const ring = button.querySelector('.pop-ripple');
+    const radius = Math.max(54, button.getBoundingClientRect().width * 0.8);
+    setBurst(true);
+    gsap.timeline()
+      .to(button, { scaleX: 1.1, scaleY: 0.86, duration: 0.1, ease: 'power2.out' })
+      .to(button, { scaleX: 0.76, scaleY: 1.16, duration: 0.12, ease: 'power3.in' })
+      .to(button, { scale: 0.06, opacity: 0, filter: 'blur(3px)', duration: 0.18, ease: 'power2.in' });
+    if (ring) gsap.fromTo(ring, { scale: 0.36, opacity: 0.72 }, { scale: 1.8, opacity: 0, duration: 0.48, ease: 'power2.out' });
+    if (particles.length) {
+      gsap.fromTo(particles, { x: 0, y: 0, scale: 0.25, opacity: 0.96 }, {
+        x: (i) => Math.cos((i / particles.length) * Math.PI * 2) * radius,
+        y: (i) => Math.sin((i / particles.length) * Math.PI * 2) * radius,
+        scale: (i) => i % 3 === 0 ? 0.12 : 0.34,
+        opacity: 0,
+        duration: 0.56,
+        stagger: 0.014,
+        ease: 'power3.out',
+      });
+    }
+    onPop(bubble, event);
+    window.setTimeout(() => setBurst(false), 620);
+  };
+
+  useEffect(() => {
+    const button = buttonRef.current;
+    if (popped || !button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const rebound = gsap.fromTo(button, { scale: 0.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.56, ease: 'elastic.out(1, 0.48)' });
+    return () => rebound.kill();
+  }, [popped]);
+
+  return (
+    <div className={`home-bubble-anchor ${HOME_SLOTS[index]}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
+      <button
+        ref={buttonRef}
+        className={`soap-bubble home-bubble${isResonant ? ' bubble-hot' : ''}`}
+        aria-label={`戳破声音泡泡：${bubble.title}，${bubble.saves} 人收藏`}
+        title={`${bubble.title} · ${bubble.saves} 人收藏`}
+        onPointerDown={(event) => gsap.to(event.currentTarget, { scaleX: 0.94, scaleY: 1.05, duration: 0.11, ease: 'power2.out' })}
+        onPointerUp={(event) => gsap.to(event.currentTarget, { scaleX: 1, scaleY: 1, duration: 0.42, ease: 'elastic.out(1, 0.38)' })}
+        onPointerCancel={(event) => gsap.to(event.currentTarget, { scale: 1, duration: 0.24, ease: 'power2.out' })}
+        onClick={pop}
+      >
+        <span className="bubble-core" />
+        <span className="bubble-glint" />
+        <span className="bubble-rank-aura" />
+        <span className="bubble-rank-mark">{isResonant ? `共鸣 ${bubble.saves}` : ''}</span>
+        <span className="pop-ripple" />
+        {burst && <span className="pop-burst" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className="pop-bit" />)}</span>}
+      </button>
+      <span className="bubble-label"><strong>{bubble.title}</strong><small>{bubble.distance} m · {bubble.saves} 收藏</small></span>
+    </div>
+  );
+}
+
+function HomeScreen({ onRoam, onPlay, playing, published, onPageChange, sortMode, onSort, activeBubble, poppedId, onBubblePop, onOpenLeaderboard }) {
+  const orbitRef = useRef(null);
+  const flipState = useRef(null);
+  const [layoutTick, setLayoutTick] = useState(0);
+  const ordered = [...SOUND_BUBBLES].sort((a, b) => {
+    if (sortMode === 'new') return b.age - a.age;
+    if (sortMode === 'near') return a.distance - b.distance;
+    return b.saves - a.saves;
+  });
+
+  useLayoutEffect(() => {
+    if (!flipState.current) return;
+    Flip.from(flipState.current, { duration: 0.72, ease: 'power3.inOut', stagger: 0.035, absolute: true, onComplete: () => { flipState.current = null; } });
+  }, [layoutTick]);
+
+  const changeSort = (mode) => {
+    if (mode === sortMode || !orbitRef.current) return;
+    flipState.current = Flip.getState(orbitRef.current.querySelectorAll('.home-bubble-anchor'));
+    onSort(mode);
+    setLayoutTick((n) => n + 1);
+  };
+
   return (
     <Scene className="app-home">
       <div className="screen-topline">
-        <span className="place-chip"><i /> 江湾 · 01</span>
+        <span className="place-chip"><i /> 江湾 · 附近</span>
         <DevicePill playing={playing} />
       </div>
       <div className="home-content">
         <div className="home-title">
-          <span className="eyebrow">今日收集 · {published ? '04' : '03'}</span>
-          <h1>泡泡</h1>
+          <span className="eyebrow">街道回声 · 12 颗</span>
+          <h1>泡泡岛</h1>
+          <p className="home-subtitle">戳开一颗，听见这里</p>
         </div>
-        <div className="home-orbit" aria-label="漂浮的声音泡泡">
+        <div className="bubble-sort-row" role="tablist" aria-label="声音泡泡排序">
+          <button className={sortMode === 'hot' ? 'selected' : ''} onClick={() => changeSort('hot')}>共鸣最多</button>
+          <button className={sortMode === 'near' ? 'selected' : ''} onClick={() => changeSort('near')}>离我最近</button>
+          <button className={sortMode === 'new' ? 'selected' : ''} onClick={() => changeSort('new')}>刚刚留下</button>
+          <button className="leaderboard-trigger" onClick={onOpenLeaderboard}><span>↗</span> 回声榜</button>
+        </div>
+        <div className="home-orbit" ref={orbitRef} aria-label="可戳破的声音泡泡">
           <span className="orbit-halo halo-one" />
           <span className="orbit-halo halo-two" />
-          <Bubble size={128} className="home-bubble bubble-center" label="午后的风" onClick={onPlay} />
-          <Bubble size={62} className="home-bubble bubble-left" label="远处的钟声" onClick={onPlay} />
-          <Bubble size={44} className="home-bubble bubble-right" label="树叶" onClick={onPlay} />
-          <Bubble size={29} className="home-bubble bubble-low" label="脚步声" onClick={onPlay} />
-          <Bubble size={20} className="home-bubble bubble-high" label="小泡泡" onClick={onPlay} />
-          {published && <Bubble size={35} className="home-bubble bubble-new" label="新留下的声音" onClick={onPlay} />}
-          <span className="orbit-caption">江湾 · 03 段回声</span>
+          {ordered.map((bubble, index) => <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} />)}
+          <span className="orbit-caption">{sortMode === 'hot' ? '被收藏越多，回声越亮' : sortMode === 'near' ? '沿着声音，继续走' : '刚刚有人留在这里'}</span>
         </div>
-        <button className={`now-playing glass-surface${playing ? ' is-playing' : ''}`} onClick={onPlay}>
+        <button className={`now-playing glass-surface${playing ? ' is-playing' : ''}`} onClick={() => onPlay(activeBubble || SOUND_BUBBLES[0])}>
           <span className="play-disc">{playing ? <span className="pause-bars"><i /><i /></span> : <span className="play-triangle" />}</span>
-          <span className="track-copy"><strong>{published ? '风从河面来' : '午后的风'}</strong><small>留在这里的一句话</small></span>
+          <span className="track-copy"><strong>{activeBubble?.title || '河面上的风'}</strong><small>{playing ? '录音正在从泡泡里流出来' : `${activeBubble?.saves || 86} 人收进泡泡盒 · 点按回听`}</small></span>
           <Waveform active={playing} small />
         </button>
-        <GlassButton className="start-roam" onClick={onRoam}>开始漫游 <span className="arrow-out">↗</span></GlassButton>
+        <GlassButton className="start-roam" onClick={onRoam}>举起手机，开始漫游 <span className="arrow-out">↗</span></GlassButton>
       </div>
       <TabBar active="home" onChange={onPageChange} />
     </Scene>
   );
 }
 
-function RoamScreen({ selected, onSelect, captured, onCapture, playing, onPageChange, zoom, onZoom }) {
+function LeaderboardSheet({ open, onClose, onRoam }) {
+  const panelRef = useRef(null);
+  const backdropRef = useRef(null);
+
+  useLayoutEffect(() => {
+    if (!open || !panelRef.current || !backdropRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(backdropRef.current, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.22, ease: 'power1.out' });
+      gsap.fromTo(panelRef.current, { y: 48, scale: 0.97, autoAlpha: 0 }, { y: 0, scale: 1, autoAlpha: 1, duration: 0.52, ease: 'back.out(1.35)' });
+      gsap.fromTo('.leader-row', { y: 14, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.35, stagger: 0.07, delay: 0.12, ease: 'power2.out' });
+    });
+    return () => ctx.revert();
+  }, [open]);
+
+  if (!open) return null;
+  const ranked = [...SOUND_BUBBLES].sort((a, b) => b.saves - a.saves).slice(0, 3);
   return (
-    <Scene className={`app-roam${captured ? ' capture-done' : ''}`}>
+    <div className="sheet-backdrop" ref={backdropRef} onClick={onClose}>
+      <section className="leader-sheet glass-surface" ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="leader-title" onClick={(event) => event.stopPropagation()}>
+        <span className="sheet-grabber" />
+        <div className="leader-head">
+          <div><span className="eyebrow">江湾 · 本周</span><h2 id="leader-title">回声榜</h2></div>
+          <button className="sheet-close" aria-label="关闭回声榜" onClick={onClose}>×</button>
+        </div>
+        <p className="leader-subtitle">被更多人收进泡泡盒的声音，会亮得更久。</p>
+        <div className="leader-list">
+          {ranked.map((bubble, index) => (
+            <div className={`leader-row rank-${index + 1}`} key={bubble.id}>
+              <span className="leader-rank">{String(index + 1).padStart(2, '0')}</span>
+              <span className={`leader-orb accent-${bubble.accent}`} />
+              <span className="leader-copy"><strong>{bubble.title}</strong><small>{bubble.author} · {bubble.distance} m</small></span>
+              <span className="leader-saves">{bubble.saves}<small>收藏</small></span>
+            </div>
+          ))}
+        </div>
+        <button className="leader-roam" onClick={onRoam}>去找这颗声音 <span>↗</span></button>
+      </section>
+    </div>
+  );
+}
+
+function RoamScreen({ selected, onSelect, captured, onCapture, playing, onPageChange, zoom, onZoom }) {
+  const targetSound = selected === 1 ? SOUND_BUBBLES[0] : SOUND_BUBBLES[1];
+  return (
+    <Scene className={`app-roam${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")` }}>
       <div className="screen-topline">
-        <span className="place-chip"><i /> 江湾 · 漫游中</span>
+        <span className="place-chip ar-place-chip"><i /> 江湾 · 实景 AR</span>
         <DevicePill playing={playing} />
       </div>
       <div className="roam-world">
+        <div className="roam-sort glass-surface">
+          <button className={selected === 1 ? 'active' : ''} onClick={() => onSelect(1)}>视线内 <i>03</i></button>
+          <button className={selected === 2 ? 'active' : ''} onClick={() => onSelect(2)}>共鸣榜 <i>01</i></button>
+        </div>
         <div className="floor-line floor-back"><span>二层</span></div>
         <div className="floor-line floor-front"><span>一层</span></div>
         <div className="distant-architecture" />
-        <Bubble size={82 * zoom} className={`target-bubble${selected === 1 ? ' target-selected' : ''}${captured ? ' target-captured' : ''}`} label="二层的声音泡泡" onClick={() => onSelect(1)} />
-        <Bubble size={43} className={`target-bubble target-small${selected === 2 ? ' target-selected' : ''}`} label="远处的钟声" onClick={() => onSelect(2)} />
+        <Bubble size={82 * zoom} className={`target-bubble bubble-hot${selected === 1 ? ' target-selected' : ''}${captured ? ' target-captured' : ''}`} label="二层的声音泡泡" onClick={() => onSelect(1)} />
+        <Bubble size={43} className={`target-bubble target-small${selected === 2 ? ' target-selected bubble-hot' : ''}`} label="巷口的钟声" onClick={() => onSelect(2)} />
         <Bubble size={27} className="target-bubble target-tiny" label="远处的小泡泡" onClick={() => onSelect(2)} />
         <div className="aim-ring"><i /><b /></div>
-        <div className="target-caption"><span>二层回声</span><i>·</i><span>8 m</span></div>
+        <div className="target-caption"><span>{selected === 1 ? '二层回声' : '巷口的钟声'}</span><i>·</i><span>{targetSound.distance} m</span><b>{targetSound.saves} 收藏</b></div>
         <div className="zoom-control glass-surface">
           <button aria-label="放大" onClick={() => onZoom(1)}>+</button><span /><button aria-label="缩小" onClick={() => onZoom(-1)}>−</button>
         </div>
@@ -127,9 +292,9 @@ function RoamScreen({ selected, onSelect, captured, onCapture, playing, onPageCh
           </>
         ) : (
           <>
-            <div className="roam-card-top"><span className="eyebrow">现场共选</span><span className="crowd-count"><i /><i /><i /> 04</span></div>
-            <strong className="roam-quote">「风从河面来，像一句没说完的话。」</strong>
-            <div className="roam-card-bottom"><span>林留在这里 · 12 秒</span><button className="capture-key" onClick={onCapture}><span className="key-core" />捕捉</button></div>
+            <div className="roam-card-top"><span className="eyebrow">现场共选 · {targetSound.saves} 人收藏</span><span className="crowd-count"><i /><i /><i /> 04</span></div>
+            <strong className="roam-quote">「{targetSound.quote}」</strong>
+            <div className="roam-card-bottom"><span>{targetSound.author} 留在这里 · {targetSound.duration}</span><button className="capture-key" onClick={onCapture}><span className="key-core" />按实体键捕捉</button></div>
           </>
         )}
       </div>
@@ -182,7 +347,7 @@ function AudiencePreview({ page, selected, captured, playing, published }) {
         <span className="audience-title">现场镜像</span>
         <span className="live-pill"><i /> LIVE</span>
       </div>
-      <Scene className={`projection-scene projection-${page}`}>
+      <Scene className={`projection-scene projection-${page}`} style={page === 'roam' ? { '--street-image': `url("${streetBackground}")` } : undefined}>
         <div className="projection-location"><i /> 江湾 · 01 <span>空间回声</span></div>
         {page === 'roam' ? (
           <>
@@ -228,6 +393,67 @@ function App() {
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [published, setPublished] = useState(false);
+  const [sortMode, setSortMode] = useState('hot');
+  const [activeBubble, setActiveBubble] = useState(SOUND_BUBBLES[0]);
+  const [poppedId, setPoppedId] = useState(null);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const [deviceOpen, setDeviceOpen] = useState(false);
+  const popTimer = useRef(null);
+  const playbackTimer = useRef(null);
+  const playbackFallback = useRef(null);
+  const playbackToken = useRef(0);
+
+  const startBubblePlayback = (bubble) => {
+    const token = ++playbackToken.current;
+    window.clearTimeout(playbackTimer.current);
+    window.clearTimeout(playbackFallback.current);
+    setActiveBubble(bubble);
+    setPlaying(true);
+    const minDuration = Math.max(2200, bubble.quote.length * 130);
+    const startedAt = Date.now();
+    const finish = () => {
+      if (token !== playbackToken.current) return;
+      window.clearTimeout(playbackFallback.current);
+      const remaining = Math.max(0, minDuration - (Date.now() - startedAt));
+      playbackTimer.current = window.setTimeout(() => setPlaying(false), remaining);
+    };
+    if (!('speechSynthesis' in window)) {
+      playbackTimer.current = window.setTimeout(() => setPlaying(false), minDuration);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(bubble.quote);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.86;
+    utterance.pitch = 1.02;
+    utterance.volume = 0.9;
+    const voice = window.speechSynthesis.getVoices().find((item) => item.lang.toLowerCase().startsWith('zh'));
+    if (voice) utterance.voice = voice;
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    playbackFallback.current = window.setTimeout(() => setPlaying(false), minDuration + 9000);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleBubblePlayback = (bubble) => {
+    if (playing) {
+      playbackToken.current += 1;
+      window.clearTimeout(playbackTimer.current);
+      window.clearTimeout(playbackFallback.current);
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      setPlaying(false);
+      return;
+    }
+    startBubblePlayback(bubble);
+  };
+
+  const popBubble = (bubble) => {
+    setActiveBubble(bubble);
+    setPoppedId(bubble.id);
+    startBubblePlayback(bubble);
+    window.clearTimeout(popTimer.current);
+    popTimer.current = window.setTimeout(() => setPoppedId(null), 1650);
+  };
 
   useEffect(() => {
     if (!recording) return undefined;
@@ -240,8 +466,7 @@ function App() {
 
   const beginCapture = () => {
     setCaptured(true);
-    setPlaying(true);
-    window.setTimeout(() => setPlaying(false), 4200);
+    startBubblePlayback(SOUND_BUBBLES[0]);
   };
 
   const publishBubble = () => {
@@ -256,8 +481,8 @@ function App() {
       <div className="demo-stage">
         <AudiencePreview page={page} selected={selected} captured={captured} playing={playing} published={published} />
         <div className="phone-column">
-          <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #e9f8f8, #b9e5e7 48%, #e6f2ee)">
-            {page === 'home' && <HomeScreen onRoam={() => setPage('roam')} onPlay={() => setPlaying(v => !v)} playing={playing} published={published} onPageChange={setPage} />}
+          <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
+            {page === 'home' && <HomeScreen onRoam={() => setPage('roam')} onPlay={toggleBubblePlayback} playing={playing} published={published} onPageChange={setPage} sortMode={sortMode} onSort={setSortMode} activeBubble={activeBubble} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
             {page === 'roam' && <RoamScreen selected={selected} onSelect={setSelected} captured={captured} onCapture={beginCapture} playing={playing} onPageChange={setPage} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.5, Math.max(.75, v + step * .12)))} />}
             {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} onRecord={() => setRecording(v => !v)} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={setPage} />}
           </Phone>
@@ -265,6 +490,13 @@ function App() {
         </div>
       </div>
       <div className="stage-floor" />
+      <button className={`device-launcher${deviceOpen ? ' is-open' : ''}`} onClick={() => setDeviceOpen((open) => !open)} aria-expanded={deviceOpen} aria-label={deviceOpen ? '收起声景装置' : '展开声景装置'}>
+        <span className="device-launcher-orb"><i /><i /><i /></span>
+        <span>{deviceOpen ? '收起装置' : '看声景装置'}</span>
+        <b>{deviceOpen ? '−' : '↗'}</b>
+      </button>
+      {deviceOpen && <Suspense fallback={<div className="device-viewer device-viewer-loading glass-surface" role="status">装置载入中…</div>}><DeviceViewer open onClose={() => setDeviceOpen(false)} playing={playing} /></Suspense>}
+      <LeaderboardSheet open={leaderboardOpen} onClose={() => setLeaderboardOpen(false)} onRoam={() => { setLeaderboardOpen(false); setPage('roam'); }} />
     </main>
   );
 }
