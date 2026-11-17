@@ -60,7 +60,7 @@ npm run build
 ## 技术组成
 
 - `src/`：Vite + React 的可交互演示；GSAP/Flip 页面动效、Three.js 装置模型和街景资源都在 `src/`。
-- `src/assets/soundscape-device.stl.gz`：本次提供的压缩 STL 模型。Three.js 打开装置面板时按需载入，并根据模型的独立零件壳体应用演示 CMF。
+- `src/assets/soundscape-device.stl.gz.part-1` 与 `part-2`：拆分存放的压缩 STL 数据。Three.js 打开装置面板时按需拼合、解压并载入，再根据模型的独立零件壳体应用演示 CMF。
 - `native/SoundscapeDemoView.swift`：使用 SwiftUI Liquid Glass 的原生界面视图，要求 iOS 26+。当前仓库未包含 Xcode 工程，且该文件尚未在 Xcode 中编译验证。
 - `docs/product-context.md`：产品目标、交互规则、游戏循环和软硬件分工。
 - `docs/app-information-architecture.md`：可讨论的 App Mind Map、导航规则、Demo 分层和关键决策。

@@ -5,7 +5,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import deviceModelUrl from './assets/soundscape-device.stl.gz?url';
+import deviceModelPartOneUrl from './assets/soundscape-device.stl.gz.part-1?url';
+import deviceModelPartTwoUrl from './assets/soundscape-device.stl.gz.part-2?url';
 
 const CMF = {
   teal: 0x38b4a5,
@@ -312,9 +313,17 @@ function DeviceCanvas({ playing }) {
     const loadDevice = async () => {
       let sourceGeometry;
       try {
-        const response = await fetch(deviceModelUrl);
-        if (!response.ok) throw new Error(`Model request failed (${response.status}).`);
-        let buffer = await response.arrayBuffer();
+        const responses = await Promise.all([deviceModelPartOneUrl, deviceModelPartTwoUrl].map((url) => fetch(url)));
+        const failedResponse = responses.find((response) => !response.ok);
+        if (failedResponse) throw new Error(`Model request failed (${failedResponse.status}).`);
+        const parts = await Promise.all(responses.map((response) => response.arrayBuffer()));
+        const compressed = new Uint8Array(parts.reduce((sum, part) => sum + part.byteLength, 0));
+        let offset = 0;
+        parts.forEach((part) => {
+          compressed.set(new Uint8Array(part), offset);
+          offset += part.byteLength;
+        });
+        let buffer = compressed.buffer;
         const bytes = new Uint8Array(buffer);
         if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
           if (!('DecompressionStream' in window)) throw new Error('This browser cannot decompress the model asset.');

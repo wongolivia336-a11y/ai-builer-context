@@ -30,7 +30,7 @@
 - 目前没有后端、用户账号、云端同步、真实 ARKit/GPS、ESP32 通信、真实音频录制/声纹处理或实体吹泡控制。
 - 修改交互时同步更新相关文案和 `docs/demo-scope.md`，让仓库状态保持真实。
 - 新增依赖前先确认确有需要。不要提交 `node_modules/`、`dist/`、本机临时文件、密钥或真实用户录音。
-- Three.js 设备查看器按需载入 `src/assets/soundscape-device.stl.gz`；CMF 是根据网格壳体与局部几何推定的演示材质，不代表 STL 自带材质或真实硬件已接入。
+- Three.js 设备查看器按需拼合并载入 `src/assets/soundscape-device.stl.gz.part-*`；CMF 是根据网格壳体与局部几何推定的演示材质，不代表 STL 自带材质或真实硬件已接入。
 - 若改动涉及主流程，保持浏览器演示与 SwiftUI 原型的信息架构一致；若只改一端，请在 PR 中说明原因。
 
 ## 本地协作
