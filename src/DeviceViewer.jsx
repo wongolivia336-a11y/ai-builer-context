@@ -210,6 +210,7 @@ function buildDevice(scene, sourceGeometry) {
 
   const group = new THREE.Group();
   const orient = new THREE.Group();
+  // Default to the broad face of the central phone cradle.
   orient.rotation.y = -Math.PI / 2;
   group.add(orient);
   const body = new THREE.Mesh(geometry, materials);
@@ -244,7 +245,7 @@ function DeviceCanvas({ playing }) {
     if (!mount) return undefined;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
-    camera.position.set(0.65, 1.35, 4.5);
+    camera.position.set(0.65, 1.35, -4.5);
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
@@ -280,8 +281,7 @@ function DeviceCanvas({ playing }) {
     controls.dampingFactor = 0.075;
     controls.enablePan = false;
     controls.enableZoom = false;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.48;
+    controls.autoRotate = false;
     controls.target.set(0, 0.04, 0);
 
     const timer = new THREE.Timer();
@@ -418,3 +418,4 @@ export default function DeviceViewer({ open, onClose, playing }) {
     </section>
   );
 }
+
