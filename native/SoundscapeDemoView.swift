@@ -52,47 +52,75 @@ private struct SoundscapeBackdrop: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(red: 0.95, green: 0.97, blue: 0.99), Color(red: 0.84, green: 0.9, blue: 0.96), Color(red: 0.94, green: 0.96, blue: 0.98)],
+                colors: [Color(red: 0.96, green: 0.98, blue: 1.0), Color(red: 0.89, green: 0.93, blue: 0.98), Color(red: 0.95, green: 0.94, blue: 0.98)],
                 startPoint: .top,
                 endPoint: .bottom
             )
-            Ellipse()
-                .fill(.white.opacity(0.42))
-                .frame(height: 230)
-                .blur(radius: 34)
-                .offset(x: -90, y: 250)
-            Ellipse()
-                .fill(Color(red: 0.72, green: 0.82, blue: 0.9).opacity(0.28))
-                .frame(height: 150)
-                .blur(radius: 28)
-                .offset(x: 100, y: 330)
         }
         .ignoresSafeArea()
     }
 }
 
+private enum RecordingKind: String, CaseIterable, Identifiable {
+    case all = "全部"
+    case voice = "人声"
+    case ambience = "环境声"
+    case thought = "碎念"
+
+    var id: String { rawValue }
+
+    var tint: Color {
+        switch self {
+        case .all, .ambience: Color(red: 0.61, green: 0.77, blue: 0.9)
+        case .voice: Color(red: 0.88, green: 0.65, blue: 0.75)
+        case .thought: Color(red: 0.72, green: 0.68, blue: 0.84)
+        }
+    }
+
+    var rim: [Color] {
+        switch self {
+        case .all, .ambience:
+            [.white.opacity(0.95), Color(red: 0.53, green: 0.76, blue: 0.91).opacity(0.8), .white.opacity(0.32), Color(red: 0.78, green: 0.72, blue: 0.88).opacity(0.65), .white.opacity(0.92)]
+        case .voice:
+            [.white.opacity(0.95), Color(red: 0.9, green: 0.65, blue: 0.76).opacity(0.8), .white.opacity(0.34), Color(red: 0.94, green: 0.78, blue: 0.67).opacity(0.66), .white.opacity(0.92)]
+        case .thought:
+            [.white.opacity(0.95), Color(red: 0.73, green: 0.68, blue: 0.87).opacity(0.82), .white.opacity(0.32), Color(red: 0.68, green: 0.81, blue: 0.9).opacity(0.7), .white.opacity(0.92)]
+        }
+    }
+}
+
+private struct GalleryRecord: Identifiable {
+    let id: String
+    let index: String
+    let title: String
+    let kind: RecordingKind
+    let duration: String
+}
+
+private let galleryRecords = [
+    GalleryRecord(id: "wind", index: "01", title: "河面上的风", kind: .ambience, duration: "12 秒"),
+    GalleryRecord(id: "bell", index: "02", title: "巷口的钟声", kind: .ambience, duration: "8 秒"),
+    GalleryRecord(id: "steps", index: "03", title: "刚经过的人", kind: .voice, duration: "6 秒"),
+    GalleryRecord(id: "osmanthus", index: "04", title: "桂花茶的下午", kind: .thought, duration: "10 秒"),
+    GalleryRecord(id: "rain", index: "05", title: "雨停以后", kind: .thought, duration: "9 秒"),
+]
+
 private struct SoapBubble: View {
     var size: CGFloat
-
-    private let rim = [
-        Color.white.opacity(0.95),
-        Color(red: 0.47, green: 0.7, blue: 0.86).opacity(0.8),
-        Color.white.opacity(0.28),
-        Color(red: 0.84, green: 0.55, blue: 0.78).opacity(0.7),
-        Color(red: 0.88, green: 0.75, blue: 0.45).opacity(0.72),
-        Color(red: 0.53, green: 0.71, blue: 0.82).opacity(0.76),
-        Color.white.opacity(0.95)
-    ]
+    var kind: RecordingKind = .ambience
 
     var body: some View {
         Circle()
             .fill(.ultraThinMaterial)
             .overlay {
-                Circle().fill(
-                    RadialGradient(colors: [.white.opacity(0.5), .white.opacity(0.04), .clear], center: .init(x: 0.28, y: 0.24), startRadius: 1, endRadius: size * 0.72)
-                )
+                Circle().fill(RadialGradient(
+                    colors: [.white.opacity(0.56), kind.tint.opacity(0.13), .clear],
+                    center: .init(x: 0.28, y: 0.24),
+                    startRadius: 1,
+                    endRadius: size * 0.72
+                ))
             }
-            .overlay { Circle().stroke(AngularGradient(colors: rim, center: .center), lineWidth: max(1, size * 0.014)) }
+            .overlay { Circle().stroke(AngularGradient(colors: kind.rim, center: .center), lineWidth: max(1, size * 0.014)) }
             .overlay(alignment: .topLeading) {
                 Capsule()
                     .fill(.white.opacity(0.72))
@@ -102,18 +130,28 @@ private struct SoapBubble: View {
                     .offset(x: size * 0.2, y: size * 0.19)
             }
             .frame(width: size, height: size)
-            .shadow(color: Color(red: 0.6, green: 0.72, blue: 0.82).opacity(0.12), radius: size * 0.12, y: size * 0.06)
+            .shadow(color: kind.tint.opacity(0.1), radius: size * 0.1, y: size * 0.05)
     }
 }
 
 private struct BubbleHome: View {
     @Binding var playing: Bool
     let onRoam: () -> Void
+    @State private var filter: RecordingKind = .all
+    @State private var activeRecordID = galleryRecords[0].id
+
+    private var visibleRecords: [GalleryRecord] {
+        filter == .all ? galleryRecords : galleryRecords.filter { $0.kind == filter }
+    }
+
+    private var activeRecord: GalleryRecord {
+        galleryRecords.first(where: { $0.id == activeRecordID }) ?? galleryRecords[0]
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 14) {
             HStack {
-                Label("江湾 · 01", systemImage: "location.fill")
+                Text("声音档案 · 个人收藏")
                     .font(.system(size: 11, weight: .regular))
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -122,54 +160,176 @@ private struct BubbleHome: View {
                     .foregroundStyle(.secondary)
             }
 
-            Spacer(minLength: 28)
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("我的回声")
+                                .font(.system(size: 31, weight: .regular, design: .serif))
+                                .foregroundStyle(Color(red: 0.2, green: 0.29, blue: 0.4))
+                            Text("5 段声音 · 3 种内容")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Text("01 — 05")
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .padding(.bottom, 3)
+                    }
 
-            VStack(spacing: 8) {
-                Text("今日收集 · 03")
-                    .font(.system(size: 10, weight: .regular))
-                    .tracking(2)
-                    .foregroundStyle(.secondary)
-                Text("泡泡")
-                    .font(.system(size: 34, weight: .light))
-                    .tracking(6)
-                    .foregroundStyle(Color(red: 0.2, green: 0.31, blue: 0.41).opacity(0.72))
+                    HStack(spacing: 3) {
+                        ForEach(RecordingKind.allCases) { kind in
+                            Button {
+                                withAnimation(.easeOut(duration: 0.2)) { filter = kind }
+                            } label: {
+                                Text(kind.rawValue)
+                                    .font(.system(size: 11, weight: filter == kind ? .medium : .regular))
+                                    .foregroundStyle(filter == kind ? Color.primary.opacity(0.78) : Color.secondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 9)
+                                    .background {
+                                        if filter == kind {
+                                            Capsule().fill(.white.opacity(0.72))
+                                        }
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(4)
+                    .glassEffect(.regular, in: Capsule())
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("最近收录")
+                                .font(.system(size: 13, weight: .medium))
+                            Spacer()
+                            Text("按声音类型整理")
+                                .font(.system(size: 10, weight: .regular))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if let featured = visibleRecords.first {
+                            GalleryRecordTile(record: featured, featured: true, playing: playing && activeRecordID == featured.id) {
+                                select(featured)
+                            }
+                        }
+
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                            ForEach(Array(visibleRecords.dropFirst())) { record in
+                                GalleryRecordTile(record: record, featured: false, playing: playing && activeRecordID == record.id) {
+                                    select(record)
+                                }
+                            }
+                        }
+                    }
+
+                    Button { playing.toggle() } label: {
+                        HStack(spacing: 11) {
+                            Image(systemName: playing ? "pause.fill" : "play.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .frame(width: 34, height: 34)
+                                .background(.white.opacity(0.62), in: Circle())
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(activeRecord.title).font(.system(size: 12, weight: .medium))
+                                Text("\(activeRecord.kind.rawValue) · \(activeRecord.duration)")
+                                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 4)
+                            WaveBars(active: playing)
+                        }
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 9)
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: onRoam) {
+                        Label("继续漫游", systemImage: "scope")
+                            .font(.system(size: 13, weight: .medium))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                            .glassEffect(.regular, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 6)
+                .padding(.bottom, 20)
             }
+        }
+    }
 
-            BubbleConstellation()
-                .padding(.vertical, 16)
+    private func select(_ record: GalleryRecord) {
+        let wasActive = activeRecordID == record.id
+        activeRecordID = record.id
+        playing = wasActive ? !playing : true
+    }
+}
 
-            Button { playing.toggle() } label: {
-                HStack(spacing: 12) {
+private struct GalleryRecordTile: View {
+    let record: GalleryRecord
+    let featured: Bool
+    let playing: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            if featured {
+                HStack(spacing: 16) {
+                    bubble(size: 90)
+                    VStack(alignment: .leading, spacing: 7) {
+                        Text(record.kind.rawValue)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(record.kind.tint)
+                        Text(record.title)
+                            .font(.system(size: 17, weight: .regular, design: .serif))
+                            .foregroundStyle(Color.primary.opacity(0.82))
+                        Text("\(record.index)  ·  \(record.duration)")
+                            .font(.system(size: 10, weight: .regular, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
                     Image(systemName: playing ? "pause.fill" : "play.fill")
                         .font(.system(size: 12, weight: .semibold))
-                        .frame(width: 38, height: 38)
-                        .background(.white.opacity(0.54), in: Circle())
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("午后的风").font(.system(size: 13, weight: .medium))
-                        Text("留在这里的一句话").font(.system(size: 10)).foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 4)
-                    WaveBars(active: playing)
+                        .foregroundStyle(Color.primary.opacity(0.6))
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+                .padding(.horizontal, 15)
+                .padding(.vertical, 13)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            } else {
+                VStack(spacing: 7) {
+                    bubble(size: 66)
+                    Text(record.title)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.primary.opacity(0.78))
+                        .lineLimit(1)
+                    Text("\(record.kind.rawValue) · \(record.duration)")
+                        .font(.system(size: 9, weight: .regular))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
             }
-            .buttonStyle(.plain)
-
-            Button(action: onRoam) {
-                Label("开始漫游", systemImage: "arrow.up.right")
-                    .font(.system(size: 13, weight: .medium))
-                    .tracking(1)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 15)
-                    .glassEffect(.regular, in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 18)
-
-            Spacer(minLength: 20)
         }
+        .buttonStyle(.plain)
+    }
+
+    private func bubble(size: CGFloat) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            SoapBubble(size: size, kind: record.kind)
+            if playing {
+                Image(systemName: "waveform")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(Color(red: 0.34, green: 0.5, blue: 0.67))
+                    .padding(6)
+                    .background(.regularMaterial, in: Circle())
+                    .offset(x: 4, y: 3)
+            }
+        }
+        .scaleEffect(playing ? 1.035 : 1)
+        .animation(.easeOut(duration: 0.22), value: playing)
     }
 }
 
@@ -358,3 +518,4 @@ private struct SoundscapeTabBar: View {
         SoundscapeDemoView()
     }
 }
+
