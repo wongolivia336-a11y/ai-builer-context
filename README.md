@@ -8,6 +8,8 @@
 
 ![泡泡首页与现场镜像预览](./docs/assets/home-preview.png)
 
+![基于最新 STL 的 Three.js 装置模型与 CMF 预览](./docs/assets/device-model-preview.png)
+
 ## 体验流程
 
 ```mermaid
@@ -31,7 +33,7 @@ flowchart LR
 - **漫游**：在真实街道照片上进行 AR 风格瞄准，缩放并选中不同距离或高度的泡泡；按装置实体键触发捕捉。
 - **共创**：选择“给下一位”或“留在此刻”，录音、试听、绑定位置并发布。
 - **设备状态**：显示声景装置连接与播放状态。
-- **设备模型**：桌面左下角入口打开可拖动旋转的 Three.js 声景装置，也可收起回到专注浏览。
+- **设备模型**：桌面左下角入口打开可拖动旋转的 Three.js 泡泡枪。模型来自最新 STL，预览采用薄荷绿磨砂机身、浅粉喇叭与握把、暖黄功能件、透明储液仓和金属细节；模型资源压缩后按需加载。
 - **现场镜像**：桌面演示页同步展示手机当前界面，供 Demo Day 观众观看和参与共选。
 
 ## 本地运行
@@ -49,7 +51,7 @@ Vite 会输出本地地址。可直接访问不同页面：
 - `/?screen=roam` 漫游
 - `/?screen=create` 共创
 
-浏览器演示支持泡泡排序与破裂动画、中文语音合成试听、回声榜、街景上的 AR 目标缩放与捕捉动画、录音预览和发布状态。它不调用真实麦克风、不连接 ESP32，也不会启动 AR 相机；装置是程序化 Three.js 模型。
+浏览器演示支持泡泡排序与破裂动画、中文语音合成试听、回声榜、街景上的 AR 目标缩放与捕捉动画、录音预览和发布状态。它不调用真实麦克风、不连接 ESP32，也不会启动 AR 相机；泡泡枪展示的是提供的 STL 外形和演示材质，不会控制真实装置。
 
 ```bash
 npm run build
@@ -58,6 +60,7 @@ npm run build
 ## 技术组成
 
 - `src/`：Vite + React 的可交互演示；GSAP/Flip 页面动效、Three.js 装置模型和街景资源都在 `src/`。
+- `src/assets/soundscape-device.stl.gz`：本次提供的压缩 STL 模型。Three.js 打开装置面板时按需载入，并根据模型的独立零件壳体应用演示 CMF。
 - `native/SoundscapeDemoView.swift`：使用 SwiftUI Liquid Glass 的原生界面视图，要求 iOS 26+。当前仓库未包含 Xcode 工程，且该文件尚未在 Xcode 中编译验证。
 - `docs/product-context.md`：产品目标、交互规则、游戏循环和软硬件分工。
 - `docs/app-information-architecture.md`：可讨论的 App Mind Map、导航规则、Demo 分层和关键决策。
