@@ -48,14 +48,40 @@ private enum SoundscapePage: String, CaseIterable {
     }
 }
 
+private enum PopPalette {
+    static let paper = Color(red: 0.97, green: 0.96, blue: 0.92)
+    static let paperLight = Color(red: 0.99, green: 0.985, blue: 0.95)
+    static let ink = Color(red: 0.12, green: 0.17, blue: 0.14)
+    static let forest = Color(red: 0.10, green: 0.20, blue: 0.15)
+    static let moss = Color(red: 0.53, green: 0.63, blue: 0.34)
+    static let lime = Color(red: 0.85, green: 0.94, blue: 0.30)
+    static let coral = Color(red: 0.89, green: 0.38, blue: 0.31)
+}
+
 private struct SoundscapeBackdrop: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(red: 0.96, green: 0.98, blue: 1.0), Color(red: 0.89, green: 0.93, blue: 0.98), Color(red: 0.95, green: 0.94, blue: 0.98)],
+                colors: [PopPalette.paperLight, Color(red: 0.92, green: 0.95, blue: 0.89), Color(red: 0.89, green: 0.94, blue: 0.94)],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            RadialGradient(colors: [PopPalette.lime.opacity(0.15), .clear], center: .topTrailing, startRadius: 2, endRadius: 280)
+            Circle()
+                .fill(Color.white.opacity(0.55))
+                .frame(width: 260, height: 260)
+                .blur(radius: 58)
+                .offset(x: -150, y: -290)
+            Canvas { context, size in
+                for index in 0..<96 {
+                    let x = CGFloat((index * 37) % 101) / 101 * size.width
+                    let y = CGFloat((index * 61) % 103) / 103 * size.height
+                    let diameter: CGFloat = index.isMultiple(of: 8) ? 1.5 : 0.8
+                    let mark = Path(ellipseIn: CGRect(x: x, y: y, width: diameter, height: diameter))
+                    context.fill(mark, with: .color(PopPalette.ink.opacity(0.035)))
+                }
+            }
+            .allowsHitTesting(false)
         }
         .ignoresSafeArea()
     }
@@ -71,7 +97,8 @@ private enum RecordingKind: String, CaseIterable, Identifiable {
 
     var tint: Color {
         switch self {
-        case .all, .ambience: Color(red: 0.61, green: 0.77, blue: 0.9)
+        case .all: PopPalette.lime
+        case .ambience: Color(red: 0.61, green: 0.79, blue: 0.88)
         case .voice: Color(red: 0.88, green: 0.65, blue: 0.75)
         case .thought: Color(red: 0.72, green: 0.68, blue: 0.84)
         }
@@ -151,31 +178,55 @@ private struct BubbleHome: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
-                Text("声音档案 · 个人收藏")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    Circle().fill(PopPalette.coral).frame(width: 5, height: 5)
+                    Text("FIELD NOTES / VOL. 01")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(0.6)
+                }
+                .foregroundStyle(PopPalette.ink)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .background(PopPalette.lime, in: UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 3, bottomTrailingRadius: 10, topTrailingRadius: 10))
                 Spacer()
                 Label("装置已连接", systemImage: "dot.radiowaves.left.and.right")
-                    .font(.system(size: 10, weight: .regular))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(PopPalette.forest.opacity(0.7))
             }
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(alignment: .bottom) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("我的回声")
-                                .font(.system(size: 31, weight: .regular, design: .serif))
-                                .foregroundStyle(Color(red: 0.2, green: 0.29, blue: 0.4))
-                            Text("5 段声音 · 3 种内容")
-                                .font(.system(size: 12, weight: .regular))
-                                .foregroundStyle(.secondary)
+                            HStack(spacing: 0) {
+                                Text("我的")
+                                Text("回声")
+                                    .background(alignment: .bottom) {
+                                        Rectangle().fill(PopPalette.lime).frame(height: 8).offset(y: -2)
+                                    }
+                            }
+                            .font(.system(size: 32, weight: .black, design: .rounded))
+                            .tracking(-1.1)
+                            .foregroundStyle(PopPalette.ink)
+                            HStack(spacing: 6) {
+                                Text("05 段声音")
+                                Circle().fill(PopPalette.moss).frame(width: 3, height: 3)
+                                Text("03 种内容")
+                            }
+                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(PopPalette.forest.opacity(0.66))
                         }
                         Spacer()
-                        Text("01 — 05")
-                            .font(.system(size: 10, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.secondary)
-                            .padding(.bottom, 3)
+                        VStack(spacing: 3) {
+                            Text("SIDE")
+                            Text("A / 01")
+                        }
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .foregroundStyle(PopPalette.ink.opacity(0.72))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 7)
+                        .background(PopPalette.lime.opacity(0.78), in: UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 9, bottomTrailingRadius: 3, topTrailingRadius: 9))
+                        .rotationEffect(.degrees(4))
                     }
 
                     HStack(spacing: 3) {
@@ -183,14 +234,17 @@ private struct BubbleHome: View {
                             Button {
                                 withAnimation(.easeOut(duration: 0.2)) { filter = kind }
                             } label: {
-                                Text(kind.rawValue)
-                                    .font(.system(size: 11, weight: filter == kind ? .medium : .regular))
-                                    .foregroundStyle(filter == kind ? Color.primary.opacity(0.78) : Color.secondary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 9)
+                                HStack(spacing: 5) {
+                                    Circle().fill(kind == .all ? PopPalette.ink : kind.tint).frame(width: 5, height: 5)
+                                    Text(kind.rawValue)
+                                        .font(.system(size: 10, weight: filter == kind ? .semibold : .regular))
+                                }
+                                .foregroundStyle(filter == kind ? PopPalette.ink : PopPalette.forest.opacity(0.66))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 9)
                                     .background {
                                         if filter == kind {
-                                            Capsule().fill(.white.opacity(0.72))
+                                            Capsule().fill(PopPalette.lime)
                                         }
                                     }
                             }
@@ -203,11 +257,13 @@ private struct BubbleHome: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("最近收录")
-                                .font(.system(size: 13, weight: .medium))
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundStyle(PopPalette.forest)
                             Spacer()
-                            Text("按声音类型整理")
-                                .font(.system(size: 10, weight: .regular))
-                                .foregroundStyle(.secondary)
+                            Text("SOUND LOG  /  05")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .tracking(0.4)
+                                .foregroundStyle(PopPalette.forest.opacity(0.48))
                         }
 
                         if let featured = visibleRecords.first {
@@ -229,28 +285,34 @@ private struct BubbleHome: View {
                         HStack(spacing: 11) {
                             Image(systemName: playing ? "pause.fill" : "play.fill")
                                 .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(PopPalette.ink)
                                 .frame(width: 34, height: 34)
-                                .background(.white.opacity(0.62), in: Circle())
+                                .background(PopPalette.lime, in: Circle())
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(activeRecord.title).font(.system(size: 12, weight: .medium))
+                                Text(activeRecord.title).font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(PopPalette.ink)
                                 Text("\(activeRecord.kind.rawValue) · \(activeRecord.duration)")
-                                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(PopPalette.forest.opacity(0.6))
                             }
                             Spacer(minLength: 4)
                             WaveBars(active: playing)
                         }
                         .padding(.horizontal, 13)
                         .padding(.vertical, 9)
-                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .background(PopPalette.paperLight.opacity(0.84), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay { RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.96), lineWidth: 1) }
+                        .shadow(color: PopPalette.forest.opacity(0.09), radius: 12, y: 5)
                     }
                     .buttonStyle(.plain)
 
                     Button(action: onRoam) {
                         Label("继续漫游", systemImage: "scope")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(PopPalette.ink)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 13)
-                            .glassEffect(.regular, in: Capsule())
+                            .background(PopPalette.lime, in: Capsule())
+                            .overlay { Capsule().stroke(PopPalette.ink.opacity(0.09), lineWidth: 1) }
+                            .shadow(color: PopPalette.forest.opacity(0.08), radius: 7, y: 3)
                     }
                     .buttonStyle(.plain)
                 }
@@ -280,14 +342,17 @@ private struct GalleryRecordTile: View {
                     bubble(size: 90)
                     VStack(alignment: .leading, spacing: 7) {
                         Text(record.kind.rawValue)
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(record.kind.tint)
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundStyle(PopPalette.ink)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(PopPalette.lime.opacity(0.76), in: UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 7, bottomTrailingRadius: 3, topTrailingRadius: 7))
                         Text(record.title)
-                            .font(.system(size: 17, weight: .regular, design: .serif))
-                            .foregroundStyle(Color.primary.opacity(0.82))
-                        Text("\(record.index)  ·  \(record.duration)")
-                            .font(.system(size: 10, weight: .regular, design: .monospaced))
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundStyle(PopPalette.ink)
+                        Text("SIDE A  ·  \(record.index)  ·  \(record.duration)")
+                            .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(PopPalette.forest.opacity(0.56))
                     }
                     Spacer(minLength: 0)
                     Image(systemName: playing ? "pause.fill" : "play.fill")
@@ -296,7 +361,9 @@ private struct GalleryRecordTile: View {
                 }
                 .padding(.horizontal, 15)
                 .padding(.vertical, 13)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(PopPalette.paperLight.opacity(0.92), in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: 21, style: .continuous).stroke(.white.opacity(0.98), lineWidth: 1) }
+                .shadow(color: PopPalette.forest.opacity(0.09), radius: 12, y: 5)
             } else {
                 VStack(spacing: 7) {
                     bubble(size: 66)
@@ -353,63 +420,119 @@ private struct RoamScreen: View {
     @Binding var playing: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Label("江湾 · 漫游中", systemImage: "location.fill")
-                Spacer()
-                Label(playing ? "正在播放" : "装置已连接", systemImage: "dot.radiowaves.left.and.right")
-            }
-            .font(.system(size: 10))
-            .foregroundStyle(.secondary)
+        ZStack {
+            LinearGradient(colors: [Color(red: 0.10, green: 0.23, blue: 0.17), Color(red: 0.16, green: 0.31, blue: 0.23), Color(red: 0.10, green: 0.20, blue: 0.16)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            RadialGradient(colors: [PopPalette.moss.opacity(0.24), .clear], center: .topTrailing, startRadius: 2, endRadius: 260)
+            Circle()
+                .fill(Color(red: 0.36, green: 0.48, blue: 0.26).opacity(0.34))
+                .frame(width: 230, height: 230)
+                .blur(radius: 52)
+                .offset(x: 140, y: -150)
 
-            Spacer()
-
-            ZStack {
-                Circle().stroke(.white.opacity(0.52), lineWidth: 1).frame(width: 190, height: 190)
-                Circle().stroke(.white.opacity(0.18), lineWidth: 1).frame(width: 244, height: 244)
-                SoapBubble(size: 92)
-                    .scaleEffect(captured ? 0.2 : 1)
-                    .opacity(captured ? 0.15 : 1)
-                    .offset(y: -55)
-                    .animation(.spring(duration: 0.8, bounce: 0.08), value: captured)
-                Text("二层回声 · 8 m")
-                    .font(.system(size: 10, weight: .regular))
-                    .tracking(2)
-                    .foregroundStyle(.secondary)
-                    .offset(y: 80)
-            }
-
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 13) {
-                Text(captured ? "声音正在设备中回响" : "现场共选 · 04")
-                    .font(.system(size: 10, weight: .regular))
-                    .tracking(1.3)
-                    .foregroundStyle(.secondary)
-                Text(captured ? "风从河面来" : "「风从河面来，像一句没说完的话。」")
-                    .font(.system(size: 13, weight: .regular))
-                    .lineLimit(2)
+            VStack(spacing: 0) {
                 HStack {
-                    if captured { WaveBars(active: playing) }
-                    else { Text("林留在这里 · 12 秒").font(.system(size: 10)).foregroundStyle(.secondary) }
+                    Label("江湾 · 漫游中", systemImage: "location.fill")
                     Spacer()
-                    Button {
-                        captured = true
-                        playing = true
-                    } label: {
-                        Label(captured ? "已捕捉" : "捕捉", systemImage: captured ? "checkmark" : "circle.inset.filled")
-                            .font(.system(size: 11, weight: .medium))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 9)
-                            .glassEffect(.regular, in: Capsule())
+                    HStack(spacing: 5) {
+                        Circle().fill(PopPalette.coral).frame(width: 5, height: 5)
+                        Text("REC 00:12")
+                            .font(.system(size: 8, weight: .bold, design: .monospaced))
                     }
-                    .buttonStyle(.plain)
                 }
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.86))
+
+                Spacer(minLength: 8)
+
+                ZStack {
+                    Circle().stroke(PopPalette.lime.opacity(0.48), lineWidth: 1).frame(width: 190, height: 190)
+                    Circle().stroke(.white.opacity(0.18), style: StrokeStyle(lineWidth: 1, dash: [2, 6])).frame(width: 244, height: 244)
+                    SoapBubble(size: 92, kind: .voice)
+                        .scaleEffect(captured ? 0.2 : 1)
+                        .opacity(captured ? 0.15 : 1)
+                        .offset(y: -55)
+                        .animation(.spring(duration: 0.8, bounce: 0.08), value: captured)
+                    ViewfinderCorners().stroke(PopPalette.lime.opacity(0.84), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+                        .frame(width: 216, height: 216)
+                    VStack(spacing: 5) {
+                        Text("二层回声")
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .tracking(0.8)
+                        Text("8 m  /  TARGET 01")
+                            .font(.system(size: 7, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.72))
+                    }
+                    .foregroundStyle(PopPalette.lime)
+                    .offset(y: 81)
+                }
+
+                Spacer(minLength: 8)
+
+                VStack(alignment: .leading, spacing: 13) {
+                    HStack {
+                        Text(captured ? "声音正在设备中回响" : "现场共选 · 04")
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .tracking(0.7)
+                        Spacer()
+                        Text("SIDE A")
+                            .font(.system(size: 7, weight: .bold, design: .monospaced))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(PopPalette.lime, in: Capsule())
+                    }
+                    .foregroundStyle(PopPalette.forest.opacity(0.72))
+                    Text(captured ? "风从河面来" : "「风从河面来，像一句没说完的话。」")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(PopPalette.ink)
+                        .lineLimit(2)
+                    HStack {
+                        if captured { WaveBars(active: playing) }
+                        else { Text("林留在这里 · 12 秒").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(PopPalette.forest.opacity(0.6)) }
+                        Spacer()
+                        Button {
+                            captured = true
+                            playing = true
+                        } label: {
+                            Label(captured ? "已捕捉" : "捕捉", systemImage: captured ? "checkmark" : "circle.inset.filled")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundStyle(PopPalette.ink)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(PopPalette.lime, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(PopPalette.paperLight, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .overlay { RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.95), lineWidth: 1) }
+                .shadow(color: .black.opacity(0.18), radius: 16, y: 7)
             }
-            .padding(17)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .padding(16)
         }
+        .overlay { RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(.white.opacity(0.13), lineWidth: 1) }
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+}
+
+private struct ViewfinderCorners: Shape {
+    func path(in rect: CGRect) -> Path {
+        let corner: CGFloat = 20
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + corner))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + corner, y: rect.minY))
+        path.move(to: CGPoint(x: rect.maxX - corner, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + corner))
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY - corner))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX + corner, y: rect.maxY))
+        path.move(to: CGPoint(x: rect.maxX - corner, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - corner))
+        return path
     }
 }
 
@@ -428,9 +551,25 @@ private struct CreateScreen: View {
             .foregroundStyle(.secondary)
 
             Spacer(minLength: 12)
-            Text("留一句")
-                .font(.system(size: 34, weight: .light))
-                .tracking(5)
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("FIELD RECORDING / 01")
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(0.8)
+                        .foregroundStyle(PopPalette.forest.opacity(0.62))
+                    Text("留一句")
+                        .font(.system(size: 32, weight: .black, design: .rounded))
+                        .tracking(-1)
+                        .foregroundStyle(PopPalette.ink)
+                }
+                Spacer()
+                Text("REC")
+                    .font(.system(size: 8, weight: .black, design: .monospaced))
+                    .foregroundStyle(PopPalette.ink)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(PopPalette.lime, in: UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 8, bottomTrailingRadius: 3, topTrailingRadius: 8))
+            }
             BubbleConstellation()
                 .scaleEffect(0.82)
                 .frame(height: 210)
@@ -440,28 +579,32 @@ private struct CreateScreen: View {
                 Text("留在此刻").tag(1)
             }
             .pickerStyle(.segmented)
+            .tint(PopPalette.moss)
 
             VStack(alignment: .leading, spacing: 13) {
                 Text(prompt == 0 ? "说一句，留给下一个路过的人" : "说一句，此刻的你和这里")
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced)).foregroundStyle(PopPalette.forest.opacity(0.62))
                 Text(recording ? "正在收录这一刻…" : "一段话，刚刚好")
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.system(size: 13, weight: .bold, design: .rounded)).foregroundStyle(PopPalette.ink)
                 HStack {
                     Button { recording.toggle() } label: {
                         Image(systemName: recording ? "stop.fill" : "waveform")
                             .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(PopPalette.ink)
                             .frame(width: 38, height: 38)
-                            .glassEffect(.regular, in: Circle())
+                            .background(recording ? PopPalette.coral : PopPalette.lime, in: Circle())
                     }
                     .buttonStyle(.plain)
                     WaveBars(active: recording)
                     Spacer()
-                    Text(recording ? "00:08" : "00:00").font(.system(size: 10, design: .rounded)).foregroundStyle(.secondary)
+                    Text(recording ? "00:08" : "00:00").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundStyle(PopPalette.forest.opacity(0.62))
                 }
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 25, style: .continuous))
+            .background(PopPalette.paperLight.opacity(0.89), in: RoundedRectangle(cornerRadius: 21, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: 21, style: .continuous).stroke(.white.opacity(0.95), lineWidth: 1) }
+            .shadow(color: PopPalette.forest.opacity(0.08), radius: 12, y: 5)
 
             Spacer(minLength: 18)
         }
@@ -476,7 +619,7 @@ private struct WaveBars: View {
         HStack(alignment: .center, spacing: 2) {
             ForEach(Array(heights.enumerated()), id: \.offset) { index, height in
                 Capsule()
-                    .fill(Color(red: 0.4, green: 0.62, blue: 0.78).opacity(0.7))
+                    .fill(PopPalette.moss.opacity(0.78))
                     .frame(width: 2, height: active ? height : max(5, height * 0.45))
                     .animation(.easeInOut(duration: 0.34).delay(Double(index) * 0.025).repeatForever(autoreverses: true), value: active)
             }
@@ -496,12 +639,12 @@ private struct SoundscapeTabBar: View {
                         Image(systemName: item.symbol).font(.system(size: 15, weight: .regular))
                         Text(item.rawValue).font(.system(size: 9, weight: .regular))
                     }
-                    .foregroundStyle(selection == item ? Color(red: 0.27, green: 0.43, blue: 0.59) : .secondary)
+                    .foregroundStyle(selection == item ? PopPalette.ink : PopPalette.forest.opacity(0.58))
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
                     .background {
                         if selection == item {
-                            Capsule().fill(.white.opacity(0.48))
+                            Capsule().fill(PopPalette.lime)
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import { Phone } from './kit/phone';
 import streetBackground from './assets/roam-street.png';
 import './styles.css';
 import './styles-v2.css';
+import './styles-editorial.css';
 
 const DeviceViewer = lazy(() => import('./DeviceViewer'));
 
@@ -173,20 +174,20 @@ function HomeScreen({ onRoam, onPlay, playing, onPageChange, activeBubble, poppe
       <div className="home-content gallery-content">
         <div className="gallery-heading">
           <div>
-            <span className="eyebrow">个人声音图鉴</span>
-            <h1>我的回声</h1>
-            <p>5 段声音 <i /> 3 种内容</p>
+            <span className="eyebrow"><i /> FIELD NOTES / VOL. 01</span>
+            <h1>我的<span>回声</span></h1>
+            <p>05 段声音 <i /> <b>03 种内容</b></p>
           </div>
           <button className="gallery-board" onClick={onOpenLeaderboard} aria-label="打开回声榜">
             <span>↗</span><small>回声榜</small>
           </button>
         </div>
         <div className="gallery-filter" role="tablist" aria-label="按声音内容筛选">
-          {kinds.map(([key, label]) => (
-            <button key={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => setKindFilter(key)}>{label}</button>
+            {kinds.map(([key, label]) => (
+            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => setKindFilter(key)}>{label}</button>
           ))}
         </div>
-        <div className="gallery-section-head"><strong>最近收录</strong><span>按声音类型呈现</span></div>
+        <div className="gallery-section-head"><strong>最近收录</strong><span><b>{String(gallery.length).padStart(2, '0')}</b> / SOUND LOG</span></div>
         <div className="gallery-grid" aria-label="个人声音泡泡图鉴">
           {gallery.map((bubble, index) => <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} />)}
         </div>
@@ -296,7 +297,13 @@ function CreateScreen({ prompt, onPrompt, recording, onRecord, transcript, onPub
         <DevicePill playing={false} />
       </div>
       <div className="create-content">
-        <div className="create-heading"><span className="eyebrow">共创一段声音</span><h1>留一句</h1></div>
+        <div className="create-heading">
+          <div className="create-title-copy">
+            <span className="eyebrow">FIELD RECORDING / 01</span>
+            <h1>留一句</h1>
+          </div>
+          <span className="create-rec"><i /> REC</span>
+        </div>
         <div className="create-orbit">
           <span className="create-aura" />
           <Bubble size={104} className={`record-bubble${recording ? ' recording' : ''}`} label="录音泡泡" />
@@ -352,6 +359,7 @@ function AudiencePreview({ page, selected, captured, playing, published }) {
           </>
         ) : (
           <>
+            <div className="projection-issue"><span>FIELD NOTES</span><b>VOL. 01</b><i>05 SOUNDS</i></div>
             <div className="projection-home-title">我的<br /><em>回声图鉴</em></div>
             <div className="projection-cluster">
               <Bubble size={150} className="projection-bubble p-center accent-blue" />

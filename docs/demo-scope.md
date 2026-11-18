@@ -11,6 +11,7 @@
 - 录音预览和发布状态。
 - 桌面演示中的现场镜像，用于展示观众看到的大屏状态。
 - SwiftUI Liquid Glass 视觉原型 `native/SoundscapeDemoView.swift`。
+- 首页采用个人声音档案与 Y2K 青春编辑拼贴方向；漫游页使用森林暗场和高亮取景标记。背景照片、手绘贴纸与字形情绪版提示词见 [`newjeans-inspired-ui-asset-pack.md`](./newjeans-inspired-ui-asset-pack.md)，图像资产仍需单独生成后集成。
 
 ## 当前模拟
 

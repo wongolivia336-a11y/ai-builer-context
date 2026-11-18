@@ -8,6 +8,8 @@
 
 ![泡泡首页与现场镜像预览](./docs/assets/home-preview.png)
 
+![390 px 手机端首页适配](./docs/assets/home-preview-mobile.png)
+
 ![基于最新 STL 的 Three.js 装置模型与 CMF 预览](./docs/assets/device-model-preview.png)
 
 ## 体验流程
@@ -66,7 +68,8 @@ npm run build
 - `docs/product-context.md`：产品目标、交互规则、游戏循环和软硬件分工。
 - `docs/app-information-architecture.md`：可讨论的 App Mind Map、导航规则、Demo 分层和关键决策。
 - `docs/demo-scope.md`：当前可演示能力与真实设备能力的边界。
-- `docs/visual-direction.md`：泡泡材质、Liquid Glass 与页面色彩方向。
+- `docs/visual-direction.md`：泡泡材质、青春胶片拼贴、Liquid Glass 与页面色彩方向。
+- `docs/newjeans-inspired-ui-asset-pack.md`：青春胶片、Y2K 拼贴、手绘贴纸、泡泡与标题字形的文生图提示词包。
 - `docs/open-source-references.md`：泡泡物理、材质和点击破裂的开源参考与取舍。
 - `docs/ui-generation-prompts.md`：用于延展 App 组图的统一母提示词与逐屏提示词。
 - `AGENTS.md`：供 coding agent 使用的项目约束和协作说明。
