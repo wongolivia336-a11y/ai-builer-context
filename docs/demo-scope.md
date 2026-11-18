@@ -11,7 +11,7 @@
 - 录音页的泡泡外形会随 Demo 模拟的时长和音量起伏膨胀、抖动；发布后会进入个人泡泡场，并自动打开 EchoCaster 模型和播放发泡动画。
 - 桌面演示中的现场镜像，用于展示观众看到的大屏状态。
 - SwiftUI Liquid Glass 视觉原型 `native/SoundscapeDemoView.swift`。
-- 首页采用 Y2K 屏保式弥散泡泡场；泡泡边缘使用低对比虹彩薄膜，不加厚重蓝圈。漫游页使用森林暗场和高亮取景标记。背景照片、手绘贴纸与字形提示词见 [`newjeans-inspired-ui-asset-pack.md`](./newjeans-inspired-ui-asset-pack.md)，图像资产仍需单独生成后集成。
+- 首页采用 Y2K 屏保式弥散泡泡场；泡泡边缘使用低对比虹彩薄膜，不加厚重蓝圈。漫游页使用提供的夜间林道照片，创作页使用留白天空照片；手绘星星只点缀录音泡泡，透明泡泡素材用于选中目标和回声榜缩略图。素材去向见 [`asset-use-map.md`](./asset-use-map.md)。
 
 ## 当前模拟
 
@@ -35,3 +35,4 @@
 开源泡泡项目的参考和当前未引入的原因见 [`open-source-references.md`](./open-source-references.md)。
 
 以上清单是方向，不代表已确定的技术选型或已完成能力。实现前应按 Demo Day 所需体验优先级逐项验证。
+

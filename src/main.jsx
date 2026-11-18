@@ -2,7 +2,12 @@ import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } f
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { Phone } from './kit/phone';
-import streetBackground from './assets/roam-street.png';
+import streetBackground from './assets/user-kit/roam-night-portrait.webp';
+import landscapeStreetBackground from './assets/user-kit/roam-night-landscape.webp';
+import createBackground from './assets/user-kit/create-open-sky.webp';
+import soundPostcardCover from './assets/user-kit/sound-postcard-collage.webp';
+import stickerStarMint from './assets/user-kit/sticker-star-mint.webp';
+import stickerStarBlue from './assets/user-kit/sticker-star-blue.webp';
 import './styles.css';
 import './styles-v2.css';
 import './styles-editorial.css';
@@ -358,7 +363,11 @@ function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting
         {captured ? (
           <>
             <div className="result-heading"><span className="result-dot" />{playing ? '声音正在设备中回响' : '已收进泡泡盒'}</div>
-            <div className="result-track"><strong>「风从河面来」</strong><Waveform active={playing} small /></div>
+            <div className="result-track">
+              <span className="result-postcard-art"><img src={soundPostcardCover} alt="" /></span>
+              <span className="result-track-copy"><strong>「风从河面来」</strong><small>一段留在林间的回声</small></span>
+              <Waveform active={playing} small />
+            </div>
             <div className="real-bubbles" aria-hidden="true"><i /><i /><i /><i /><i /></div>
           </>
         ) : (
@@ -376,7 +385,7 @@ function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting
 
 function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, emitting, onRecord, transcript, onPublish, published, onPageChange }) {
   return (
-    <Scene className="app-create">
+    <Scene className="app-create" style={{ '--create-image': `url("${createBackground}")` }}>
       <div className="screen-topline">
         <span className="place-chip"><i /> 江湾 · 01</span>
         <DevicePill playing={false} emitting={emitting} />
@@ -392,6 +401,8 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
         <div className={`create-orbit${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}>
           <span className="create-aura" />
           <span className="record-shape-wave" aria-hidden="true" />
+          <img className="create-sticker sticker-star-mint" src={stickerStarMint} alt="" aria-hidden="true" />
+          <img className="create-sticker sticker-star-blue" src={stickerStarBlue} alt="" aria-hidden="true" />
           <Bubble size={114} className={`record-bubble${recording ? ' recording' : ''}`} label={recording ? '正在录制自己的声音，泡泡会随着声音呼吸' : '录音泡泡'} style={{ '--record-energy': recordingEnergy }} />
           <Bubble size={34} className="create-satellite sat-a" />
           <Bubble size={24} className="create-satellite sat-b" />
@@ -425,7 +436,7 @@ function AudiencePreview({ page, selected, captured, playing, emitting, recordin
         <span className="audience-title">现场镜像</span>
         <span className="live-pill"><i /> LIVE</span>
       </div>
-      <Scene className={`projection-scene projection-${page}`} style={page === 'roam' ? { '--street-image': `url("${streetBackground}")` } : undefined}>
+      <Scene className={`projection-scene projection-${page}`} style={page === 'roam' ? { '--street-image': `url("${landscapeStreetBackground}")` } : page === 'create' ? { '--create-image': `url("${createBackground}")` } : undefined}>
         <div className="projection-location"><i /> {page === 'home' ? '我的回声' : '江湾 · 01'} <span>{page === 'home' ? '个人图鉴' : '空间回声'}</span></div>
         {page === 'roam' ? (
           <>
@@ -630,3 +641,4 @@ function App() {
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+

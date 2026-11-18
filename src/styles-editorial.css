@@ -399,3 +399,57 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .device-live-dot.active { box-shadow:0 0 0 4px rgba(221,237,81,.15),0 0 15px rgba(221,237,81,.55); }
 .projection-home-orb .soap-bubble { filter:saturate(1.18); }
 @keyframes filter-bubble-bob { 0%,100% { transform:translateY(0) scale(.82); } 50% { transform:translateY(-3px) scale(1.15); } }
+
+/* User supplied visual kit: scene photos establish context; transparent art is kept to small moments. */
+.app-create {
+  background-image:linear-gradient(180deg,rgba(248,248,238,.18),rgba(244,247,238,.18) 46%,rgba(245,246,238,.73)),var(--create-image);
+  background-size:cover;
+  background-position:center 42%;
+}
+.app-create .scene-sky,.app-create .scene-water,.app-create .scene-horizon { display:none; }
+.app-create .create-content { z-index:1; }
+.create-sticker { position:absolute; z-index:4; width:26px; height:auto; pointer-events:none; filter:drop-shadow(0 3px 4px rgba(61,80,70,.12)); }
+.create-sticker.sticker-star-mint { top:8px; left:7px; width:31px; transform:rotate(-13deg); }
+.create-sticker.sticker-star-blue { right:8px; bottom:1px; width:24px; transform:rotate(11deg); }
+.create-orbit.is-recording .sticker-star-mint { animation:sticker-listen 1.05s ease-in-out infinite alternate; }
+.create-orbit.is-recording .sticker-star-blue { animation:sticker-listen 1.35s ease-in-out -.35s infinite alternate-reverse; }
+@keyframes sticker-listen { from { translate:0 1px; scale:.96; } to { translate:0 -4px; scale:1.06; } }
+
+.app-roam .target-bubble.target-selected::before {
+  inset:-10%;
+  padding:0;
+  border-radius:50%;
+  background:url("./assets/user-kit/bubble-rim-thin.webp") center / 100% 100% no-repeat;
+  -webkit-mask:none;
+  mask:none;
+  -webkit-mask-composite:initial;
+  mask-composite:initial;
+  opacity:.78;
+  filter:drop-shadow(0 0 7px rgba(244,244,255,.24));
+}
+.app-roam.capture-done .target-bubble.target-selected::before {
+  background-image:url("./assets/user-kit/bubble-rim-pearl.webp");
+  opacity:.84;
+}
+
+.result-track { align-items:center; gap:10px; margin-top:10px; }
+.result-postcard-art { position:relative; z-index:1; display:block; width:42px; height:48px; flex:none; transform:rotate(-3deg); }
+.result-postcard-art::before { content:""; position:absolute; z-index:-1; inset:-7px; background:url("./assets/user-kit/bubble-rim-thin.webp") center / 100% 100% no-repeat; opacity:.8; }
+.result-postcard-art img { display:block; width:100%; height:100%; object-fit:cover; border:1px solid rgba(255,255,255,.94); border-radius:5px 7px 4px 6px; box-shadow:0 4px 9px rgba(26,43,32,.16); }
+.result-track-copy { display:grid; gap:4px; min-width:0; }
+.result-track-copy small { color:rgba(40,76,78,.5); font-size:7px; }
+.result-track .waveform { margin-left:auto; }
+
+.leader-orb.accent-rose { background-image:url("./assets/user-kit/bubble-sphere-pearl.webp"),radial-gradient(circle at 29% 25%,white,rgba(191,218,240,.24) 40%,rgba(223,161,188,.17) 68%,rgba(255,255,255,.56)); background-size:cover,auto; background-position:center; }
+.leader-orb.accent-gold { background-image:url("./assets/user-kit/bubble-rim-pearl.webp"),radial-gradient(circle at 29% 25%,white,rgba(191,218,240,.24) 40%,rgba(223,161,188,.17) 68%,rgba(255,255,255,.56)); background-size:cover,auto; background-position:center; }
+.leader-orb.accent-blue { background-image:url("./assets/user-kit/bubble-rim-mint.webp"),radial-gradient(circle at 29% 25%,white,rgba(191,218,240,.24) 40%,rgba(223,161,188,.17) 68%,rgba(255,255,255,.56)); background-size:cover,auto; background-position:center; }
+.leader-orb.accent-lilac { background-image:url("./assets/user-kit/bubble-sphere-lilac.webp"),radial-gradient(circle at 29% 25%,white,rgba(191,218,240,.24) 40%,rgba(223,161,188,.17) 68%,rgba(255,255,255,.56)); background-size:cover,auto; background-position:center; }
+
+.projection-scene.projection-roam { background-image:linear-gradient(180deg,rgba(17,37,51,.13),rgba(17,37,51,.04) 48%,rgba(15,32,43,.29)),var(--street-image); background-position:center; }
+.projection-scene.projection-create { background-image:linear-gradient(180deg,rgba(249,248,239,.18),rgba(244,247,238,.18) 46%,rgba(245,246,238,.72)),var(--create-image); background-size:cover; background-position:center 42%; }
+.projection-create .scene-sky,.projection-create .scene-water,.projection-create .scene-horizon { display:none; }
+
+@media (prefers-reduced-motion:reduce) {
+  .create-orbit.is-recording .create-sticker { animation:none!important; }
+}
+

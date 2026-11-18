@@ -4,7 +4,7 @@
 
 声景漫游把城市里的声音做成可以发现、戳开和接力的泡泡。概念体验中，用户用手机 AR 瞄准他人留下的声音，再通过实体装置完成捕捉；也可以录下一句话，留给后来经过的人。
 
-> 当前仓库提供可交互的浏览器演示和 SwiftUI 视觉原型。GPS、ARKit、ESP32、真实录音与声纹处理、机械吹泡装置尚未接入；演示中的相关反馈是交互模拟。泡泡播放使用浏览器中文语音合成示例，漫游使用生成的街景图作 AR 底图。
+> 当前仓库提供可交互的浏览器演示和 SwiftUI 视觉原型。GPS、ARKit、ESP32、真实录音与声纹处理、机械吹泡装置尚未接入；演示中的相关反馈是交互模拟。泡泡播放使用浏览器中文语音合成示例；漫游与共创页面使用项目提供的环境照片作为视觉底图。
 
 ![泡泡首页与现场镜像预览](./docs/assets/home-preview.jpg)
 
@@ -80,6 +80,7 @@ npm run build
 - `docs/visual-direction.md`：泡泡材质、青春胶片拼贴、Liquid Glass 与页面色彩方向。
 - `docs/newjeans-inspired-ui-asset-pack.md`：青春胶片、Y2K 拼贴、手绘贴纸、泡泡与标题字形的文生图提示词包。
 - `docs/open-source-references.md`：泡泡物理、材质和点击破裂的开源参考与取舍。
+- `docs/asset-use-map.md`：本轮提供的照片、贴纸和透明泡泡素材在页面中的使用位置。
 - `docs/ui-generation-prompts.md`：用于延展 App 组图的统一母提示词与逐屏提示词。
 - `AGENTS.md`：供 coding agent 使用的项目约束和协作说明。
 
@@ -92,3 +93,4 @@ npm run build
 ## 给 AI coding agent 的入口
 
 开始修改前先读 [`AGENTS.md`](./AGENTS.md)、[`docs/product-context.md`](./docs/product-context.md) 和 [`docs/demo-scope.md`](./docs/demo-scope.md)。实现中请明确区分“原型模拟”和“真实硬件/定位/音频集成”，不要把尚未接入的能力描述为已完成。
+
