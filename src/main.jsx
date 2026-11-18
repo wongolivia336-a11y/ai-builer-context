@@ -11,11 +11,11 @@ const DeviceViewer = lazy(() => import('./DeviceViewer'));
 
 const initialScreen = new URLSearchParams(location.search).get('screen');
 
-function Bubble({ size, className = '', label, onClick }) {
+function Bubble({ size, className = '', label, onClick, style = {} }) {
   return (
     <button
       className={`soap-bubble ${className}`}
-      style={{ '--bubble-size': `${size}px` }}
+      style={{ '--bubble-size': `${size}px`, ...style }}
       aria-label={label || '声音泡泡'}
       onClick={onClick}
     >
@@ -60,68 +60,76 @@ function TabBar({ active, onChange }) {
   );
 }
 
-function DevicePill({ playing }) {
+function DevicePill({ playing, emitting = false }) {
   return (
     <div className={`device-pill${playing ? ' playing' : ''}`}>
       <i />
-      <span>{playing ? '正在播放' : '装置已连接'}</span>
+      <span>{playing ? '声音正在流动' : emitting ? '泡泡正在舒展 · SIM' : 'EchoCaster · DEMO'}</span>
     </div>
   );
 }
 
 const SOUND_BUBBLES = [
-  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 116, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 5 },
-  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 72, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 3 },
-  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 52, accent: 'rose', kind: '人声', kindKey: 'voice', age: 1 },
-  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 43, accent: 'lilac', kind: '碎念', kindKey: 'thought', age: 2 },
-  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 34, accent: 'lilac', kind: '碎念', kindKey: 'thought', age: 0 },
+  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 138, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
+  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 106, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
+  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 94, accent: 'rose', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
+  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 116, accent: 'lilac', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
+  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 86, accent: 'lilac', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
+  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 124, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
+  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 100, accent: 'rose', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
+  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 90, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
+  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 108, accent: 'rose', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
+  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 78, accent: 'gold', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
+  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 88, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
+  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 82, accent: 'lilac', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
 ];
 
-function HomeBubble({ bubble, index, popped, onPop }) {
+const BUBBLE_FIELD_SEEDS = [
+  [0.03, 0.23], [0.32, 0.11], [0.81, 0.18], [0.56, 0.31],
+  [0.12, 0.43], [0.94, 0.39], [0.39, 0.52], [0.7, 0.63],
+  [0.08, 0.76], [0.51, 0.87], [0.88, 0.8], [0.28, 0.93],
+];
+
+function HomeBubble({ bubble, index, popped, onPop, filtered, highlighted }) {
   const buttonRef = useRef(null);
   const [burst, setBurst] = useState(false);
-  const isResonant = bubble.saves >= 50;
-
-  useEffect(() => {
-    const button = buttonRef.current;
-    if (!button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const float = gsap.to(button, {
-      y: index % 2 ? -3 : 3,
-      rotation: index % 2 ? 0.5 : -0.5,
-      duration: 4.4 + index * 0.3,
-      delay: index * -0.32,
-      repeat: -1,
-      yoyo: true,
-      ease: 'sine.inOut',
-    });
-    return () => float.kill();
-  }, [index]);
+  const isResonant = bubble.saves >= 50 || bubble.comments.length >= 2;
 
   const pop = (event) => {
     const button = buttonRef.current;
     if (!button || popped) return;
+    const field = button.closest('.bubble-field');
     const particles = button.querySelectorAll('.pop-bit');
     const ring = button.querySelector('.pop-ripple');
-    const radius = Math.max(54, button.getBoundingClientRect().width * 0.8);
+    const flash = field?.querySelector('.bubble-pop-flash');
+    const radius = Math.max(86, button.getBoundingClientRect().width * 1.18);
     setBurst(true);
     gsap.timeline()
-      .to(button, { scaleX: 1.1, scaleY: 0.86, duration: 0.1, ease: 'power2.out' })
-      .to(button, { scaleX: 0.76, scaleY: 1.16, duration: 0.12, ease: 'power3.in' })
-      .to(button, { scale: 0.06, opacity: 0, filter: 'blur(3px)', duration: 0.18, ease: 'power2.in' });
-    if (ring) gsap.fromTo(ring, { scale: 0.36, opacity: 0.72 }, { scale: 1.8, opacity: 0, duration: 0.48, ease: 'power2.out' });
+      .to(button, { scaleX: 1.24, scaleY: 0.72, filter: 'brightness(1.5)', duration: 0.11, ease: 'power2.out' })
+      .to(button, { scaleX: 0.78, scaleY: 1.28, duration: 0.1, ease: 'power3.in' })
+      .to(button, { scale: 0.015, opacity: 0, filter: 'brightness(2.6) blur(4px)', duration: 0.2, ease: 'power2.in' });
+    if (flash && field) {
+      const rect = field.getBoundingClientRect();
+      gsap.killTweensOf(flash);
+      gsap.set(flash, { left: event.clientX - rect.left, top: event.clientY - rect.top });
+      gsap.fromTo(flash, { scale: 0.1, opacity: 0.88 }, { scale: 9, opacity: 0, duration: 0.72, ease: 'power2.out' });
+      gsap.fromTo(field, { x: -3, y: 1 }, { x: 0, y: 0, duration: 0.32, ease: 'elastic.out(1, 0.42)' });
+    }
+    if (ring) gsap.fromTo(ring, { scale: 0.2, opacity: 0.9 }, { scale: 2.65, opacity: 0, duration: 0.66, ease: 'power2.out' });
     if (particles.length) {
-      gsap.fromTo(particles, { x: 0, y: 0, scale: 0.25, opacity: 0.96 }, {
-        x: (i) => Math.cos((i / particles.length) * Math.PI * 2) * radius,
-        y: (i) => Math.sin((i / particles.length) * Math.PI * 2) * radius,
-        scale: (i) => i % 3 === 0 ? 0.12 : 0.34,
+      gsap.fromTo(particles, { x: 0, y: 0, scale: 0.2, rotation: 0, opacity: 1 }, {
+        x: (i) => Math.cos((i / particles.length) * Math.PI * 2 + index) * radius * (0.72 + (i % 3) * 0.2),
+        y: (i) => Math.sin((i / particles.length) * Math.PI * 2 + index) * radius * (0.72 + (i % 2) * 0.25),
+        scale: (i) => i % 3 === 0 ? 1.05 : 0.48,
+        rotation: (i) => i % 2 ? 92 : -72,
         opacity: 0,
-        duration: 0.56,
-        stagger: 0.014,
+        duration: 0.78,
+        stagger: 0.012,
         ease: 'power3.out',
       });
     }
     onPop(bubble, event);
-    window.setTimeout(() => setBurst(false), 620);
+    window.setTimeout(() => setBurst(false), 860);
   };
 
   useEffect(() => {
@@ -132,14 +140,15 @@ function HomeBubble({ bubble, index, popped, onPop }) {
   }, [popped]);
 
   return (
-    <div className={`home-bubble-anchor gallery-entry${index === 0 ? ' is-featured' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} style={{ '--bubble-size': `${index === 0 ? 104 : 66 + (index % 2) * 8}px`, '--bubble-accent': bubble.accent }}>
+    <div className={`bubble-body kind-${bubble.kindKey}${filtered ? ' is-filtered' : ''}${highlighted ? ' is-highlighted' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} data-id={bubble.id} data-kind={bubble.kindKey} data-seed={index} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
+      <svg className="bubble-filter-lasso" viewBox="0 0 160 142" aria-hidden="true"><path d="M81 5C119 2 154 26 153 66S132 131 84 136 7 116 7 73 36 10 81 5Z" /></svg>
       <button
         ref={buttonRef}
         className={`soap-bubble home-bubble accent-${bubble.accent}${isResonant ? ' bubble-hot' : ''}`}
         aria-label={`戳开${bubble.kind}泡泡并回听：${bubble.title}`}
         title={`${bubble.kind} · ${bubble.title}`}
-        onPointerDown={(event) => gsap.to(event.currentTarget, { scaleX: 0.94, scaleY: 1.05, duration: 0.11, ease: 'power2.out' })}
-        onPointerUp={(event) => gsap.to(event.currentTarget, { scaleX: 1, scaleY: 1, duration: 0.42, ease: 'elastic.out(1, 0.38)' })}
+        onPointerDown={(event) => gsap.to(event.currentTarget, { scaleX: 0.91, scaleY: 1.07, duration: 0.1, ease: 'power2.out' })}
+        onPointerUp={(event) => gsap.to(event.currentTarget, { scaleX: 1, scaleY: 1, duration: 0.5, ease: 'elastic.out(1, 0.32)' })}
         onPointerCancel={(event) => gsap.to(event.currentTarget, { scale: 1, duration: 0.24, ease: 'power2.out' })}
         onClick={pop}
       >
@@ -148,62 +157,138 @@ function HomeBubble({ bubble, index, popped, onPop }) {
         <span className="bubble-rank-aura" />
         <span className="bubble-rank-mark">{isResonant ? `共鸣 ${bubble.saves}` : ''}</span>
         <span className="pop-ripple" />
-        {burst && <span className="pop-burst" aria-hidden="true">{Array.from({ length: 10 }, (_, i) => <i key={i} className="pop-bit" />)}</span>}
+        {burst && <span className="pop-burst" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} className="pop-bit" />)}</span>}
       </button>
-      <span className="bubble-label"><small className={`gallery-kind kind-${bubble.kindKey}`}>{bubble.kind}</small><strong>{bubble.title}</strong><small className="gallery-duration">{bubble.duration} · {String(index + 1).padStart(2, '0')}</small></span>
+      <span className="bubble-label"><strong>{bubble.title}</strong><small><i /> {bubble.kind} · {bubble.duration}</small></span>
     </div>
   );
 }
 
-function HomeScreen({ onRoam, onPlay, playing, onPageChange, activeBubble, poppedId, onBubblePop, onOpenLeaderboard }) {
+function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubblePop, onOpenLeaderboard }) {
   const [kindFilter, setKindFilter] = useState('all');
+  const fieldRef = useRef(null);
   const kinds = [
-    ['all', '全部'],
-    ['voice', '人声'],
-    ['ambience', '环境声'],
-    ['thought', '碎念'],
+    ['all', '全部', '◌'],
+    ['voice', '人声', '◉'],
+    ['ambience', '环境声', '◌'],
+    ['thought', '碎念', '✳'],
   ];
-  const gallery = SOUND_BUBBLES.filter((bubble) => kindFilter === 'all' || bubble.kindKey === kindFilter);
+
+  useEffect(() => {
+    const field = fieldRef.current;
+    if (!field) return undefined;
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const bounds = field.getBoundingClientRect();
+    const bodies = [...field.querySelectorAll('.bubble-body')].map((element, index) => {
+      const diameter = element.querySelector('.soap-bubble')?.offsetWidth || 80;
+      const seed = BUBBLE_FIELD_SEEDS[index % BUBBLE_FIELD_SEEDS.length];
+      const maxX = Math.max(0, bounds.width - diameter);
+      const maxY = Math.max(0, bounds.height - diameter);
+      const x = Math.min(maxX, Math.max(0, seed[0] * maxX + (index % 2 ? 18 : -9)));
+      const y = Math.min(maxY, Math.max(0, seed[1] * maxY + (index % 3 ? 12 : -8)));
+      const angle = (index * 2.399) + 0.7;
+      const speed = 17 + (index % 5) * 5;
+      element.style.transform = `translate3d(${x}px,${y}px,0)`;
+      return { element, diameter, x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, phase: index * 1.7 };
+    });
+    if (motionPreference.matches || bodies.length < 2) return undefined;
+    let frame = 0;
+    let last = performance.now();
+    const resizeObserver = new ResizeObserver(() => {
+      const next = field.getBoundingClientRect();
+      bodies.forEach((body) => {
+        body.x = Math.min(Math.max(0, body.x), Math.max(0, next.width - body.diameter));
+        body.y = Math.min(Math.max(0, body.y), Math.max(0, next.height - body.diameter));
+      });
+    });
+    resizeObserver.observe(field);
+    const animate = (now) => {
+      frame = window.requestAnimationFrame(animate);
+      const dt = Math.min((now - last) / 1000, 0.032);
+      last = now;
+      const width = field.clientWidth;
+      const height = field.clientHeight;
+      bodies.forEach((body) => {
+        body.vx += Math.sin(now * 0.00019 + body.phase) * 0.08 * dt;
+        body.vy += Math.cos(now * 0.00017 + body.phase) * 0.1 * dt;
+        body.x += body.vx * dt;
+        body.y += body.vy * dt;
+        const edgeX = Math.max(0, width - body.diameter);
+        const edgeY = Math.max(0, height - body.diameter);
+        if (body.x < 0) { body.x = 0; body.vx = Math.abs(body.vx) * 0.88; }
+        if (body.x > edgeX) { body.x = edgeX; body.vx = -Math.abs(body.vx) * 0.88; }
+        if (body.y < 0) { body.y = 0; body.vy = Math.abs(body.vy) * 0.88; }
+        if (body.y > edgeY) { body.y = edgeY; body.vy = -Math.abs(body.vy) * 0.88; }
+      });
+      for (let i = 0; i < bodies.length; i += 1) {
+        for (let j = i + 1; j < bodies.length; j += 1) {
+          const a = bodies[i];
+          const b = bodies[j];
+          const ax = a.x + a.diameter / 2;
+          const ay = a.y + a.diameter / 2;
+          const bx = b.x + b.diameter / 2;
+          const by = b.y + b.diameter / 2;
+          let dx = bx - ax;
+          let dy = by - ay;
+          const distance = Math.hypot(dx, dy) || 0.001;
+          const minDistance = (a.diameter + b.diameter) / 2;
+          if (distance >= minDistance) continue;
+          const nx = dx / distance;
+          const ny = dy / distance;
+          const overlap = minDistance - distance;
+          a.x -= nx * overlap * 0.5;
+          a.y -= ny * overlap * 0.5;
+          b.x += nx * overlap * 0.5;
+          b.y += ny * overlap * 0.5;
+          const relative = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+          if (relative < 0) {
+            const impulse = -(1 + 0.86) * relative * 0.5;
+            a.vx -= impulse * nx;
+            a.vy -= impulse * ny;
+            b.vx += impulse * nx;
+            b.vy += impulse * ny;
+          }
+        }
+      }
+      bodies.forEach((body) => { body.element.style.transform = `translate3d(${body.x}px,${body.y}px,0)`; });
+    };
+    frame = window.requestAnimationFrame(animate);
+    return () => { window.cancelAnimationFrame(frame); resizeObserver.disconnect(); };
+  }, []);
 
   return (
     <Scene className="app-home gallery-home">
       <div className="screen-topline">
-        <span className="gallery-kicker"><i /> 我的声音集 <b>05</b></span>
-        <DevicePill playing={playing} />
+        <span className="gallery-kicker"><i /> MY SOUND GALLERY <b>{String(bubbles.length).padStart(2, '0')}</b></span>
+        <DevicePill playing={playing} emitting={emitting} />
       </div>
       <div className="home-content gallery-content">
         <div className="gallery-heading">
-          <div>
-            <span className="eyebrow"><i /> FIELD NOTES / VOL. 01</span>
-            <h1>我的<span>回声</span></h1>
-            <p>05 段声音 <i /> <b>03 种内容</b></p>
-          </div>
-          <button className="gallery-board" onClick={onOpenLeaderboard} aria-label="打开回声榜">
-            <span>↗</span><small>回声榜</small>
+          <span className="eyebrow"><i /> FIELD NOTES / VOL. 01</span>
+          <h1>听见<span>留下</span></h1>
+          <p>每一颗泡泡，都有一个人的路过。</p>
+          <button className="gallery-board" onClick={onOpenLeaderboard} aria-label="打开回声留言榜">
+            <span>↗</span><small>回声留言榜</small>
           </button>
         </div>
-        <div className="gallery-filter" role="tablist" aria-label="按声音内容筛选">
-            {kinds.map(([key, label]) => (
-            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => setKindFilter(key)}>{label}</button>
+        <div className="gallery-filter" role="tablist" aria-label="用泡泡聚焦不同声音类型">
+          {kinds.map(([key, label, symbol]) => (
+            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => setKindFilter(key)}><i>{symbol}</i><span>{label}</span></button>
           ))}
         </div>
-        <div className="gallery-section-head"><strong>最近收录</strong><span><b>{String(gallery.length).padStart(2, '0')}</b> / SOUND LOG</span></div>
-        <div className="gallery-grid" aria-label="个人声音泡泡图鉴">
-          {gallery.map((bubble, index) => <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} />)}
+        <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="漂浮的个人声音泡泡">
+          <span className="bubble-pop-flash" aria-hidden="true" />
+          {bubbles.map((bubble, index) => (
+            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
+          ))}
         </div>
-        <button className={`now-playing glass-surface${playing ? ' is-playing' : ''}`} onClick={() => onPlay(activeBubble || SOUND_BUBBLES[0])}>
-          <span className="play-disc">{playing ? <span className="pause-bars"><i /><i /></span> : <span className="play-triangle" />}</span>
-          <span className="track-copy"><strong>{activeBubble?.title || '河面上的风'}</strong><small>{playing ? '声音正在从泡泡里流出来' : `${activeBubble?.kind || '环境声'} · ${activeBubble?.duration || '12 秒'} · 点按回听`}</small></span>
-          <Waveform active={playing} small />
-        </button>
-        <GlassButton className="start-roam" onClick={onRoam}>继续漫游 <span className="arrow-out">↗</span></GlassButton>
       </div>
       <TabBar active="home" onChange={onPageChange} />
     </Scene>
   );
 }
 
-function LeaderboardSheet({ open, onClose, onRoam }) {
+function LeaderboardSheet({ open, onClose, onRoam, bubbles }) {
   const panelRef = useRef(null);
   const backdropRef = useRef(null);
 
@@ -218,39 +303,39 @@ function LeaderboardSheet({ open, onClose, onRoam }) {
   }, [open]);
 
   if (!open) return null;
-  const ranked = [...SOUND_BUBBLES].sort((a, b) => b.saves - a.saves).slice(0, 3);
+  const ranked = [...bubbles].sort((a, b) => b.saves + b.comments.length * 8 - (a.saves + a.comments.length * 8)).slice(0, 3);
   return (
     <div className="sheet-backdrop" ref={backdropRef} onClick={onClose}>
       <section className="leader-sheet glass-surface" ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="leader-title" onClick={(event) => event.stopPropagation()}>
         <span className="sheet-grabber" />
         <div className="leader-head">
-          <div><span className="eyebrow">本周共鸣</span><h2 id="leader-title">回声榜</h2></div>
+          <div><span className="eyebrow">SAVES × NOTES / WEEKLY</span><h2 id="leader-title">回声热榜</h2></div>
           <button className="sheet-close" aria-label="关闭回声榜" onClick={onClose}>×</button>
         </div>
-        <p className="leader-subtitle">被更多人收进泡泡盒的声音，会亮得更久。</p>
+        <p className="leader-subtitle">收藏是回声，留言让它继续往前走。</p>
         <div className="leader-list">
           {ranked.map((bubble, index) => (
             <div className={`leader-row rank-${index + 1}`} key={bubble.id}>
               <span className="leader-rank">{String(index + 1).padStart(2, '0')}</span>
               <span className={`leader-orb accent-${bubble.accent}`} />
-              <span className="leader-copy"><strong>{bubble.title}</strong><small>{bubble.author} · {bubble.kind}</small></span>
-              <span className="leader-saves">{bubble.saves}<small>收藏</small></span>
+              <div className="leader-copy"><strong>{bubble.title}</strong><small>{bubble.author} · {bubble.kind}</small><span className="leader-comment">“{bubble.comments[0]?.text || '还没有留言，来写下第一句。'}”</span></div>
+              <span className="leader-saves"><span>{bubble.saves}<small>收藏</small></span><i /><span>{bubble.comments.length}<small>留言</small></span></span>
             </div>
           ))}
         </div>
-        <button className="leader-roam" onClick={onRoam}>去找这颗声音 <span>↗</span></button>
+        <button className="leader-roam" onClick={onRoam}>去听大家留下的声音 <span>↗</span></button>
       </section>
     </div>
   );
 }
 
-function RoamScreen({ selected, onSelect, captured, onCapture, playing, onPageChange, zoom, onZoom }) {
+function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting, onPageChange, zoom, onZoom }) {
   const targetSound = selected === 1 ? SOUND_BUBBLES[0] : SOUND_BUBBLES[1];
   return (
     <Scene className={`app-roam${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")` }}>
       <div className="screen-topline">
         <span className="place-chip ar-place-chip"><i /> 江湾 · 实景 AR</span>
-        <DevicePill playing={playing} />
+        <DevicePill playing={playing} emitting={emitting} />
       </div>
       <div className="roam-world">
         <div className="roam-sort glass-surface">
@@ -289,12 +374,12 @@ function RoamScreen({ selected, onSelect, captured, onCapture, playing, onPageCh
   );
 }
 
-function CreateScreen({ prompt, onPrompt, recording, onRecord, transcript, onPublish, published, onPageChange }) {
+function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, emitting, onRecord, transcript, onPublish, published, onPageChange }) {
   return (
     <Scene className="app-create">
       <div className="screen-topline">
         <span className="place-chip"><i /> 江湾 · 01</span>
-        <DevicePill playing={false} />
+        <DevicePill playing={false} emitting={emitting} />
       </div>
       <div className="create-content">
         <div className="create-heading">
@@ -302,11 +387,12 @@ function CreateScreen({ prompt, onPrompt, recording, onRecord, transcript, onPub
             <span className="eyebrow">FIELD RECORDING / 01</span>
             <h1>留一句</h1>
           </div>
-          <span className="create-rec"><i /> REC</span>
+          <span className="create-rec"><i /> {recording ? 'REC · SIM' : 'VOICE NOTE'}</span>
         </div>
-        <div className="create-orbit">
+        <div className={`create-orbit${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}>
           <span className="create-aura" />
-          <Bubble size={104} className={`record-bubble${recording ? ' recording' : ''}`} label="录音泡泡" />
+          <span className="record-shape-wave" aria-hidden="true" />
+          <Bubble size={114} className={`record-bubble${recording ? ' recording' : ''}`} label={recording ? '正在录制自己的声音，泡泡会随着声音呼吸' : '录音泡泡'} style={{ '--record-energy': recordingEnergy }} />
           <Bubble size={34} className="create-satellite sat-a" />
           <Bubble size={24} className="create-satellite sat-b" />
           <Bubble size={17} className="create-satellite sat-c" />
@@ -321,17 +407,17 @@ function CreateScreen({ prompt, onPrompt, recording, onRecord, transcript, onPub
           <div className="record-row">
             <button className={`record-button${recording ? ' recording' : ''}`} onClick={onRecord}><span className="record-button-inner" /></button>
             <Waveform active={recording || !!transcript} />
-            <span className="record-time">{recording ? '00:08' : transcript ? '00:08' : '00:00'}</span>
+            <span className="record-time">00:{String(recordingSeconds).padStart(2, '0')}</span>
           </div>
         </div>
-        <GlassButton className="publish-button" onClick={transcript ? onPublish : onRecord}>{published ? '已留在这里' : transcript ? '留下这句话' : '开始录音'} <span className="arrow-out">↗</span></GlassButton>
+        <GlassButton className="publish-button" onClick={recording ? onRecord : transcript ? onPublish : onRecord}>{recording ? '完成录音' : published ? '已留在这里' : transcript ? '留下这句话' : '开始录音'} <span className="arrow-out">↗</span></GlassButton>
       </div>
       <TabBar active="create" onChange={onPageChange} />
     </Scene>
   );
 }
 
-function AudiencePreview({ page, selected, captured, playing, published }) {
+function AudiencePreview({ page, selected, captured, playing, emitting, recording, recordingEnergy, published, bubbles }) {
   return (
     <section className="audience-window">
       <div className="audience-chrome">
@@ -354,21 +440,27 @@ function AudiencePreview({ page, selected, captured, playing, published }) {
           </>
         ) : page === 'create' ? (
           <>
-            <div className="projection-create-cluster"><Bubble size={135} className={published ? 'published-bubble' : ''} /><Bubble size={53} /><Bubble size={31} /></div>
-            <div className="projection-caption"><span>{published ? '声音已经留下' : '一段新声音，正在诞生'}</span><strong>{published ? '等下一位路过' : '一句话 · 一个位置'}</strong></div>
+            <div className={`projection-create-cluster${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}><span className="projection-record-wave" /><Bubble size={135} className={`projection-record-bubble${recording ? ' recording' : ''}${published ? ' published-bubble' : ''}`} style={{ '--record-energy': recordingEnergy }} /><Bubble size={53} /><Bubble size={31} /></div>
+            <div className="projection-caption"><span>{recording ? '声音正在呼吸 · REC SIM' : published ? '声音已经留下' : '一段新声音，正在诞生'}</span><strong>{published ? 'EchoCaster 泡泡发射演示' : '一句话 · 一个位置'}</strong></div>
           </>
         ) : (
           <>
-            <div className="projection-issue"><span>FIELD NOTES</span><b>VOL. 01</b><i>05 SOUNDS</i></div>
-            <div className="projection-home-title">我的<br /><em>回声图鉴</em></div>
-            <div className="projection-cluster">
-              <Bubble size={150} className="projection-bubble p-center accent-blue" />
-              <Bubble size={70} className="projection-bubble p-left accent-rose" />
-              <Bubble size={46} className="projection-bubble p-right accent-lilac" />
-              <Bubble size={30} className="projection-bubble p-low accent-blue" />
-              <Bubble size={34} className="projection-bubble p-new accent-lilac" />
+            <div className="projection-issue"><span>MY SOUND GALLERY</span><b>VOL. 01</b><i>{String(bubbles.length).padStart(2, '0')} SOUNDS</i></div>
+            <div className="projection-home-title">听见<br /><em>留下</em></div>
+            <div className="projection-bubble-field">
+              {bubbles.map((bubble, index) => {
+                const coordinates = [[8, 31], [28, 29], [54, 24], [83, 30], [15, 52], [43, 47], [69, 52], [94, 58], [6, 77], [33, 75], [61, 82], [86, 79]];
+                const point = coordinates[index % coordinates.length];
+                const size = Math.max(48, Math.min(126, bubble.size * 0.86));
+                return (
+                  <div className={`projection-home-orb${bubble.saves >= 50 || bubble.comments.length >= 2 ? ' is-resonant' : ''}`} key={bubble.id} style={{ left: `${point[0]}%`, top: `${point[1]}%`, '--bubble-size': `${size}px`, '--float-delay': `${(index % 7) * -0.6}s` }}>
+                    <Bubble size={size} className={`accent-${bubble.accent}`} label={bubble.title} />
+                    <span>{bubble.title}</span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="projection-track glass-surface"><span className="projection-play"><span className="play-triangle" /></span><span><strong>河面上的风</strong><small>环境声 · 12 秒</small></span><Waveform active={playing} small /></div>
+            <div className="projection-home-note">轻轻戳开一颗 · 听见留下的声音</div>
           </>
         )}
       </Scene>
@@ -379,14 +471,17 @@ function AudiencePreview({ page, selected, captured, playing, published }) {
 function App() {
   const [page, setPage] = useState(['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
   const [playing, setPlaying] = useState(false);
+  const [deviceEmitting, setDeviceEmitting] = useState(false);
   const [captured, setCaptured] = useState(false);
   const [selected, setSelected] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [prompt, setPrompt] = useState('next');
   const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [recordingEnergy, setRecordingEnergy] = useState(0.18);
   const [transcript, setTranscript] = useState('');
   const [published, setPublished] = useState(false);
-  const [activeBubble, setActiveBubble] = useState(SOUND_BUBBLES[0]);
+  const [createdBubble, setCreatedBubble] = useState(null);
   const [poppedId, setPoppedId] = useState(null);
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const [deviceOpen, setDeviceOpen] = useState(false);
@@ -394,12 +489,14 @@ function App() {
   const playbackTimer = useRef(null);
   const playbackFallback = useRef(null);
   const playbackToken = useRef(0);
+  const deviceEmissionTimer = useRef(null);
+  const recordingStartedAt = useRef(0);
+  const bubbles = createdBubble ? [createdBubble, ...SOUND_BUBBLES] : SOUND_BUBBLES;
 
   const startBubblePlayback = (bubble) => {
     const token = ++playbackToken.current;
     window.clearTimeout(playbackTimer.current);
     window.clearTimeout(playbackFallback.current);
-    setActiveBubble(bubble);
     setPlaying(true);
     const minDuration = Math.max(2200, bubble.quote.length * 130);
     const startedAt = Date.now();
@@ -427,43 +524,82 @@ function App() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const toggleBubblePlayback = (bubble) => {
-    if (playing) {
-      playbackToken.current += 1;
-      window.clearTimeout(playbackTimer.current);
-      window.clearTimeout(playbackFallback.current);
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      setPlaying(false);
-      return;
-    }
-    startBubblePlayback(bubble);
+  const triggerDeviceEmission = (duration = 10000) => {
+    setDeviceEmitting(true);
+    window.clearTimeout(deviceEmissionTimer.current);
+    deviceEmissionTimer.current = window.setTimeout(() => setDeviceEmitting(false), duration);
   };
 
   const popBubble = (bubble) => {
-    setActiveBubble(bubble);
     setPoppedId(bubble.id);
     startBubblePlayback(bubble);
+    triggerDeviceEmission();
     window.clearTimeout(popTimer.current);
     popTimer.current = window.setTimeout(() => setPoppedId(null), 1650);
   };
 
+  const finishRecording = () => {
+    setRecording(false);
+    setTranscript('风从河面来，像一句没说完的话。');
+    setRecordingEnergy(0.22);
+  };
+
+  const toggleRecording = () => {
+    if (recording) {
+      finishRecording();
+      return;
+    }
+    setTranscript('');
+    setPublished(false);
+    setRecordingSeconds(0);
+    setRecordingEnergy(0.2);
+    recordingStartedAt.current = performance.now();
+    setRecording(true);
+  };
+
   useEffect(() => {
     if (!recording) return undefined;
-    const timer = window.setTimeout(() => {
-      setRecording(false);
-      setTranscript('风从河面来，像一句没说完的话。');
-    }, 1500);
-    return () => window.clearTimeout(timer);
+    const interval = window.setInterval(() => {
+      const elapsed = (performance.now() - recordingStartedAt.current) / 1000;
+      const seconds = Math.min(6, Math.floor(elapsed));
+      const breath = 0.16 + Math.abs(Math.sin(elapsed * 4.9)) * 0.58 + Math.abs(Math.sin(elapsed * 1.7 + 0.9)) * 0.18;
+      setRecordingSeconds(seconds);
+      setRecordingEnergy(Math.min(0.96, breath));
+      if (elapsed >= 6) finishRecording();
+    }, 90);
+    return () => window.clearInterval(interval);
   }, [recording]);
 
   const beginCapture = () => {
     setCaptured(true);
+    triggerDeviceEmission(18000);
     startBubblePlayback(SOUND_BUBBLES[0]);
   };
 
   const publishBubble = () => {
+    if (!transcript) return;
+    const bubble = {
+      id: `my-echo-${Date.now()}`,
+      title: '给下一位的声音',
+      quote: transcript,
+      author: '你',
+      duration: `${Math.max(1, recordingSeconds)} 秒`,
+      saves: 1,
+      listens: 1,
+      distance: 0,
+      size: 118,
+      accent: 'rose',
+      kind: '人声',
+      kindKey: 'voice',
+      age: 0,
+      comments: [],
+    };
+    setCreatedBubble(bubble);
     setPublished(true);
     setPage('home');
+    setDeviceOpen(true);
+    triggerDeviceEmission(24000);
+    startBubblePlayback(bubble);
   };
 
   return (
@@ -471,27 +607,26 @@ function App() {
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
       <header className="demo-header"><span className="wordmark">声景漫游</span><span className="demo-mode"><i /> DEMO 01</span></header>
       <div className="demo-stage">
-        <AudiencePreview page={page} selected={selected} captured={captured} playing={playing} published={published} />
+        <AudiencePreview page={page} selected={selected} captured={captured} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} />
         <div className="phone-column">
           <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
-            {page === 'home' && <HomeScreen onRoam={() => setPage('roam')} onPlay={toggleBubblePlayback} playing={playing} onPageChange={setPage} activeBubble={activeBubble} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
-            {page === 'roam' && <RoamScreen selected={selected} onSelect={setSelected} captured={captured} onCapture={beginCapture} playing={playing} onPageChange={setPage} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.5, Math.max(.75, v + step * .12)))} />}
-            {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} onRecord={() => setRecording(v => !v)} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={setPage} />}
+          {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={setPage} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
+          {page === 'roam' && <RoamScreen selected={selected} onSelect={setSelected} captured={captured} onCapture={beginCapture} playing={playing} emitting={deviceEmitting} onPageChange={setPage} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.5, Math.max(.75, v + step * .12)))} />}
+            {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={setPage} />}
           </Phone>
-          <div className={`device-status${playing ? ' is-playing' : ''}`}><span className="device-dot" /><span>{playing ? '播放中' : '声景装置'}</span><b>ESP32</b></div>
+          <div className={`device-status${playing || deviceEmitting ? ' is-playing' : ''}`}><span className="device-dot" /><span>{deviceEmitting ? 'EchoCaster 发泡演示中' : playing ? 'EchoCaster 播放演示中' : 'EchoCaster 演示装置'}</span><b>SIM</b></div>
         </div>
       </div>
       <div className="stage-floor" />
       <button className={`device-launcher${deviceOpen ? ' is-open' : ''}`} onClick={() => setDeviceOpen((open) => !open)} aria-expanded={deviceOpen} aria-label={deviceOpen ? '收起声景装置' : '展开声景装置'}>
         <span className="device-launcher-orb"><i /><i /><i /></span>
-        <span>{deviceOpen ? '收起装置' : '看声景装置'}</span>
+        <span>{deviceOpen ? '收起 EchoCaster' : '查看 EchoCaster'}</span>
         <b>{deviceOpen ? '−' : '↗'}</b>
       </button>
-      {deviceOpen && <Suspense fallback={<div className="device-viewer device-viewer-loading glass-surface" role="status">装置载入中…</div>}><DeviceViewer open onClose={() => setDeviceOpen(false)} playing={playing} /></Suspense>}
-      <LeaderboardSheet open={leaderboardOpen} onClose={() => setLeaderboardOpen(false)} onRoam={() => { setLeaderboardOpen(false); setPage('roam'); }} />
+      {deviceOpen && <Suspense fallback={<div className="device-viewer device-viewer-loading glass-surface" role="status">装置载入中…</div>}><DeviceViewer open onClose={() => setDeviceOpen(false)} playing={playing || deviceEmitting} /></Suspense>}
+      <LeaderboardSheet open={leaderboardOpen} onClose={() => setLeaderboardOpen(false)} onRoam={() => { setLeaderboardOpen(false); setPage('roam'); }} bubbles={bubbles} />
     </main>
   );
 }
 
 createRoot(document.getElementById('root')).render(<App />);
-

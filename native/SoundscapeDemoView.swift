@@ -15,15 +15,15 @@ struct SoundscapeDemoView: View {
             Group {
                 switch page {
                 case .bubbles:
-                    BubbleHome(playing: $playing, onRoam: { page = .roam })
+                    BubbleHome(playing: $playing)
                 case .roam:
                     RoamScreen(captured: $captured, playing: $playing)
                 case .create:
                     CreateScreen(recording: $recording, prompt: $prompt)
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
+            .padding(.horizontal, page == .bubbles ? 0 : 24)
+            .padding(.top, page == .bubbles ? 0 : 12)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             SoundscapeTabBar(selection: $page)
@@ -130,6 +130,13 @@ private let galleryRecords = [
     GalleryRecord(id: "steps", index: "03", title: "刚经过的人", kind: .voice, duration: "6 秒"),
     GalleryRecord(id: "osmanthus", index: "04", title: "桂花茶的下午", kind: .thought, duration: "10 秒"),
     GalleryRecord(id: "rain", index: "05", title: "雨停以后", kind: .thought, duration: "9 秒"),
+    GalleryRecord(id: "market", index: "06", title: "收摊前的灯", kind: .ambience, duration: "7 秒"),
+    GalleryRecord(id: "goodnight", index: "07", title: "没说出口的晚安", kind: .voice, duration: "8 秒"),
+    GalleryRecord(id: "bicycle", index: "08", title: "车铃经过", kind: .ambience, duration: "5 秒"),
+    GalleryRecord(id: "wish", index: "09", title: "给明天的小愿望", kind: .voice, duration: "6 秒"),
+    GalleryRecord(id: "soda", index: "10", title: "窗边的汽水", kind: .thought, duration: "7 秒"),
+    GalleryRecord(id: "morning", index: "11", title: "早班车经过", kind: .ambience, duration: "11 秒"),
+    GalleryRecord(id: "postcard", index: "12", title: "给陌生人的明信片", kind: .voice, duration: "9 秒"),
 ]
 
 private struct SoapBubble: View {
@@ -141,13 +148,13 @@ private struct SoapBubble: View {
             .fill(.ultraThinMaterial)
             .overlay {
                 Circle().fill(RadialGradient(
-                    colors: [.white.opacity(0.56), kind.tint.opacity(0.13), .clear],
+                    colors: [.white.opacity(0.56), kind.tint.opacity(0.26), .clear],
                     center: .init(x: 0.28, y: 0.24),
                     startRadius: 1,
                     endRadius: size * 0.72
                 ))
             }
-            .overlay { Circle().stroke(AngularGradient(colors: kind.rim, center: .center), lineWidth: max(1, size * 0.014)) }
+            .overlay { Circle().stroke(AngularGradient(colors: kind.rim.map { $0.opacity(0.42) }, center: .center), lineWidth: max(0.8, size * 0.008)) }
             .overlay(alignment: .topLeading) {
                 Capsule()
                     .fill(.white.opacity(0.72))
@@ -163,161 +170,114 @@ private struct SoapBubble: View {
 
 private struct BubbleHome: View {
     @Binding var playing: Bool
-    let onRoam: () -> Void
     @State private var filter: RecordingKind = .all
     @State private var activeRecordID = galleryRecords[0].id
-
-    private var visibleRecords: [GalleryRecord] {
-        filter == .all ? galleryRecords : galleryRecords.filter { $0.kind == filter }
-    }
 
     private var activeRecord: GalleryRecord {
         galleryRecords.first(where: { $0.id == activeRecordID }) ?? galleryRecords[0]
     }
 
     var body: some View {
-        VStack(spacing: 14) {
-            HStack {
-                HStack(spacing: 6) {
-                    Circle().fill(PopPalette.coral).frame(width: 5, height: 5)
-                    Text("FIELD NOTES / VOL. 01")
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .tracking(0.6)
-                }
-                .foregroundStyle(PopPalette.ink)
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .background(PopPalette.lime, in: UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 3, bottomTrailingRadius: 10, topTrailingRadius: 10))
-                Spacer()
-                Label("装置已连接", systemImage: "dot.radiowaves.left.and.right")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(PopPalette.forest.opacity(0.7))
-            }
+        GeometryReader { proxy in
+            let points: [CGPoint] = [
+                .init(x: 0.06, y: 0.27), .init(x: 0.36, y: 0.2), .init(x: 0.81, y: 0.25),
+                .init(x: 0.9, y: 0.47), .init(x: 0.12, y: 0.5), .init(x: 0.48, y: 0.39),
+                .init(x: 0.68, y: 0.6), .init(x: 0.25, y: 0.68), .init(x: 0.92, y: 0.78),
+                .init(x: 0.43, y: 0.83), .init(x: 0.07, y: 0.86), .init(x: 0.73, y: 0.91),
+            ]
+            let sizes: [CGFloat] = [118, 66, 88, 56, 92, 76, 58, 104, 72, 60, 84, 70]
 
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 0) {
-                                Text("我的")
-                                Text("回声")
-                                    .background(alignment: .bottom) {
-                                        Rectangle().fill(PopPalette.lime).frame(height: 8).offset(y: -2)
-                                    }
-                            }
-                            .font(.system(size: 32, weight: .black, design: .rounded))
-                            .tracking(-1.1)
-                            .foregroundStyle(PopPalette.ink)
-                            HStack(spacing: 6) {
-                                Text("05 段声音")
-                                Circle().fill(PopPalette.moss).frame(width: 3, height: 3)
-                                Text("03 种内容")
-                            }
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(PopPalette.forest.opacity(0.66))
+            ZStack(alignment: .topLeading) {
+                ForEach(galleryRecords.indices, id: \.self) { index in
+                    let record = galleryRecords[index]
+                    let isFocused = filter == .all || filter == record.kind
+                    DreamBubbleOrb(
+                        record: record,
+                        size: sizes[index % sizes.count],
+                        playing: playing && activeRecordID == record.id,
+                        focused: filter != .all && isFocused,
+                        dimmed: filter != .all && !isFocused
+                    ) { select(record) }
+                    .position(x: proxy.size.width * points[index % points.count].x, y: proxy.size.height * points[index % points.count].y)
+                }
+
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        HStack(spacing: 6) {
+                            Circle().fill(PopPalette.coral).frame(width: 5, height: 5)
+                            Text("MY SOUND GALLERY")
+                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                .tracking(0.6)
+                        }
+                        .foregroundStyle(PopPalette.ink.opacity(0.76))
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .glassEffect(.regular, in: Capsule())
+                        Spacer()
+                        Label("EchoCaster · DEMO", systemImage: "dot.radiowaves.left.and.right")
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundStyle(PopPalette.forest.opacity(0.64))
+                    }
+
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("听见留下")
+                                .font(.system(size: 29, weight: .black, design: .rounded))
+                                .tracking(-1.2)
+                                .foregroundStyle(PopPalette.ink)
+                            Text("每一颗泡泡，都有一个人的路过。")
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(PopPalette.forest.opacity(0.6))
                         }
                         Spacer()
-                        VStack(spacing: 3) {
-                            Text("SIDE")
-                            Text("A / 01")
+                        HStack(spacing: 4) {
+                            Image(systemName: "quote.bubble")
+                            Text("12 留声")
                         }
-                        .font(.system(size: 8, weight: .bold, design: .monospaced))
-                        .foregroundStyle(PopPalette.ink.opacity(0.72))
-                        .padding(.horizontal, 8)
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(PopPalette.forest.opacity(0.75))
+                        .padding(.horizontal, 9)
                         .padding(.vertical, 7)
-                        .background(PopPalette.lime.opacity(0.78), in: UnevenRoundedRectangle(topLeadingRadius: 3, bottomLeadingRadius: 9, bottomTrailingRadius: 3, topTrailingRadius: 9))
-                        .rotationEffect(.degrees(4))
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
+                    .padding(.top, 14)
 
                     HStack(spacing: 3) {
                         ForEach(RecordingKind.allCases) { kind in
                             Button {
-                                withAnimation(.easeOut(duration: 0.2)) { filter = kind }
+                                withAnimation(.spring(response: 0.36, dampingFraction: 0.65)) { filter = kind }
                             } label: {
-                                HStack(spacing: 5) {
+                                HStack(spacing: 4) {
                                     Circle().fill(kind == .all ? PopPalette.ink : kind.tint).frame(width: 5, height: 5)
-                                    Text(kind.rawValue)
-                                        .font(.system(size: 10, weight: filter == kind ? .semibold : .regular))
+                                    Text(kind.rawValue).font(.system(size: 9, weight: filter == kind ? .semibold : .regular))
                                 }
-                                .foregroundStyle(filter == kind ? PopPalette.ink : PopPalette.forest.opacity(0.66))
+                                .foregroundStyle(filter == kind ? PopPalette.ink : PopPalette.forest.opacity(0.65))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 9)
-                                    .background {
-                                        if filter == kind {
-                                            Capsule().fill(PopPalette.lime)
-                                        }
-                                    }
+                                .padding(.vertical, 8)
+                                .background { if filter == kind { Capsule().fill(PopPalette.lime.opacity(0.82)) } }
                             }
                             .buttonStyle(.plain)
                         }
                     }
                     .padding(4)
                     .glassEffect(.regular, in: Capsule())
+                    .padding(.top, 13)
+                    .allowsHitTesting(true)
 
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("最近收录")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundStyle(PopPalette.forest)
-                            Spacer()
-                            Text("SOUND LOG  /  05")
-                                .font(.system(size: 8, weight: .bold, design: .monospaced))
-                                .tracking(0.4)
-                                .foregroundStyle(PopPalette.forest.opacity(0.48))
-                        }
-
-                        if let featured = visibleRecords.first {
-                            GalleryRecordTile(record: featured, featured: true, playing: playing && activeRecordID == featured.id) {
-                                select(featured)
-                            }
-                        }
-
-                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                            ForEach(Array(visibleRecords.dropFirst())) { record in
-                                GalleryRecordTile(record: record, featured: false, playing: playing && activeRecordID == record.id) {
-                                    select(record)
-                                }
-                            }
-                        }
+                    Spacer()
+                    HStack {
+                        Text("\(galleryRecords.count) 个回声正在呼吸")
+                        Spacer()
+                        Text(activeRecord.title)
                     }
-
-                    Button { playing.toggle() } label: {
-                        HStack(spacing: 11) {
-                            Image(systemName: playing ? "pause.fill" : "play.fill")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(PopPalette.ink)
-                                .frame(width: 34, height: 34)
-                                .background(PopPalette.lime, in: Circle())
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(activeRecord.title).font(.system(size: 12, weight: .bold, design: .rounded)).foregroundStyle(PopPalette.ink)
-                                Text("\(activeRecord.kind.rawValue) · \(activeRecord.duration)")
-                                    .font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(PopPalette.forest.opacity(0.6))
-                            }
-                            Spacer(minLength: 4)
-                            WaveBars(active: playing)
-                        }
-                        .padding(.horizontal, 13)
-                        .padding(.vertical, 9)
-                        .background(PopPalette.paperLight.opacity(0.84), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .overlay { RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.96), lineWidth: 1) }
-                        .shadow(color: PopPalette.forest.opacity(0.09), radius: 12, y: 5)
-                    }
-                    .buttonStyle(.plain)
-
-                    Button(action: onRoam) {
-                        Label("继续漫游", systemImage: "scope")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(PopPalette.ink)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 13)
-                            .background(PopPalette.lime, in: Capsule())
-                            .overlay { Capsule().stroke(PopPalette.ink.opacity(0.09), lineWidth: 1) }
-                            .shadow(color: PopPalette.forest.opacity(0.08), radius: 7, y: 3)
-                    }
-                    .buttonStyle(.plain)
+                    .font(.system(size: 8, weight: .medium, design: .monospaced))
+                    .foregroundStyle(PopPalette.forest.opacity(0.46))
+                    .padding(.bottom, 12)
                 }
-                .padding(.top, 6)
-                .padding(.bottom, 20)
+                .padding(.horizontal, 19)
+                .padding(.top, 10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(false)
             }
         }
     }
@@ -326,6 +286,53 @@ private struct BubbleHome: View {
         let wasActive = activeRecordID == record.id
         activeRecordID = record.id
         playing = wasActive ? !playing : true
+    }
+}
+
+private struct DreamBubbleOrb: View {
+    let record: GalleryRecord
+    let size: CGFloat
+    let playing: Bool
+    let focused: Bool
+    let dimmed: Bool
+    let action: () -> Void
+    @State private var drifting = false
+    @State private var popped = false
+
+    var body: some View {
+        Button {
+            withAnimation(.spring(response: 0.18, dampingFraction: 0.42)) { popped = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.38)) { popped = false }
+                action()
+            }
+        } label: {
+            VStack(spacing: 4) {
+                ZStack {
+                    if focused {
+                        Circle().stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
+                            .foregroundStyle(record.kind.tint.opacity(0.82))
+                            .frame(width: size + 19, height: size + 19)
+                            .rotationEffect(.degrees(drifting ? 8 : -8))
+                    }
+                    SoapBubble(size: size, kind: record.kind)
+                        .overlay(alignment: .bottomTrailing) {
+                            if playing { Image(systemName: "waveform").font(.system(size: 9, weight: .medium)).foregroundStyle(PopPalette.forest.opacity(0.68)).padding(6).glassEffect(.regular, in: Circle()).offset(x: 4, y: 4) }
+                        }
+                }
+                Text(record.title)
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundStyle(PopPalette.forest.opacity(0.66))
+                    .lineLimit(1)
+                    .shadow(color: .white.opacity(0.8), radius: 3)
+            }
+            .scaleEffect(popped ? 0.72 : (drifting ? 1.025 : 0.97))
+            .opacity(dimmed ? 0.16 : 1)
+            .saturation(dimmed ? 0.3 : 1)
+            .animation(.easeInOut(duration: 0.34), value: dimmed)
+        }
+        .buttonStyle(.plain)
+        .onAppear { withAnimation(.easeInOut(duration: 3.3 + Double(size.truncatingRemainder(dividingBy: 5))).repeatForever(autoreverses: true)) { drifting = true } }
     }
 }
 
@@ -545,7 +552,7 @@ private struct CreateScreen: View {
             HStack {
                 Label("江湾 · 01", systemImage: "location.fill")
                 Spacer()
-                Label("装置已连接", systemImage: "dot.radiowaves.left.and.right")
+                Label("EchoCaster · DEMO", systemImage: "dot.radiowaves.left.and.right")
             }
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
@@ -661,4 +668,3 @@ private struct SoundscapeTabBar: View {
         SoundscapeDemoView()
     }
 }
-

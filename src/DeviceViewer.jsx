@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import deviceModelPartOneUrl from './assets/soundscape-device.stl.gz.part-1?url';
@@ -30,7 +31,8 @@ function makePartMaterial(color, options = {}) {
 
 function materialForPart(rank, part) {
   const longThinHorn = part.size[0] < 18 && part.size[2] > 130;
-  if (longThinHorn || rank === 2 || rank === 8) return 1;
+  if (longThinHorn) return rank < 2 ? 1 : 0;
+  if (rank === 2 || rank === 8) return 0;
   if (rank === 6 || rank === 7 || rank === 19) return 2;
   if (rank === 4 || rank === 9 || rank === 10) return 3;
   if ((rank >= 11 && part.triangles < 1800) || (rank >= 13 && rank <= 16)) return 4;
@@ -95,14 +97,8 @@ function prepareModelGeometry(source, rawCenter) {
     part.size = part.min.map((value, axis) => part.max[axis] - value);
     return [part.root, materialForPart(rank, part)];
   }));
-  const materialForTriangle = (offset) => {
-    const root = find(index[offset]);
-    const baseMaterial = materialByRoot.get(root);
-    if (baseMaterial > 1) return baseMaterial;
-    const y = (position[index[offset] * 3 + 1] + position[index[offset + 1] * 3 + 1] + position[index[offset + 2] * 3 + 1]) / 3;
-    if (y > rawCenter.y + 28 || y < rawCenter.y - 75) return 1;
-    return baseMaterial;
-  };
+
+  const materialForTriangle = (offset) => materialByRoot.get(find(index[offset]));
   const counts = new Uint32Array(6);
   for (let i = 0; i < index.length; i += 3) counts[materialForTriangle(i)] += 3;
   const buckets = Array.from(counts, (count) => new Uint32Array(count));
@@ -134,39 +130,52 @@ function prepareModelGeometry(source, rawCenter) {
 
 function createSoapBubbles(parent, outlet) {
   const bubbles = [];
-  const bubbleMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xe8f5ff,
-    roughness: 0.045,
-    metalness: 0,
-    transmission: 0.94,
-    thickness: 0.34,
-    ior: 1.33,
-    iridescence: 1,
-    iridescenceIOR: 1.3,
-    iridescenceThicknessRange: [110, 460],
-    transparent: true,
-    opacity: 0,
-    clearcoat: 1,
-    depthWrite: false,
-  });
+  const bubbleColors = [0xffcada, 0xc3f1e8, 0xd8cbff, 0xffe4a8];
   const emitter = new THREE.Group();
   emitter.position.copy(outlet);
   parent.add(emitter);
 
-  for (let i = 0; i < 5; i += 1) {
-    const material = bubbleMaterial.clone();
-    const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.045 + (i % 3) * 0.013, 28, 20), material);
-    bubble.position.set((i % 2) * 0.07, (i - 2) * 0.035, (i % 3) * 0.05);
+  const radii = [0.32, 0.4, 0.48, 0.36];
+  for (let i = 0; i < radii.length; i += 1) {
+    const material = new THREE.MeshPhysicalMaterial({
+      color: bubbleColors[i],
+      emissive: bubbleColors[i],
+      emissiveIntensity: 0.14,
+      roughness: 0.045,
+      metalness: 0.015,
+      transmission: 0.4,
+      thickness: 0.58,
+      ior: 1.33,
+      iridescence: 1,
+      iridescenceIOR: 1.3,
+      iridescenceThicknessRange: [160, 620],
+      transparent: true,
+      opacity: 0,
+      clearcoat: 1,
+      depthWrite: false,
+    });
+    const bubble = new THREE.Mesh(new THREE.SphereGeometry(radii[i], 32, 24), material);
+    bubble.position.set((i - 1.5) * 0.14, (i - 1.5) * 0.19, i * 0.09);
     emitter.add(bubble);
     gsap.to(bubble.position, {
-      x: `+=${0.28 + (i % 2) * 0.12}`,
-      y: `+=${0.22 + (i % 3) * 0.08}`,
-      z: `-=${0.85 + (i % 2) * 0.17}`,
-      duration: 1.9 + i * 0.21,
-      delay: i * -0.38,
+      x: `+=${-0.72 - i * 0.08}`,
+      y: `+=${0.38 + (i % 3) * 0.13}`,
+      z: `+=${0.18 + (i % 2) * 0.12}`,
+      duration: 4.2 + i * 0.34,
+      delay: i * -0.92,
       repeat: -1,
       ease: 'sine.inOut',
       yoyo: true,
+    });
+    gsap.to(bubble.scale, {
+      x: 1.1,
+      y: 1.1,
+      z: 1.1,
+      duration: 2.8 + i * 0.22,
+      delay: i * -0.52,
+      repeat: -1,
+      yoyo: true,
+      ease: 'sine.inOut',
     });
     bubbles.push({ mesh: bubble, material });
   }
@@ -208,23 +217,64 @@ function buildDevice(scene, sourceGeometry) {
     makePartMaterial(CMF.dark, { metalness: 0.18, roughness: 0.3, clearcoat: 0.4 }),
   ];
 
+  const phoneCradle = new THREE.Group();
+  phoneCradle.position.set(-0.8, 0.05, -0.1);
+  const phoneFrameGeometry = new RoundedBoxGeometry(0.98, 1.82, 0.085, 5, 0.11);
+  phoneFrameGeometry.rotateY(Math.PI / 2);
+  const phoneFrame = new THREE.Mesh(phoneFrameGeometry, makePartMaterial(CMF.teal, { roughness: 0.25, clearcoat: 0.55 }));
+  phoneFrame.castShadow = true;
+  phoneFrame.receiveShadow = true;
+  phoneCradle.add(phoneFrame);
+
+  const phoneScreenGeometry = new RoundedBoxGeometry(0.87, 1.68, 0.022, 5, 0.075);
+  phoneScreenGeometry.rotateY(Math.PI / 2);
+  const phoneScreen = new THREE.Mesh(phoneScreenGeometry, new THREE.MeshPhysicalMaterial({
+    color: 0x18242c,
+    metalness: 0.16,
+    roughness: 0.18,
+    clearcoat: 1,
+    clearcoatRoughness: 0.14,
+    side: THREE.DoubleSide,
+  }));
+  phoneScreen.position.x = -0.054;
+  phoneCradle.add(phoneScreen);
+
+  const phoneNotch = new THREE.Mesh(
+    new RoundedBoxGeometry(0.14, 0.024, 0.012, 4, 0.012),
+    new THREE.MeshBasicMaterial({ color: 0x52616b })
+  );
+  phoneNotch.geometry.rotateY(Math.PI / 2);
+  phoneNotch.position.set(-0.068, 0.78, -0.1);
+  phoneCradle.add(phoneNotch);
+
   const group = new THREE.Group();
   const orient = new THREE.Group();
-  // Default to the broad face of the central phone cradle.
+  // The phone cradle stays portrait while the horn points to the right.
+  // Reverse the source orientation so the horn reads toward the right; the
+  // phone screen is mounted on the opposite local face to remain camera-facing.
   orient.rotation.y = -Math.PI / 2;
   group.add(orient);
   const body = new THREE.Mesh(geometry, materials);
   body.castShadow = true;
   body.receiveShadow = true;
   orient.add(body);
+  orient.add(phoneCradle);
   scene.add(group);
 
-  const outlet = new THREE.Vector3(0, rawBox.max.y - rawCenter.y, 0).multiplyScalar(scale);
-  const bubbles = createSoapBubbles(orient, outlet);
+  const bubbles = createSoapBubbles(group, new THREE.Vector3(0.05, 0.92, -0.36));
   const float = gsap.to(group.position, { y: 0.045, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   const turn = gsap.to(group.rotation, { y: 0.12, duration: 4.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
   group.rotation.y = -0.12;
-  return { group, geometry, materials, bubbles, float, turn };
+  return {
+    group,
+    geometry,
+    materials,
+    bubbles,
+    float,
+    turn,
+    auxiliaryGeometries: [phoneFrameGeometry, phoneScreenGeometry, phoneNotch.geometry],
+    auxiliaryMaterials: [phoneFrame.material, phoneScreen.material, phoneNotch.material],
+  };
 }
 
 function DeviceCanvas({ playing }) {
@@ -236,7 +286,7 @@ function DeviceCanvas({ playing }) {
   useEffect(() => {
     playingRef.current = playing;
     deviceRef.current?.bubbles.forEach(({ material }, index) => {
-      gsap.to(material, { opacity: playing ? 0.82 : 0, duration: 0.34, delay: playing ? index * 0.07 : 0, ease: 'power2.out' });
+      gsap.to(material, { opacity: playing ? 0.96 : 0, duration: 0.34, delay: playing ? index * 0.07 : 0, ease: 'power2.out' });
     });
   }, [playing]);
 
@@ -339,7 +389,7 @@ function DeviceCanvas({ playing }) {
         deviceRef.current = device;
         setModelStatus('ready');
         gsap.fromTo(device.group.scale, { x: 0.78, y: 0.78, z: 0.78 }, { x: 1, y: 1, z: 1, duration: 0.9, ease: 'back.out(1.22)' });
-        device.bubbles.forEach(({ material }) => { material.opacity = playingRef.current ? 0.82 : 0; });
+        device.bubbles.forEach(({ material }) => { material.opacity = playingRef.current ? 0.96 : 0; });
       } catch (error) {
         console.error('Could not load the soundscape device model.', error);
         sourceGeometry?.dispose();
@@ -359,10 +409,13 @@ function DeviceCanvas({ playing }) {
         device.turn.kill();
         device.bubbles.forEach(({ mesh, material }) => {
           gsap.killTweensOf(mesh.position);
+          gsap.killTweensOf(mesh.scale);
           gsap.killTweensOf(material);
         });
         device.geometry.dispose();
         device.materials.forEach((material) => material.dispose());
+        device.auxiliaryGeometries.forEach((geometry) => geometry.dispose());
+        device.auxiliaryMaterials.forEach((material) => material.dispose());
         device.bubbles.forEach(({ mesh, material }) => {
           mesh.geometry.dispose();
           material.dispose();
@@ -377,8 +430,8 @@ function DeviceCanvas({ playing }) {
   }, []);
 
   return (
-    <div className={`device-canvas${playing ? ' is-playing' : ''}`} ref={mountRef} aria-label="可拖动旋转的实体泡泡枪模型">
-      {modelStatus === 'loading' && <span className="device-model-state">载入泡泡枪模型…</span>}
+    <div className={`device-canvas${playing ? ' is-playing' : ''}`} ref={mountRef} aria-label="可拖动旋转的 EchoCaster 竖屏手机夹持泡泡装置模型">
+      {modelStatus === 'loading' && <span className="device-model-state">载入 EchoCaster 模型…</span>}
       {modelStatus === 'error' && <span className="device-model-state is-error">模型载入失败</span>}
     </div>
   );
@@ -405,17 +458,16 @@ export default function DeviceViewer({ open, onClose, playing }) {
   };
 
   return (
-    <section className="device-viewer glass-surface" ref={panelRef} aria-label="实体泡泡枪 3D 展示">
+    <section className="device-viewer glass-surface" ref={panelRef} aria-label="EchoCaster 3D 展示">
       <header className="device-viewer-head">
-        <div className="device-detail"><span className="device-eyebrow">SOUNDSCAPE · MODEL 02</span><h2>实体泡泡枪</h2></div>
-        <button className="device-close" onClick={closeAnimated} aria-label="收起装置">−</button>
+        <div className="device-detail"><span className="device-eyebrow">SOUNDSCAPE · FIELD DEVICE</span><h2>EchoCaster</h2><small>竖屏手机夹持 · 声音泡泡发射器</small></div>
+        <button className="device-close" onClick={closeAnimated} aria-label="收起 EchoCaster">−</button>
       </header>
       <DeviceCanvas playing={playing} />
       <div className="device-viewer-foot">
-        <div className="device-detail"><span className={`device-live-dot${playing ? ' active' : ''}`} /><span>{playing ? '正在播放 · 泡泡从喇叭口冒出' : '拖动旋转 · 按左下角收起'}</span></div>
-        <div className="device-detail"><i className="device-key-icon" /> ESP32 · Wi-Fi</div>
+        <div className="device-detail"><span className={`device-live-dot${playing ? ' active' : ''}`} /><span>{playing ? '播放演示中 · 大泡泡正在舒展' : '拖动旋转 · 查看竖屏手机仓'}</span></div>
+        <div className="device-detail"><i className="device-key-icon" /> LINK · DEMO</div>
       </div>
     </section>
   );
 }
-
