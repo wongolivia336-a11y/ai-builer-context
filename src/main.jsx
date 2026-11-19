@@ -1018,6 +1018,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const [bursts, setBursts] = useState([]);
   const [filterDragProgress, setFilterDragProgress] = useState(0);
   const [isFilterDragging, setIsFilterDragging] = useState(false);
+  const [filterPhysics, setFilterPhysics] = useState({ stretch: 1.06, tailLeft: 0, tailRight: 0 });
   const burstIdRef = useRef(0);
   const fieldRef = useRef(null);
   const filterGestureRef = useRef(null);
@@ -1043,6 +1044,10 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   };
   const updateFilterGesture = (event) => {
     if (filterGestureRef.current?.pointerId !== event.pointerId) return;
+    const dx = event.clientX - filterGestureRef.current.previousX;
+    filterGestureRef.current.previousX = event.clientX;
+    const tail = Math.min(17, Math.abs(dx) * 0.68);
+    setFilterPhysics({ stretch: 1 + Math.min(0.23, Math.abs(dx) / 105), tailLeft: dx > 0 ? tail : 0, tailRight: dx < 0 ? tail : 0 });
     const progress = filterProgressAtPointer(event);
     const targetIndex = Math.round(progress);
     filterGestureRef.current.targetIndex = targetIndex;
@@ -1053,8 +1058,10 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const beginFilterGesture = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     const progress = filterProgressAtPointer(event);
-    filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setFilterDragProgress(progress);
+    setFilterPhysics({ stretch: 1.12, tailLeft: 0, tailRight: 0 });
     setIsFilterDragging(true);
   };
   const finishFilterGesture = (event, cancelled = false) => {
@@ -1066,6 +1073,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
     filterGestureRef.current = null;
     setIsFilterDragging(false);
     setFilterDragProgress(targetIndex);
+    setFilterPhysics({ stretch: 1.06, tailLeft: 0, tailRight: 0 });
     if (didSwipe) {
       setKindFilter(kinds[targetIndex][0]);
       suppressFilterClickRef.current = true;
@@ -1283,13 +1291,13 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
           className={`gallery-filter${isFilterDragging ? ' is-filter-dragging' : ''}`}
           role="tablist"
           aria-label="用泡泡聚焦不同声音类型"
-          style={{ '--filter-progress': `${(isFilterDragging ? filterDragProgress : selectedFilterIndex) * 100}%` }}
+          style={{ '--filter-progress': `${(isFilterDragging ? filterDragProgress : selectedFilterIndex) * 100}%`, '--filter-stretch': filterPhysics.stretch, '--filter-tail-left': `${filterPhysics.tailLeft}px`, '--filter-tail-right': `${filterPhysics.tailRight}px` }}
           onPointerDown={beginFilterGesture}
           onPointerMove={updateFilterGesture}
           onPointerUp={finishFilterGesture}
           onPointerCancel={(event) => finishFilterGesture(event, true)}
         >
-          <span className="filter-liquid-indicator" aria-hidden="true" />
+          <span className="filter-liquid-indicator" aria-hidden="true"><i className="filter-liquid-tail tail-left" /><i className="filter-liquid-tail tail-right" /></span>
           {kinds.map(([key, label, symbol]) => (
             <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => { if (!suppressFilterClickRef.current) setKindFilter(key); }}><i>{symbol}</i><span>{label}</span></button>
           ))}
