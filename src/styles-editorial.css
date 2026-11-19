@@ -923,7 +923,10 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 
 /* Elastic lime glass navigation: the active capsule keeps its brand tint and stretches into its wake while swiping. */
 .tab-glass,.gallery-home .tab-glass,.app-roam .tab-glass,.app-create .tab-glass {
-  position:relative;
+  position:absolute;
+  left:50%;
+  bottom:max(12px,calc(env(safe-area-inset-bottom,0px) + 8px));
+  transform:translateX(-50%);
   overflow:visible;
   border:1px solid rgba(255,255,232,.9);
   background:linear-gradient(130deg,rgba(236,249,174,.72),rgba(217,239,126,.48) 48%,rgba(244,250,202,.62));
@@ -1202,4 +1205,14 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .gallery-filter.is-filter-dragging .filter-liquid-tail {
   opacity:1;
   transition:none;
+}
+
+
+/* Keep keyboard navigation visible on the liquid controls. */
+.tab-glass .tab-item:focus-visible,
+.gallery-filter button:focus-visible {
+  outline:2px solid rgba(91,123,36,.86);
+  outline-offset:2px;
+  box-shadow:0 0 0 3px rgba(248,255,224,.86);
+  z-index:2;
 }
