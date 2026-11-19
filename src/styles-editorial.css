@@ -484,6 +484,7 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .bubble-orbit-rail { position:absolute; left:50%; top:50%; width:calc(var(--bubble-size) + 76px); height:calc(var(--bubble-size) + 40px); border:1px solid rgba(255,255,255,.55); border-radius:50%; transform:translate(-50%,-50%) rotate(-9deg); box-shadow:0 0 15px rgba(198,217,231,.12),inset 0 0 14px rgba(255,255,255,.2); pointer-events:none; }
 .bubble-orbit-rail::after { content:""; position:absolute; left:8%; right:8%; top:49%; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,.42),transparent); }
 .bubble-orbit-tag { position:absolute; left:50%; top:50%; display:block; max-width:126px; overflow:hidden; padding:5px 8px; border:1px solid rgba(255,255,255,.82); border-radius:999px; color:rgba(51,70,83,.86); background:rgba(250,252,252,.82); box-shadow:0 4px 12px rgba(70,97,120,.12),inset 0 1px 0 white; backdrop-filter:blur(11px) saturate(120%); -webkit-backdrop-filter:blur(11px) saturate(120%); font:650 8px/1 ui-sans-serif,system-ui,sans-serif; letter-spacing:.015em; text-overflow:ellipsis; white-space:nowrap; pointer-events:auto; touch-action:none; cursor:grab; will-change:transform; }
+.bubble-orbit-tag:active { cursor:grabbing; }
 .orbit-tag-0 { color:#3f5d72; background:rgba(231,243,249,.84); }
 .orbit-tag-1 { color:#8b6178; background:rgba(252,238,242,.84); }
 .orbit-tag-2 { color:#665d8b; background:rgba(241,237,249,.85); }

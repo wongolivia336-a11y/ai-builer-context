@@ -193,14 +193,26 @@ function OrbitTagTrack({ bubble }) {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
     dragRef.current = null;
     const motion = motionRef.current;
-    if (motion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      motion.tween?.kill();
-      motion.spin();
-    }
+    if (!motion) return;
+    motion.tween?.kill();
+    motion.tween = null;
+    const pausedForHover = event.pointerType === 'mouse' && event.currentTarget.matches(':hover');
+    if (!pausedForHover && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) motion.spin();
+  };
+  const pauseOnHover = (event) => {
+    if (event.pointerType === 'mouse') motionRef.current?.tween?.pause();
+  };
+  const resumeAfterHover = (event) => {
+    if (event.pointerType !== 'mouse' || dragRef.current) return;
+    const motion = motionRef.current;
+    if (!motion?.tween?.paused()) return;
+    motion.tween.kill();
+    motion.tween = null;
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) motion.spin();
   };
 
   return (
-    <div ref={trackRef} className="bubble-orbit-track" aria-hidden="true" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+    <div ref={trackRef} className="bubble-orbit-track" aria-hidden="true" onPointerEnter={pauseOnHover} onPointerLeave={resumeAfterHover} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
       <span className="bubble-orbit-rail" />
       {tags.map((tag, index) => <span className={`bubble-orbit-tag orbit-tag-${index}`} key={`${bubble.id}-${index}`}>{tag}</span>)}
     </div>
