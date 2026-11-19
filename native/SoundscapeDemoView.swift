@@ -7,6 +7,7 @@ struct SoundscapeDemoView: View {
     @State private var playing = false
     @State private var recording = false
     @State private var prompt = 0
+    @State private var roamPhase: RoamEntryPhase = .ready
 
     var body: some View {
         ZStack {
@@ -17,7 +18,7 @@ struct SoundscapeDemoView: View {
                 case .bubbles:
                     BubbleHome(playing: $playing)
                 case .roam:
-                    RoamScreen(captured: $captured, playing: $playing)
+                    RoamScreen(captured: $captured, playing: $playing, phase: $roamPhase)
                 case .create:
                     CreateScreen(recording: $recording, prompt: $prompt)
                 }
@@ -31,6 +32,19 @@ struct SoundscapeDemoView: View {
                 .padding(.bottom, 8)
         }
         .preferredColorScheme(.light)
+        .task(id: page) {
+            guard page == .roam else {
+                roamPhase = .ready
+                return
+            }
+            roamPhase = .scan
+            try? await Task.sleep(nanoseconds: 880_000_000)
+            guard !Task.isCancelled else { return }
+            roamPhase = .buffer
+            try? await Task.sleep(nanoseconds: 620_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.28)) { roamPhase = .ready }
+        }
     }
 }
 
@@ -116,12 +130,40 @@ private enum RecordingKind: String, CaseIterable, Identifiable {
     }
 }
 
+private enum BubbleForm {
+    case orb, heart, star, flower, cloud
+
+    var shape: AnyShape {
+        switch self {
+        case .orb: AnyShape(Circle())
+        case .heart: AnyShape(HeartBubbleShape())
+        case .star: AnyShape(StarBubbleShape())
+        case .flower: AnyShape(FlowerBubbleShape())
+        case .cloud: AnyShape(CloudBubbleShape())
+        }
+    }
+}
+
+private enum RoamEntryPhase: String {
+    case ready, scan, buffer
+}
+
 private struct GalleryRecord: Identifiable {
     let id: String
     let index: String
     let title: String
     let kind: RecordingKind
     let duration: String
+
+    var form: BubbleForm {
+        switch id {
+        case "bell", "bicycle", "morning": .star
+        case "osmanthus", "market", "smallwish", "postcard": .flower
+        case "rain", "soda": .cloud
+        case "wind", "steps", "goodnight", "wish": .heart
+        default: .orb
+        }
+    }
 }
 
 private let galleryRecords = [
@@ -142,19 +184,21 @@ private let galleryRecords = [
 private struct SoapBubble: View {
     var size: CGFloat
     var kind: RecordingKind = .ambience
+    var form: BubbleForm = .orb
 
     var body: some View {
-        Circle()
+        let silhouette = form.shape
+        silhouette
             .fill(.ultraThinMaterial)
             .overlay {
-                Circle().fill(RadialGradient(
+                silhouette.fill(RadialGradient(
                     colors: [.white.opacity(0.56), kind.tint.opacity(0.26), .clear],
                     center: .init(x: 0.28, y: 0.24),
                     startRadius: 1,
                     endRadius: size * 0.72
                 ))
             }
-            .overlay { Circle().stroke(AngularGradient(colors: kind.rim.map { $0.opacity(0.42) }, center: .center), lineWidth: max(0.8, size * 0.008)) }
+            .overlay { silhouette.stroke(AngularGradient(colors: kind.rim.map { $0.opacity(0.42) }, center: .center), lineWidth: max(0.8, size * 0.008)) }
             .overlay(alignment: .topLeading) {
                 Capsule()
                     .fill(.white.opacity(0.72))
@@ -165,6 +209,66 @@ private struct SoapBubble: View {
             }
             .frame(width: size, height: size)
             .shadow(color: kind.tint.opacity(0.1), radius: size * 0.1, y: size * 0.05)
+    }
+}
+
+private struct HeartBubbleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.maxY * 0.88))
+        path.addCurve(to: CGPoint(x: rect.width * 0.13, y: rect.height * 0.39), control1: CGPoint(x: rect.width * 0.42, y: rect.height * 0.76), control2: CGPoint(x: rect.width * 0.09, y: rect.height * 0.58))
+        path.addCurve(to: CGPoint(x: rect.midX, y: rect.height * 0.29), control1: CGPoint(x: rect.width * 0.16, y: rect.height * 0.14), control2: CGPoint(x: rect.width * 0.4, y: rect.height * 0.13))
+        path.addCurve(to: CGPoint(x: rect.width * 0.87, y: rect.height * 0.39), control1: CGPoint(x: rect.width * 0.6, y: rect.height * 0.13), control2: CGPoint(x: rect.width * 0.84, y: rect.height * 0.14))
+        path.addCurve(to: CGPoint(x: rect.midX, y: rect.maxY * 0.88), control1: CGPoint(x: rect.width * 0.91, y: rect.height * 0.58), control2: CGPoint(x: rect.width * 0.58, y: rect.height * 0.76))
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct StarBubbleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let outer = min(rect.width, rect.height) * 0.47
+        let inner = outer * 0.48
+        var path = Path()
+        for index in 0..<10 {
+            let radius = index.isMultiple(of: 2) ? outer : inner
+            let angle = Double(index) * .pi / 5 - .pi / 2
+            let point = CGPoint(x: center.x + CGFloat(cos(angle)) * radius, y: center.y + CGFloat(sin(angle)) * radius)
+            if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct FlowerBubbleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let scale = min(rect.width, rect.height) * 0.42
+        var path = Path()
+        for index in 0...120 {
+            let angle = Double(index) / 120 * 2 * .pi
+            let radius = scale * CGFloat(0.78 + 0.2 * cos(6 * angle))
+            let point = CGPoint(x: center.x + CGFloat(cos(angle)) * radius, y: center.y + CGFloat(sin(angle)) * radius)
+            if index == 0 { path.move(to: point) } else { path.addLine(to: point) }
+        }
+        path.closeSubpath()
+        return path
+    }
+}
+
+private struct CloudBubbleShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.width * 0.2, y: rect.height * 0.76))
+        path.addCurve(to: CGPoint(x: rect.width * 0.28, y: rect.height * 0.39), control1: CGPoint(x: rect.width * 0.03, y: rect.height * 0.69), control2: CGPoint(x: rect.width * 0.08, y: rect.height * 0.41))
+        path.addCurve(to: CGPoint(x: rect.width * 0.56, y: rect.height * 0.25), control1: CGPoint(x: rect.width * 0.32, y: rect.height * 0.23), control2: CGPoint(x: rect.width * 0.47, y: rect.height * 0.16))
+        path.addCurve(to: CGPoint(x: rect.width * 0.84, y: rect.height * 0.43), control1: CGPoint(x: rect.width * 0.66, y: rect.height * 0.13), control2: CGPoint(x: rect.width * 0.83, y: rect.height * 0.24))
+        path.addCurve(to: CGPoint(x: rect.width * 0.78, y: rect.height * 0.75), control1: CGPoint(x: rect.width * 0.99, y: rect.height * 0.49), control2: CGPoint(x: rect.width * 0.91, y: rect.height * 0.71))
+        path.addCurve(to: CGPoint(x: rect.width * 0.2, y: rect.height * 0.76), control1: CGPoint(x: rect.width * 0.56, y: rect.height * 0.88), control2: CGPoint(x: rect.width * 0.32, y: rect.height * 0.88))
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -180,8 +284,8 @@ private struct BubbleHome: View {
     var body: some View {
         GeometryReader { proxy in
             let points: [CGPoint] = [
-                .init(x: 0.06, y: 0.27), .init(x: 0.36, y: 0.2), .init(x: 0.81, y: 0.25),
-                .init(x: 0.9, y: 0.47), .init(x: 0.12, y: 0.5), .init(x: 0.48, y: 0.39),
+                .init(x: 0.5, y: 0.44), .init(x: 0.35, y: 0.19), .init(x: 0.82, y: 0.25),
+                .init(x: 0.9, y: 0.5), .init(x: 0.12, y: 0.5), .init(x: 0.34, y: 0.34),
                 .init(x: 0.68, y: 0.6), .init(x: 0.25, y: 0.68), .init(x: 0.92, y: 0.78),
                 .init(x: 0.43, y: 0.83), .init(x: 0.07, y: 0.86), .init(x: 0.73, y: 0.91),
             ]
@@ -195,6 +299,7 @@ private struct BubbleHome: View {
                         record: record,
                         size: sizes[index % sizes.count],
                         playing: playing && activeRecordID == record.id,
+                        orbitFocused: activeRecordID == record.id,
                         focused: filter != .all && isFocused,
                         dimmed: filter != .all && !isFocused
                     ) { select(record) }
@@ -293,11 +398,13 @@ private struct DreamBubbleOrb: View {
     let record: GalleryRecord
     let size: CGFloat
     let playing: Bool
+    let orbitFocused: Bool
     let focused: Bool
     let dimmed: Bool
     let action: () -> Void
     @State private var drifting = false
     @State private var popped = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button {
@@ -309,13 +416,41 @@ private struct DreamBubbleOrb: View {
         } label: {
             VStack(spacing: 4) {
                 ZStack {
+                    if orbitFocused {
+                        TimelineView(.animation(minimumInterval: 0.04, paused: reduceMotion)) { context in
+                            let phase = context.date.timeIntervalSinceReferenceDate * 0.14
+                            let tags = [record.title, record.kind.rawValue, record.duration, "SIDE A · \(record.index)"]
+                            ZStack {
+                                Ellipse()
+                                    .stroke(.white.opacity(0.48), lineWidth: 0.8)
+                                    .frame(width: size + 76, height: size + 40)
+                                    .rotationEffect(.degrees(-8))
+                                ForEach(tags.indices, id: \.self) { index in
+                                    let angle = phase + Double(index) * (.pi * 2 / Double(tags.count)) - .pi / 2
+                                    Text(tags[index])
+                                        .font(.system(size: 6, weight: .semibold, design: .rounded))
+                                        .lineLimit(1)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 4)
+                                        .foregroundStyle(PopPalette.forest.opacity(0.78))
+                                        .glassEffect(.regular, in: Capsule())
+                                        .position(
+                                            x: size / 2 + CGFloat(cos(angle)) * (size / 2 + 38),
+                                            y: size / 2 + CGFloat(sin(angle)) * (size / 2 + 20)
+                                        )
+                                }
+                            }
+                            .frame(width: size, height: size)
+                        }
+                        .allowsHitTesting(false)
+                    }
                     if focused {
                         Circle().stroke(style: StrokeStyle(lineWidth: 1, dash: [3, 4]))
                             .foregroundStyle(record.kind.tint.opacity(0.82))
                             .frame(width: size + 19, height: size + 19)
                             .rotationEffect(.degrees(drifting ? 8 : -8))
                     }
-                    SoapBubble(size: size, kind: record.kind)
+                    SoapBubble(size: size, kind: record.kind, form: record.form)
                         .overlay(alignment: .bottomTrailing) {
                             if playing { Image(systemName: "waveform").font(.system(size: 9, weight: .medium)).foregroundStyle(PopPalette.forest.opacity(0.68)).padding(6).glassEffect(.regular, in: Circle()).offset(x: 4, y: 4) }
                         }
@@ -332,7 +467,7 @@ private struct DreamBubbleOrb: View {
             .animation(.easeInOut(duration: 0.34), value: dimmed)
         }
         .buttonStyle(.plain)
-        .onAppear { withAnimation(.easeInOut(duration: 3.3 + Double(size.truncatingRemainder(dividingBy: 5))).repeatForever(autoreverses: true)) { drifting = true } }
+        .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 3.3 + Double(size.truncatingRemainder(dividingBy: 5))).repeatForever(autoreverses: true)) { drifting = true } } }
     }
 }
 
@@ -425,11 +560,13 @@ private struct BubbleConstellation: View {
 private struct RoamScreen: View {
     @Binding var captured: Bool
     @Binding var playing: Bool
+    @Binding var phase: RoamEntryPhase
 
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(red: 0.10, green: 0.23, blue: 0.17), Color(red: 0.16, green: 0.31, blue: 0.23), Color(red: 0.10, green: 0.20, blue: 0.16)], startPoint: .topLeading, endPoint: .bottomTrailing)
             RadialGradient(colors: [PopPalette.moss.opacity(0.24), .clear], center: .topTrailing, startRadius: 2, endRadius: 260)
+            ARIllustrationField()
             Circle()
                 .fill(Color(red: 0.36, green: 0.48, blue: 0.26).opacity(0.34))
                 .frame(width: 230, height: 230)
@@ -520,6 +657,108 @@ private struct RoamScreen: View {
         }
         .overlay { RoundedRectangle(cornerRadius: 28, style: .continuous).stroke(.white.opacity(0.13), lineWidth: 1) }
         .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay {
+            if phase != .ready { RoamEntryOverlay(phase: $phase) }
+        }
+    }
+}
+
+private struct ARIllustrationField: View {
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack {
+                illustration(.flower, tint: Color(red: 0.92, green: 0.66, blue: 0.78), size: 40, rotation: -12)
+                    .position(x: proxy.size.width * 0.16, y: proxy.size.height * 0.37)
+                illustration(.star, tint: Color(red: 0.63, green: 0.78, blue: 0.95), size: 34, rotation: 9)
+                    .position(x: proxy.size.width * 0.83, y: proxy.size.height * 0.31)
+                illustration(.heart, tint: Color(red: 0.91, green: 0.64, blue: 0.76), size: 38, rotation: 13)
+                    .position(x: proxy.size.width * 0.79, y: proxy.size.height * 0.58)
+                illustration(.flower, tint: Color(red: 0.79, green: 0.83, blue: 0.98), size: 23, rotation: 15)
+                    .position(x: proxy.size.width * 0.22, y: proxy.size.height * 0.7)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func illustration(_ form: BubbleForm, tint: Color, size: CGFloat, rotation: Double) -> some View {
+        form.shape
+            .fill(tint.opacity(0.52))
+            .overlay { form.shape.stroke(.white.opacity(0.86), lineWidth: 1.2) }
+            .overlay(alignment: .topLeading) {
+                Capsule().fill(.white.opacity(0.68)).frame(width: size * 0.25, height: 2).blur(radius: 1).rotationEffect(.degrees(-28)).offset(x: size * 0.25, y: size * 0.28)
+            }
+            .frame(width: size, height: size)
+            .shadow(color: .black.opacity(0.24), radius: 5, y: 3)
+            .rotationEffect(.degrees(rotation))
+    }
+}
+
+private struct RoamEntryOverlay: View {
+    @Binding var phase: RoamEntryPhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var travel = false
+    @State private var spinning = false
+    @State private var canSkip = false
+
+    var body: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial).overlay(Color(red: 0.08, green: 0.16, blue: 0.22).opacity(0.54))
+            VStack(spacing: 18) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .fill(.white.opacity(0.06))
+                        .frame(width: 186, height: 186)
+                        .overlay { RoundedRectangle(cornerRadius: 32, style: .continuous).stroke(.white.opacity(0.42), lineWidth: 1) }
+                    ViewfinderCorners().stroke(.white.opacity(0.84), style: StrokeStyle(lineWidth: 1.3, lineCap: .round)).frame(width: 148, height: 148)
+                    Circle().stroke(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [3, 5])).frame(width: 108, height: 108)
+                    if phase == .scan {
+                        Rectangle().fill(LinearGradient(colors: [.clear, .white.opacity(0.9), .clear], startPoint: .leading, endPoint: .trailing))
+                            .frame(width: 146, height: 1)
+                            .shadow(color: .white.opacity(0.7), radius: 7)
+                            .offset(y: travel ? 66 : -66)
+                    } else {
+                        Circle().trim(from: 0.08, to: 0.76).stroke(.white.opacity(0.76), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
+                            .frame(width: 80, height: 80)
+                            .rotationEffect(.degrees(spinning ? 360 : 0))
+                        SoapBubble(size: 29, kind: .ambience, form: .heart)
+                    }
+                }
+                VStack(spacing: 7) {
+                    Text("AR SPACE · VISUAL DEMO")
+                        .font(.system(size: 7, weight: .bold, design: .monospaced))
+                        .tracking(1.2)
+                        .foregroundStyle(.white.opacity(0.72))
+                    Text(phase == .scan ? "正在扫描周围空间" : "正在整理取景画面")
+                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Text(phase == .scan ? "寻找可放置泡泡的地面与墙面" : "把声音泡泡轻轻放进这条街")
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.72))
+                }
+                Capsule().fill(.white.opacity(0.18)).frame(width: 174, height: 2)
+                    .overlay(alignment: .leading) {
+                        Capsule().fill(.white.opacity(0.9)).frame(width: 56, height: 2).offset(x: travel ? 118 : 0)
+                    }
+                if canSkip {
+                    Button { withAnimation(.easeOut(duration: 0.22)) { phase = .ready } } label: {
+                        Label("立即进入取景", systemImage: "arrow.up.right")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(.white.opacity(0.12), in: Capsule())
+                            .overlay { Capsule().stroke(.white.opacity(0.38), lineWidth: 1) }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.42) { canSkip = true }
+            guard !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { travel = true }
+            withAnimation(.linear(duration: 1.25).repeatForever(autoreverses: false)) { spinning = true }
+        }
     }
 }
 

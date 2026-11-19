@@ -75,27 +75,188 @@ function DevicePill({ playing, emitting = false }) {
 }
 
 const SOUND_BUBBLES = [
-  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 138, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
-  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 106, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
-  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 94, accent: 'rose', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
-  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 116, accent: 'lilac', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
-  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 86, accent: 'lilac', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
-  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 124, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
-  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 100, accent: 'rose', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
-  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 90, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
-  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 108, accent: 'rose', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
-  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 78, accent: 'gold', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
-  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 88, accent: 'blue', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
-  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 82, accent: 'lilac', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
+  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 138, accent: 'blue', shape: 'heart', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
+  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 106, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
+  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 94, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
+  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 116, accent: 'lilac', shape: 'flower', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
+  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 86, accent: 'lilac', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
+  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 124, accent: 'blue', shape: 'flower', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
+  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 100, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
+  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 90, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
+  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 108, accent: 'rose', shape: 'flower', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
+  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 78, accent: 'gold', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
+  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 88, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
+  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 82, accent: 'lilac', shape: 'flower', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
 ];
 
 const BUBBLE_FIELD_SEEDS = [
-  [0.03, 0.23], [0.32, 0.11], [0.81, 0.18], [0.56, 0.31],
+  [0.5, 0.39], [0.32, 0.11], [0.81, 0.18], [0.56, 0.31],
   [0.12, 0.43], [0.94, 0.39], [0.39, 0.52], [0.7, 0.63],
   [0.08, 0.76], [0.51, 0.87], [0.88, 0.8], [0.28, 0.93],
 ];
 
-function HomeBubble({ bubble, index, popped, onPop, filtered, highlighted }) {
+const BUBBLE_SHAPE_PATHS = {
+  heart: 'M50 94 C43 88 5 60 5 34 C5 15 29 6 50 28 C71 6 95 15 95 34 C95 60 57 88 50 94 Z',
+  star: 'M50 4 C54 4 57 27 63 33 C69 39 90 34 94 39 C98 44 80 57 78 64 C76 71 88 89 83 94 C78 99 59 83 52 83 C45 83 27 99 22 94 C17 89 29 71 27 64 C25 57 7 44 11 39 C15 34 36 39 42 33 C48 27 46 4 50 4 Z',
+  flower: 'M50 12 C41 1 27 7 29 21 C15 12 5 23 15 35 C1 41 7 56 22 58 C11 70 21 84 36 77 C39 93 56 95 62 79 C76 89 89 78 79 64 C96 59 93 44 79 40 C86 25 75 13 62 21 C59 15 55 12 50 12 Z',
+  cloud: 'M24 72 C10 72 5 62 9 51 C12 42 20 39 29 40 C29 23 43 15 56 21 C64 9 83 15 83 31 C98 34 99 55 87 62 C85 73 74 78 63 75 C52 84 37 81 32 74 C29 73 27 72 24 72 Z',
+};
+
+function BubbleSilhouette({ bubble }) {
+  const path = BUBBLE_SHAPE_PATHS[bubble.shape];
+  if (!path) return null;
+  const safeId = bubble.id.replace(/[^a-z0-9-]/gi, '-');
+  const fillId = `bubble-fill-${safeId}`;
+  const filmId = `bubble-film-${safeId}`;
+  const clipId = `bubble-clip-${safeId}`;
+  return (
+    <svg className={`bubble-silhouette silhouette-${bubble.shape}`} viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <radialGradient id={fillId} cx="30%" cy="23%" r="82%">
+          <stop offset="0%" stopColor="#fff" stopOpacity=".94" />
+          <stop offset="30%" stopColor="var(--bubble-tint)" stopOpacity=".72" />
+          <stop offset="73%" stopColor="var(--bubble-tint)" stopOpacity=".44" />
+          <stop offset="100%" stopColor="#fff" stopOpacity=".76" />
+        </radialGradient>
+        <linearGradient id={filmId} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#fff" stopOpacity=".96" />
+          <stop offset=".34" stopColor="var(--bubble-edge)" stopOpacity=".72" />
+          <stop offset=".62" stopColor="#e7b9d7" stopOpacity=".66" />
+          <stop offset=".82" stopColor="#f4e7c8" stopOpacity=".64" />
+          <stop offset="1" stopColor="#fff" stopOpacity=".92" />
+        </linearGradient>
+        <clipPath id={clipId}><path d={path} /></clipPath>
+      </defs>
+      <path className="bubble-silhouette-surface" d={path} fill={`url(#${fillId})`} />
+      <path className="bubble-silhouette-rim" d={path} fill="none" stroke={`url(#${filmId})`} strokeWidth="2" />
+      <g clipPath={`url(#${clipId})`}>
+        <ellipse cx="31" cy="24" rx="22" ry="10" transform="rotate(-28 31 24)" fill="#fff" opacity=".42" />
+        <ellipse cx="70" cy="76" rx="31" ry="23" fill="var(--bubble-tint)" opacity=".2" />
+        <path d="M20 43 C24 29 34 20 47 19" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".63" />
+      </g>
+      {bubble.shape === 'flower' && <circle cx="50" cy="49" r="9" fill="#fff2cb" fillOpacity=".68" stroke="#fff" strokeOpacity=".8" strokeWidth="1.2" />}
+      {bubble.shape === 'star' && <path d="M50 15 L53 43 L80 40 L57 53 L68 79 L50 59 L31 80 L43 53 L18 49 L45 44 Z" fill="#fff" fillOpacity=".1" />}
+    </svg>
+  );
+}
+
+function OrbitTagTrack({ bubble }) {
+  const trackRef = useRef(null);
+  const motionRef = useRef(null);
+  const dragRef = useRef(null);
+  const note = bubble.comments[0]?.text || bubble.quote;
+  const tags = [bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`, note];
+
+  useLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track) return undefined;
+    const chips = [...track.querySelectorAll('.bubble-orbit-tag')];
+    const radiusX = bubble.size / 2 + 38;
+    const radiusY = bubble.size / 2 + 20;
+    const angle = { value: -90 };
+    const render = () => chips.forEach((chip, index) => {
+      const radians = ((angle.value + (index * 360) / chips.length) * Math.PI) / 180;
+      gsap.set(chip, {
+        xPercent: -50,
+        yPercent: -50,
+        x: Math.cos(radians) * radiusX,
+        y: Math.sin(radians) * radiusY,
+      });
+    });
+    const spin = () => {
+      const tween = gsap.to(angle, { value: angle.value + 360, duration: 26, ease: 'none', onUpdate: render, onComplete: () => {
+        if (motionRef.current) spin();
+      } });
+      motionRef.current = { angle, tween, render, spin, radiusX };
+    };
+    render();
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) spin();
+    else motionRef.current = { angle, tween: null, render, spin, radiusX };
+    return () => { motionRef.current?.tween?.kill(); motionRef.current = null; };
+  }, [bubble.id, bubble.size, tags.length]);
+
+  const startDrag = (event) => {
+    const motion = motionRef.current;
+    if (!motion || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    motion.tween?.pause();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    dragRef.current = { x: event.clientX, angle: motion.angle.value, pointerId: event.pointerId };
+  };
+  const moveDrag = (event) => {
+    const motion = motionRef.current;
+    const drag = dragRef.current;
+    if (!motion || !drag || drag.pointerId !== event.pointerId) return;
+    motion.angle.value = drag.angle + ((event.clientX - drag.x) / Math.max(1, motion.radiusX)) * 90;
+    motion.render();
+  };
+  const endDrag = (event) => {
+    if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
+    dragRef.current = null;
+    const motion = motionRef.current;
+    if (motion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      motion.tween?.kill();
+      motion.spin();
+    }
+  };
+
+  return (
+    <div ref={trackRef} className="bubble-orbit-track" aria-hidden="true" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+      <span className="bubble-orbit-rail" />
+      {tags.map((tag, index) => <span className={`bubble-orbit-tag orbit-tag-${index}`} key={`${bubble.id}-${index}`}>{tag}</span>)}
+    </div>
+  );
+}
+
+function ARIllustrations() {
+  const decals = [
+    { shape: 'flower', className: 'ar-decal-flower', left: '12%', top: '38%', size: 43 },
+    { shape: 'star', className: 'ar-decal-star', left: '82%', top: '29%', size: 34 },
+    { shape: 'heart', className: 'ar-decal-heart', left: '77%', top: '61%', size: 38 },
+    { shape: 'flower', className: 'ar-decal-small-flower', left: '20%', top: '70%', size: 25 },
+  ];
+  return (
+    <div className="ar-illustration-field" aria-hidden="true">
+      {decals.map((decal, index) => (
+        <svg key={decal.className} className={`ar-decal ${decal.className}`} viewBox="0 0 100 100" style={{ left: decal.left, top: decal.top, width: decal.size, height: decal.size, '--decal-delay': `${index * -0.7}s` }}>
+          <path d={BUBBLE_SHAPE_PATHS[decal.shape]} />
+          <path className="ar-decal-shine" d={decal.shape === 'heart' ? 'M27 42 C30 30 39 26 48 30' : 'M31 34 C36 24 46 21 54 25'} />
+          {decal.shape === 'flower' && <circle cx="50" cy="50" r="10" />}
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function RoamEntryOverlay({ phase, onSkip }) {
+  const [skipVisible, setSkipVisible] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setSkipVisible(true);
+      return undefined;
+    }
+    const timeout = window.setTimeout(() => setSkipVisible(true), 420);
+    return () => window.clearTimeout(timeout);
+  }, []);
+  const scanning = phase === 'scan';
+  return (
+    <div className={`roam-entry-overlay phase-${phase}`} aria-live="polite" aria-label="漫游取景准备">
+      <div className={`roam-entry-visual${scanning ? ' is-scanning' : ' is-buffering'}`} aria-hidden="true">
+        <span className="entry-corner corner-tl" /><span className="entry-corner corner-tr" /><span className="entry-corner corner-bl" /><span className="entry-corner corner-br" />
+        <span className="entry-scan-beam" /><span className="entry-scan-dot dot-one" /><span className="entry-scan-dot dot-two" /><span className="entry-scan-dot dot-three" />
+        <span className="entry-buffer-ring"><i /></span>
+      </div>
+      <div className="roam-entry-copy">
+        <span className="entry-eyebrow">AR SPACE · VISUAL DEMO</span>
+        <strong>{scanning ? '正在扫描周围空间' : '正在整理取景画面'}</strong>
+        <small>{scanning ? '寻找可放置泡泡的地面与墙面' : '把声音泡泡轻轻放进这条街'}</small>
+      </div>
+      <div className="entry-progress"><i /></div>
+      {skipVisible && <button className="entry-skip" onClick={onSkip}>立即进入取景 <span>↗</span></button>}
+    </div>
+  );
+}
+
+function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, highlighted }) {
   const buttonRef = useRef(null);
   const [burst, setBurst] = useState(false);
   const isResonant = bubble.saves >= 50 || bubble.comments.length >= 2;
@@ -145,25 +306,27 @@ function HomeBubble({ bubble, index, popped, onPop, filtered, highlighted }) {
   }, [popped]);
 
   return (
-    <div className={`bubble-body kind-${bubble.kindKey}${filtered ? ' is-filtered' : ''}${highlighted ? ' is-highlighted' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} data-id={bubble.id} data-kind={bubble.kindKey} data-seed={index} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
+    <div className={`bubble-body kind-${bubble.kindKey}${focused ? ' is-orbit-focus' : ''}${filtered ? ' is-filtered' : ''}${highlighted ? ' is-highlighted' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} data-id={bubble.id} data-kind={bubble.kindKey} data-seed={index} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
       <svg className="bubble-filter-lasso" viewBox="0 0 160 142" aria-hidden="true"><path d="M81 5C119 2 154 26 153 66S132 131 84 136 7 116 7 73 36 10 81 5Z" /></svg>
       <button
         ref={buttonRef}
-        className={`soap-bubble home-bubble accent-${bubble.accent}${isResonant ? ' bubble-hot' : ''}`}
+        className={`soap-bubble home-bubble accent-${bubble.accent}${bubble.shape ? ` has-silhouette shape-${bubble.shape}` : ''}${isResonant ? ' bubble-hot' : ''}`}
         aria-label={`戳开${bubble.kind}泡泡并回听：${bubble.title}`}
         title={`${bubble.kind} · ${bubble.title}`}
         onPointerDown={(event) => gsap.to(event.currentTarget, { scaleX: 0.91, scaleY: 1.07, duration: 0.1, ease: 'power2.out' })}
         onPointerUp={(event) => gsap.to(event.currentTarget, { scaleX: 1, scaleY: 1, duration: 0.5, ease: 'elastic.out(1, 0.32)' })}
         onPointerCancel={(event) => gsap.to(event.currentTarget, { scale: 1, duration: 0.24, ease: 'power2.out' })}
-        onClick={pop}
+        onClick={(event) => { onFocus?.(); pop(event); }}
       >
         <span className="bubble-core" />
         <span className="bubble-glint" />
+        <BubbleSilhouette bubble={bubble} />
         <span className="bubble-rank-aura" />
         <span className="bubble-rank-mark">{isResonant ? `共鸣 ${bubble.saves}` : ''}</span>
         <span className="pop-ripple" />
         {burst && <span className="pop-burst" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} className="pop-bit" />)}</span>}
       </button>
+      {focused && !popped && <OrbitTagTrack bubble={bubble} />}
       <span className="bubble-label"><strong>{bubble.title}</strong><small><i /> {bubble.kind} · {bubble.duration}</small></span>
     </div>
   );
@@ -171,6 +334,7 @@ function HomeBubble({ bubble, index, popped, onPop, filtered, highlighted }) {
 
 function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubblePop, onOpenLeaderboard }) {
   const [kindFilter, setKindFilter] = useState('all');
+  const [focusedId, setFocusedId] = useState(bubbles[0]?.id || null);
   const fieldRef = useRef(null);
   const kinds = [
     ['all', '全部', '◌'],
@@ -178,6 +342,12 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
     ['ambience', '环境声', '◌'],
     ['thought', '碎念', '✳'],
   ];
+
+  useEffect(() => {
+    if (kindFilter === 'all') return;
+    const firstMatch = bubbles.find((bubble) => bubble.kindKey === kindFilter);
+    if (firstMatch) setFocusedId(firstMatch.id);
+  }, [kindFilter]);
 
   useEffect(() => {
     const field = fieldRef.current;
@@ -220,8 +390,11 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
         body.y += body.vy * dt;
         const edgeX = Math.max(0, width - body.diameter);
         const edgeY = Math.max(0, height - body.diameter);
-        if (body.x < 0) { body.x = 0; body.vx = Math.abs(body.vx) * 0.88; }
-        if (body.x > edgeX) { body.x = edgeX; body.vx = -Math.abs(body.vx) * 0.88; }
+        const orbitPadding = body.element.classList.contains('is-orbit-focus') ? 102 : 0;
+        const minX = Math.min(orbitPadding, edgeX / 2);
+        const maxX = Math.max(minX, edgeX - minX);
+        if (body.x < minX) { body.x = minX; body.vx = Math.abs(body.vx) * 0.88; }
+        if (body.x > maxX) { body.x = maxX; body.vx = -Math.abs(body.vx) * 0.88; }
         if (body.y < 0) { body.y = 0; body.vy = Math.abs(body.vy) * 0.88; }
         if (body.y > edgeY) { body.y = edgeY; body.vy = -Math.abs(body.vy) * 0.88; }
       });
@@ -284,7 +457,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
         <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="漂浮的个人声音泡泡">
           <span className="bubble-pop-flash" aria-hidden="true" />
           {bubbles.map((bubble, index) => (
-            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
+            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} onFocus={() => setFocusedId(bubble.id)} focused={focusedId === bubble.id} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
           ))}
         </div>
       </div>
@@ -334,7 +507,7 @@ function LeaderboardSheet({ open, onClose, onRoam, bubbles }) {
   );
 }
 
-function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting, onPageChange, zoom, onZoom }) {
+function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting, onPageChange, zoom, onZoom, roamPhase, onRoamSkip }) {
   const targetSound = selected === 1 ? SOUND_BUBBLES[0] : SOUND_BUBBLES[1];
   return (
     <Scene className={`app-roam${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")` }}>
@@ -350,6 +523,7 @@ function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting
         <div className="floor-line floor-back"><span>二层</span></div>
         <div className="floor-line floor-front"><span>一层</span></div>
         <div className="distant-architecture" />
+        <ARIllustrations />
         <Bubble size={82 * zoom} className={`target-bubble bubble-hot${selected === 1 ? ' target-selected' : ''}${captured ? ' target-captured' : ''}`} label="二层的声音泡泡" onClick={() => onSelect(1)} />
         <Bubble size={43} className={`target-bubble target-small${selected === 2 ? ' target-selected bubble-hot' : ''}`} label="巷口的钟声" onClick={() => onSelect(2)} />
         <Bubble size={27} className="target-bubble target-tiny" label="远处的小泡泡" onClick={() => onSelect(2)} />
@@ -379,6 +553,7 @@ function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting
         )}
       </div>
       <TabBar active="roam" onChange={onPageChange} />
+      {roamPhase !== 'ready' && <RoamEntryOverlay phase={roamPhase} onSkip={onRoamSkip} />}
     </Scene>
   );
 }
@@ -428,7 +603,7 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
   );
 }
 
-function AudiencePreview({ page, selected, captured, playing, emitting, recording, recordingEnergy, published, bubbles }) {
+function AudiencePreview({ page, selected, captured, playing, emitting, recording, recordingEnergy, published, bubbles, roamPhase }) {
   return (
     <section className="audience-window">
       <div className="audience-chrome">
@@ -440,6 +615,8 @@ function AudiencePreview({ page, selected, captured, playing, emitting, recordin
         <div className="projection-location"><i /> {page === 'home' ? '我的回声' : '江湾 · 01'} <span>{page === 'home' ? '个人图鉴' : '空间回声'}</span></div>
         {page === 'roam' ? (
           <>
+            <ARIllustrations />
+            {roamPhase !== 'ready' && <div className={`projection-ar-status phase-${roamPhase}`}><i />{roamPhase === 'scan' ? '正在扫描空间' : '正在整理取景画面'}</div>}
             <div className="projection-floor floor-two">02 <span>二层</span></div>
             <div className="projection-floor floor-one">01 <span>一层</span></div>
             <Bubble size={170} className={`projection-target${captured ? ' target-captured' : ''}`} label="大屏上的目标泡泡" />
@@ -481,6 +658,7 @@ function AudiencePreview({ page, selected, captured, playing, emitting, recordin
 
 function App() {
   const [page, setPage] = useState(['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
+  const [roamPhase, setRoamPhase] = useState('ready');
   const [playing, setPlaying] = useState(false);
   const [deviceEmitting, setDeviceEmitting] = useState(false);
   const [captured, setCaptured] = useState(false);
@@ -503,6 +681,30 @@ function App() {
   const deviceEmissionTimer = useRef(null);
   const recordingStartedAt = useRef(0);
   const bubbles = createdBubble ? [createdBubble, ...SOUND_BUBBLES] : SOUND_BUBBLES;
+
+  const requestPageChange = (nextPage) => {
+    if (nextPage === 'roam') {
+      if (page === 'roam') {
+        if (roamPhase !== 'ready') setRoamPhase('ready');
+        return;
+      }
+      setPage('roam');
+      setRoamPhase('scan');
+      return;
+    }
+    setPage(nextPage);
+    setRoamPhase('ready');
+  };
+
+  useEffect(() => {
+    if (page !== 'roam' || roamPhase === 'ready') return undefined;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const duration = reducedMotion ? 220 : (roamPhase === 'scan' ? 880 : 620);
+    const timeout = window.setTimeout(() => {
+      setRoamPhase(roamPhase === 'scan' ? 'buffer' : 'ready');
+    }, duration);
+    return () => window.clearTimeout(timeout);
+  }, [page, roamPhase]);
 
   const startBubblePlayback = (bubble) => {
     const token = ++playbackToken.current;
@@ -600,6 +802,7 @@ function App() {
       distance: 0,
       size: 118,
       accent: 'rose',
+      shape: 'heart',
       kind: '人声',
       kindKey: 'voice',
       age: 0,
@@ -618,12 +821,12 @@ function App() {
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
       <header className="demo-header"><span className="wordmark">声景漫游</span><span className="demo-mode"><i /> DEMO 01</span></header>
       <div className="demo-stage">
-        <AudiencePreview page={page} selected={selected} captured={captured} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} />
+        <AudiencePreview page={page} selected={selected} captured={captured} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} roamPhase={roamPhase} />
         <div className="phone-column">
           <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
-          {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={setPage} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
-          {page === 'roam' && <RoamScreen selected={selected} onSelect={setSelected} captured={captured} onCapture={beginCapture} playing={playing} emitting={deviceEmitting} onPageChange={setPage} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.5, Math.max(.75, v + step * .12)))} />}
-            {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={setPage} />}
+          {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
+          {page === 'roam' && <RoamScreen selected={selected} onSelect={setSelected} captured={captured} onCapture={beginCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.5, Math.max(.75, v + step * .12)))} roamPhase={roamPhase} onRoamSkip={() => setRoamPhase('ready')} />}
+            {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={requestPageChange} />}
           </Phone>
           <div className={`device-status${playing || deviceEmitting ? ' is-playing' : ''}`}><span className="device-dot" /><span>{deviceEmitting ? 'EchoCaster 发泡演示中' : playing ? 'EchoCaster 播放演示中' : 'EchoCaster 演示装置'}</span><b>SIM</b></div>
         </div>
@@ -635,10 +838,9 @@ function App() {
         <b>{deviceOpen ? '−' : '↗'}</b>
       </button>
       {deviceOpen && <Suspense fallback={<div className="device-viewer device-viewer-loading glass-surface" role="status">装置载入中…</div>}><DeviceViewer open onClose={() => setDeviceOpen(false)} playing={playing || deviceEmitting} /></Suspense>}
-      <LeaderboardSheet open={leaderboardOpen} onClose={() => setLeaderboardOpen(false)} onRoam={() => { setLeaderboardOpen(false); setPage('roam'); }} bubbles={bubbles} />
+      <LeaderboardSheet open={leaderboardOpen} onClose={() => setLeaderboardOpen(false)} onRoam={() => { setLeaderboardOpen(false); requestPageChange('roam'); }} bubbles={bubbles} />
     </main>
   );
 }
 
 createRoot(document.getElementById('root')).render(<App />);
-
