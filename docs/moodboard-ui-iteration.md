@@ -39,8 +39,9 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 ### Roam / AR capture
 
 - Keep the supplied night-walk photo as the real-scene visual base. Overlay a small number of thin, 2D illustrated heart/star/flower forms at varied screen positions and apparent depths; keep them behind the selected capture target and away from key controls.
-- Enter roam through three visible demo states: `scan` (camera-frame sweep and plane/scene hints), `buffer` (brief glassy loading mark with “正在整理空间” copy), then `ready` (current AR-style capture UI). Use a short overall transition, roughly 1.5–2 seconds, and allow tap-to-skip after the initial scan cue.
-- Tab navigation, Echo leaderboard “去听” action, direct `?screen=roam` preview, capture selection, and captured/result state must land in a valid state. Show that this is a visual AR demo; do not imply live ARKit tracking or hardware integration.
+- Enter roam through three visible states: `scan` (camera-frame sweep), `buffer` (bubble-water progress and “正在注入泡泡水”), then `ready`. Request the rear camera from the user's navigation gesture; if permission or camera access is unavailable, keep the supplied night-walk photo as the scene fallback. After loading, release a brief screen-filling bubble burst.
+- Overlay three illustrated, differently sized sound anchors on the live camera or photo background. Tap selects and zooms toward the target; the capture action draws a soft gradient water ribbon from the edge into a floating center bubble. Tapping the center bubble plays the sound example, and long-pressing any anchor opens its translucent Liquid Glass comments.
+- Camera pixels are live when authorized, but the anchors are fixed screen-space demo positions; don't imply ARKit plane detection, world tracking, GPS, or hardware integration. Tab navigation, Echo leaderboard “去听”, direct `?screen=roam`, camera denial, capture, listening, and comments should remain usable.
 
 ### Motion and craft
 
@@ -64,6 +65,6 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 
 ## Out of scope
 
-- Actual ARKit plane detection, camera permission, microphone recording, GPS placement, voice separation, ESP32 connection, or physical bubble output.
+- Actual ARKit plane detection/world tracking, microphone recording, GPS placement, voice separation, ESP32 connection, or physical bubble output. Camera access is implemented with the browser permission API; camera-space anchors remain a visual demo.
 - Replacing the SwiftUI visual prototype or introducing new dependencies.
 - Turning the Echo leaderboard into a full social network or adding scoring/rewards.

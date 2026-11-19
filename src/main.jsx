@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
 import { Phone } from './kit/phone';
@@ -16,13 +16,17 @@ const DeviceViewer = lazy(() => import('./DeviceViewer'));
 
 const initialScreen = new URLSearchParams(location.search).get('screen');
 
-function Bubble({ size, className = '', label, onClick, style = {}, bubble }) {
+function Bubble({ size, className = '', label, onClick, onPointerDown, onPointerUp, onPointerCancel, onContextMenu, style = {}, bubble }) {
   return (
     <button
       className={`soap-bubble ${className}${bubble?.shape ? ` has-silhouette shape-${bubble.shape}` : ''}`}
       style={{ '--bubble-size': `${size}px`, ...style }}
       aria-label={label || '声音泡泡'}
       onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onContextMenu={onContextMenu}
     >
       {bubble?.shape ? <BubbleSilhouette bubble={bubble} /> : <><span className="bubble-core" /><span className="bubble-glint" /></>}
     </button>
@@ -103,9 +107,10 @@ const BUBBLE_SHAPE_PATHS = {
 };
 
 function BubbleSilhouette({ bubble }) {
+  const instanceId = useId().replace(/[^a-z0-9-]/gi, '-');
   const path = BUBBLE_SHAPE_PATHS[bubble.shape];
   if (!path) return null;
-  const safeId = bubble.id.replace(/[^a-z0-9-]/gi, '-');
+  const safeId = `${bubble.id.replace(/[^a-z0-9-]/gi, '-')}-${instanceId}`;
   const fillId = `bubble-fill-${safeId}`;
   const filmId = `bubble-film-${safeId}`;
   const clipId = `bubble-clip-${safeId}`;
@@ -569,11 +574,136 @@ function ARIllustrations() {
           {decal.shape === 'flower' && <circle cx="50" cy="50" r="10" />}
         </svg>
       ))}
+      <svg className="ar-brush-overlay" viewBox="0 0 400 700" preserveAspectRatio="none">
+        <path className="brush-sun-ray" d="M318 118c-18-20-26-46-20-69m19 57c4-25 18-47 38-60m-34 65c20-15 44-21 68-16" />
+        <path className="brush-loop" d="M35 272c26-27 61-20 68 4 7 25-23 37-43 22-17-13-9-34 12-42" />
+        <path className="brush-flower-stem" d="M306 522c-12-38 2-70 28-92m-29 79c-20-13-34-28-42-48" />
+        <path className="brush-arrow" d="M31 566c25 4 41-3 53-20m-12 1 13-2-1 14" />
+        <path className="brush-dash" d="M235 204c9-7 18-8 28-4m-21 12c8-3 14-3 20 0m66 315c8-7 17-9 26-6" />
+        <circle className="brush-dot" cx="88" cy="130" r="3" /><circle className="brush-dot" cx="105" cy="144" r="2" /><circle className="brush-dot" cx="352" cy="330" r="3" />
+      </svg>
     </div>
   );
 }
 
-function RoamEntryOverlay({ phase, onSkip }) {
+function CameraPreview({ stream, className = '' }) {
+  const videoRef = useRef(null);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) return undefined;
+    video.srcObject = stream;
+    video.play().catch(() => {});
+    return () => { video.srcObject = null; };
+  }, [stream]);
+  return <video ref={videoRef} className={`ar-camera-video ${className}`} autoPlay muted playsInline aria-hidden="true" />;
+}
+
+const AR_ANCHORS = [
+  { index: 1, left: '52%', top: '20%', size: 92, depth: '近景' },
+  { index: 2, left: '24%', top: '45%', size: 74, depth: '中景' },
+  { index: 3, left: '76%', top: '56%', size: 63, depth: '远景' },
+];
+
+function ARTargetBubble({ sound, anchor, selected, zoom, onSelect, onLongPress }) {
+  const holdTimer = useRef(null);
+  const didLongPress = useRef(false);
+  const clearHold = () => window.clearTimeout(holdTimer.current);
+  const pointerDown = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    didLongPress.current = false;
+    clearHold();
+    holdTimer.current = window.setTimeout(() => {
+      didLongPress.current = true;
+      onLongPress(sound);
+    }, 480);
+  };
+  const pointerEnd = () => clearHold();
+  const handleClick = () => {
+    if (didLongPress.current) {
+      didLongPress.current = false;
+      return;
+    }
+    onSelect(anchor.index);
+  };
+  useEffect(() => () => clearHold(), []);
+  return (
+    <div className={`ar-anchor ${selected ? 'is-selected' : ''}`} style={{ left: anchor.left, top: anchor.top, '--anchor-size': `${anchor.size * (selected ? zoom : 1)}px`, '--anchor-depth': anchor.depth }}>
+      <Bubble
+        size={anchor.size * (selected ? zoom : 1)}
+        bubble={sound}
+        className={`target-bubble accent-${sound.accent}${selected ? ' target-selected' : ''}`}
+        label={`${sound.title}，轻点瞄准，长按查看留言`}
+        onClick={handleClick}
+        onPointerDown={pointerDown}
+        onPointerUp={pointerEnd}
+        onPointerCancel={pointerEnd}
+        onContextMenu={(event) => { event.preventDefault(); onLongPress(sound); }}
+      />
+      <span className="anchor-label"><b>{sound.title}</b><small>{anchor.depth} · {sound.distance}m</small></span>
+    </div>
+  );
+}
+
+function ARCommentsSheet({ bubble, onClose }) {
+  useEffect(() => {
+    if (!bubble) return undefined;
+    const closeOnEscape = (event) => { if (event.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [bubble, onClose]);
+  if (!bubble) return null;
+  return (
+    <div className="ar-comments-backdrop" onClick={onClose}>
+      <section className="ar-comments-sheet" role="dialog" aria-modal="true" aria-label={`${bubble.title}的留言`} onClick={(event) => event.stopPropagation()}>
+        <span className="ar-sheet-grabber" />
+        <div className="ar-comments-heading">
+          <div><small>泡泡里的回声 · {bubble.comments.length} 条</small><h2>{bubble.title}</h2></div>
+          <button onClick={onClose} aria-label="关闭留言">×</button>
+        </div>
+        <p className="ar-comments-quote">“{bubble.quote}”</p>
+        <div className="ar-comments-list">
+          {bubble.comments.length ? bubble.comments.map((comment, index) => (
+            <article className="ar-comment" key={`${comment.author}-${index}`}>
+              <span className={`comment-orb orb-${index % 3}`}><i /></span>
+              <div><strong>{comment.author}</strong><p>{comment.text}</p></div>
+              <small>{index === 0 ? '刚刚' : '稍早'}</small>
+            </article>
+          )) : <p className="ar-comment-empty">这颗泡泡还没有留言，听完后留下一句吧。</p>}
+        </div>
+        <div className="ar-comment-footnote"><i /> 长按泡泡，听见大家留下的回应</div>
+      </section>
+    </div>
+  );
+}
+
+function CaptureWaterFlow({ anchorIndex }) {
+  const anchor = AR_ANCHORS.find((item) => item.index === anchorIndex) || AR_ANCHORS[0];
+  const startX = parseFloat(anchor.left) < 40 ? 4 : parseFloat(anchor.left) > 65 ? 96 : 5;
+  const startY = parseFloat(anchor.top) < 40 ? 8 : 92;
+  const path = `M ${startX} ${startY} C ${startX < 50 ? 28 : 72} ${startY - 26}, ${startX < 50 ? 72 : 28} 74, 50 47`;
+  return (
+    <svg className="capture-water-flow" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="capture-water-gradient" x1="0" y1="1" x2="1" y2="0"><stop stopColor="#a8f5ec" stopOpacity="0" /><stop offset=".38" stopColor="#c3fff4" stopOpacity=".86" /><stop offset=".7" stopColor="#e4c9ff" stopOpacity=".93" /><stop offset="1" stopColor="#fff" /></linearGradient>
+        <filter id="capture-water-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+      </defs>
+      <path className="water-flow-trail" d={path} />
+      <path className="water-flow-ribbon" d={path} pathLength="100" />
+      <path className="water-flow-core" d={path} pathLength="100" />
+      <circle className="water-flow-pearl" r="1.35" filter="url(#capture-water-glow)"><animateMotion dur="1.18s" fill="freeze" path={path} /></circle>
+    </svg>
+  );
+}
+
+function RoamArrivalBurst() {
+  const bubbles = [
+    [-38, -34, 16], [-26, -44, 10], [-11, -38, 20], [8, -46, 12], [25, -40, 18], [41, -30, 9], [-44, -14, 12], [-31, 2, 19], [-17, 14, 10], [3, 0, 14], [19, 16, 20], [38, 4, 13], [-40, 30, 18], [-20, 41, 12], [1, 34, 21], [23, 43, 11], [42, 29, 16], [4, -18, 8], [28, -13, 8], [-7, 29, 8],
+  ];
+  return <div className="roam-arrival-burst" aria-hidden="true">{bubbles.map(([x, y, size], index) => <i key={index} style={{ '--burst-x': `${x}vw`, '--burst-y': `${y}vh`, '--burst-size': `${size}px`, '--burst-delay': `${(index % 6) * 28}ms` }} />)}</div>;
+}
+
+function RoamEntryOverlay({ phase, progress, onSkip }) {
   const [skipVisible, setSkipVisible] = useState(false);
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -593,10 +723,10 @@ function RoamEntryOverlay({ phase, onSkip }) {
       </div>
       <div className="roam-entry-copy">
         <span className="entry-eyebrow">AR SPACE · VISUAL DEMO</span>
-        <strong>{scanning ? '正在扫描周围空间' : '正在整理取景画面'}</strong>
-        <small>{scanning ? '寻找可放置泡泡的地面与墙面' : '把声音泡泡轻轻放进这条街'}</small>
+        <strong>{scanning ? '正在扫描周围空间' : '正在注入泡泡水'}</strong>
+        <small>{scanning ? '识别街景与可见空间' : '把声音泡泡轻轻放进这条街'}</small>
       </div>
-      <div className="entry-progress"><i /></div>
+      <div className="entry-progress" role="progressbar" aria-label="空间准备进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress * 100)}><i style={{ width: `${Math.max(4, progress * 100)}%` }} /><span style={{ left: `${progress * 100}%` }} /></div>
       {skipVisible && <button className="entry-skip" onClick={onSkip}>立即进入取景 <span>↗</span></button>}
     </div>
   );
@@ -964,53 +1094,88 @@ function LeaderboardSheet({ open, onClose, onRoam, bubbles }) {
   );
 }
 
-function RoamScreen({ selected, onSelect, captured, onCapture, playing, emitting, onPageChange, zoom, onZoom, roamPhase, onRoamSkip }) {
-  const targetSound = selected === 1 ? SOUND_BUBBLES[0] : SOUND_BUBBLES[1];
+function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase, onCapture, onListen, onResetCapture, playing, emitting, onPageChange, zoom, onZoom, roamPhase, roamProgress, onRoamSkip, cameraStream, cameraStatus, onOpenCamera, onCloseCamera }) {
+  const [commentBubble, setCommentBubble] = useState(null);
+  const [showArrivalBurst, setShowArrivalBurst] = useState(false);
+  const priorPhase = useRef(roamPhase);
+  const targetSound = SOUND_BUBBLES[selected - 1] || SOUND_BUBBLES[0];
+  const anchor = AR_ANCHORS.find((item) => item.index === selected) || AR_ANCHORS[0];
+  const focusX = anchor.left;
+  const focusY = anchor.top;
+
+  useEffect(() => {
+    if (priorPhase.current !== 'ready' && roamPhase === 'ready') {
+      setShowArrivalBurst(true);
+      const timeout = window.setTimeout(() => setShowArrivalBurst(false), 1450);
+      priorPhase.current = roamPhase;
+      return () => window.clearTimeout(timeout);
+    }
+    priorPhase.current = roamPhase;
+    return undefined;
+  }, [roamPhase]);
+
   return (
-    <Scene className={`app-roam${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")` }}>
+    <Scene className={`app-roam${cameraStream ? ' has-camera' : ''}${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")`, '--scene-zoom': zoom, '--focus-x': focusX, '--focus-y': focusY, '--focus-size': `${anchor.size * zoom}px` }}>
+      {cameraStream && <CameraPreview stream={cameraStream} />}
       <div className="screen-topline">
-        <span className="place-chip ar-place-chip"><i /> 江湾 · 实景 AR</span>
+        <span className="place-chip ar-place-chip"><i /> 江湾 · 漫游取景</span>
         <DevicePill playing={playing} emitting={emitting} />
       </div>
       <div className="roam-world">
         <div className="roam-sort glass-surface">
-          <button className={selected === 1 ? 'active' : ''} onClick={() => onSelect(1)}>视线内 <i>03</i></button>
-          <button className={selected === 2 ? 'active' : ''} onClick={() => onSelect(2)}>共鸣榜 <i>01</i></button>
+          <button className="active" onClick={() => onSelect(selected)}>空间回声 <i>03</i></button>
+          <span>长按泡泡 · 看留言</span>
         </div>
-        <div className="floor-line floor-back"><span>二层</span></div>
-        <div className="floor-line floor-front"><span>一层</span></div>
-        <div className="distant-architecture" />
-        <ARIllustrations />
-        <Bubble size={82 * zoom} className={`target-bubble bubble-hot${selected === 1 ? ' target-selected' : ''}${captured ? ' target-captured' : ''}`} label="二层的声音泡泡" onClick={() => onSelect(1)} />
-        <Bubble size={43} className={`target-bubble target-small${selected === 2 ? ' target-selected bubble-hot' : ''}`} label="巷口的钟声" onClick={() => onSelect(2)} />
-        <Bubble size={27} className="target-bubble target-tiny" label="远处的小泡泡" onClick={() => onSelect(2)} />
-        <div className="aim-ring"><i /><b /></div>
-        <div className="target-caption"><span>{selected === 1 ? '二层回声' : '巷口的钟声'}</span><i>·</i><span>{targetSound.distance} m</span><b>{targetSound.saves} 收藏</b></div>
-        <div className="zoom-control glass-surface">
-          <button aria-label="放大" onClick={() => onZoom(1)}>+</button><span /><button aria-label="缩小" onClick={() => onZoom(-1)}>−</button>
+        <div className="camera-status-chip"><i className={cameraStream ? 'is-live' : ''} />{cameraStream ? '镜头已连接 · 演示锚点' : cameraStatus === 'requesting' ? '正在请求镜头…' : cameraStatus === 'denied' ? '照片取景 · 镜头未授权' : cameraStatus === 'unavailable' ? '照片取景 · 当前设备不可用' : '照片取景 · 可开启后置镜头'}</div>
+        <button className="camera-toggle glass-surface" onClick={cameraStream ? onCloseCamera : onOpenCamera} disabled={cameraStatus === 'requesting'}>
+          <span>{cameraStream ? '关闭镜头' : cameraStatus === 'requesting' ? '开启中…' : '开启镜头'}</span><i>{cameraStream ? '●' : '↗'}</i>
+        </button>
+        <div className="ar-zoom-stage">
+          <div className="floor-line floor-back"><span>二层</span></div>
+          <div className="floor-line floor-front"><span>一层</span></div>
+          <div className="distant-architecture" />
+          <ARIllustrations />
+          {AR_ANCHORS.map((item) => <ARTargetBubble key={item.index} anchor={item} sound={SOUND_BUBBLES[item.index - 1]} selected={selected === item.index} zoom={zoom} onSelect={onSelect} onLongPress={setCommentBubble} />)}
         </div>
+        {!captured && <>
+          <div className="aim-ring"><i /><b /></div>
+          <div className="target-caption"><span>{targetSound.kind === '人声' ? '人声回响' : targetSound.title}</span><i>·</i><span>{targetSound.distance} m</span><b>{targetSound.saves} 收藏</b></div>
+        </>}
+        <div className="zoom-control glass-surface" aria-label="取景缩放">
+          <button aria-label="放大泡泡" onClick={() => onZoom(1)}>+</button><span /><button aria-label="缩小泡泡" onClick={() => onZoom(-1)}>−</button>
+        </div>
+        {capturePhase === 'travelling' && <CaptureWaterFlow anchorIndex={selected} />}
+        {(capturePhase === 'arrived' || capturePhase === 'listening') && capturedBubble && (
+          <div className={`captured-orb ${playing ? 'is-playing' : ''}`}>
+            <span className="captured-orb-halo" />
+            <Bubble size={88} bubble={capturedBubble} className={`accent-${capturedBubble.accent}`} label={`点击聆听：${capturedBubble.title}`} onClick={onListen} />
+            <b>{playing ? '正在回响' : '轻点听听'}</b>
+          </div>
+        )}
+        {showArrivalBurst && <RoamArrivalBurst />}
       </div>
       <div className={`roam-card glass-surface${captured ? ' result-card' : ''}`}>
-        {captured ? (
+        {captured && capturedBubble ? (
           <>
-            <div className="result-heading"><span className="result-dot" />{playing ? '声音正在设备中回响' : '已收进泡泡盒'}</div>
+            <div className="result-heading"><span className="result-dot" />{capturePhase === 'travelling' ? '正在把回声带回手中' : playing ? '声音正在 EchoCaster 中回响' : '这颗泡泡已抵达'}</div>
             <div className="result-track">
               <span className="result-postcard-art"><img src={soundPostcardCover} alt="" /></span>
-              <span className="result-track-copy"><strong>「风从河面来」</strong><small>一段留在林间的回声</small></span>
+              <span className="result-track-copy"><strong>「{capturedBubble.title}」</strong><small>{capturePhase === 'travelling' ? '沿着水光，慢慢靠近' : playing ? '正在播放这段回声' : '轻点中央泡泡，听听它留下的话'}</small></span>
               <Waveform active={playing} small />
             </div>
-            <div className="real-bubbles" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+            <div className="roam-result-actions"><span>{capturedBubble.author} · {capturedBubble.duration}</span><button onClick={onResetCapture} disabled={capturePhase === 'travelling'}>继续寻找 <i>↗</i></button></div>
           </>
         ) : (
           <>
-            <div className="roam-card-top"><span className="eyebrow">现场共选 · {targetSound.saves} 人收藏</span><span className="crowd-count"><i /><i /><i /> 04</span></div>
+            <div className="roam-card-top"><span className="eyebrow">{targetSound.kind} · {targetSound.saves} 次收藏 · {targetSound.comments.length} 条留言</span><span className="crowd-count"><i /><i /><i /> 现场</span></div>
             <strong className="roam-quote">「{targetSound.quote}」</strong>
-            <div className="roam-card-bottom"><span>{targetSound.author} 留在这里 · {targetSound.duration}</span><button className="capture-key" onClick={onCapture}><span className="key-core" />按实体键捕捉</button></div>
+            <div className="roam-card-bottom"><span>{targetSound.author} 留在这里 · {targetSound.duration}</span><button className="capture-key" onClick={() => onCapture(targetSound)} disabled={capturePhase === 'travelling'}><span className="key-core" />{capturePhase === 'travelling' ? '泡泡正沿光流靠近' : '捕捉这颗泡泡'}</button></div>
           </>
         )}
       </div>
       <TabBar active="roam" onChange={onPageChange} />
-      {roamPhase !== 'ready' && <RoamEntryOverlay phase={roamPhase} onSkip={onRoamSkip} />}
+      {roamPhase !== 'ready' && <RoamEntryOverlay phase={roamPhase} progress={roamProgress} onSkip={onRoamSkip} />}
+      <ARCommentsSheet bubble={commentBubble} onClose={() => setCommentBubble(null)} />
     </Scene>
   );
 }
@@ -1060,7 +1225,7 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
   );
 }
 
-function AudiencePreview({ page, selected, captured, playing, emitting, recording, recordingEnergy, published, bubbles, roamPhase }) {
+function AudiencePreview({ page, selected, captured, capturedBubble, playing, emitting, recording, recordingEnergy, published, bubbles, roamPhase }) {
   return (
     <section className="audience-window">
       <div className="audience-chrome">
@@ -1080,8 +1245,8 @@ function AudiencePreview({ page, selected, captured, playing, emitting, recordin
             <Bubble size={65} className="projection-bubble pb-one" />
             <Bubble size={40} className="projection-bubble pb-two" />
             <div className="projection-cross"><i /><b /></div>
-            <div className="projection-caption"><span>{captured ? '声音落进了泡泡里' : '全场选中的声音'}</span><strong>{captured ? '正在设备中播放' : selected === 1 ? '二层 · 风的留言' : '远处 · 一声回响'}</strong></div>
-            {captured && <div className="projection-playback"><Waveform active={playing} /><span>风从河面来</span><div className="real-bubbles"><i /><i /><i /></div></div>}
+            <div className="projection-caption"><span>{captured ? '声音落进了泡泡里' : '全场选中的声音'}</span><strong>{captured ? capturedBubble?.title || '正在设备中播放' : (SOUND_BUBBLES[selected - 1] || SOUND_BUBBLES[0]).title}</strong></div>
+            {captured && <div className="projection-playback"><Waveform active={playing} /><span>{capturedBubble?.title || '声音已捕捉'}</span><div className="real-bubbles"><i /><i /><i /></div></div>}
           </>
         ) : page === 'create' ? (
           <>
@@ -1117,10 +1282,15 @@ function AudiencePreview({ page, selected, captured, playing, emitting, recordin
 
 function App() {
   const [page, setPage] = useState(['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
-  const [roamPhase, setRoamPhase] = useState('ready');
+  const [roamPhase, setRoamPhase] = useState(initialScreen === 'roam' ? 'scan' : 'ready');
+  const [roamProgress, setRoamProgress] = useState(0);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraStatus, setCameraStatus] = useState('idle');
   const [playing, setPlaying] = useState(false);
   const [deviceEmitting, setDeviceEmitting] = useState(false);
   const [captured, setCaptured] = useState(false);
+  const [capturedBubble, setCapturedBubble] = useState(null);
+  const [capturePhase, setCapturePhase] = useState('idle');
   const [selected, setSelected] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [prompt, setPrompt] = useState('next');
@@ -1138,31 +1308,87 @@ function App() {
   const playbackFallback = useRef(null);
   const playbackToken = useRef(0);
   const deviceEmissionTimer = useRef(null);
+  const captureTimer = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const cameraRequestId = useRef(0);
+  const roamStartedAt = useRef(0);
   const recordingStartedAt = useRef(0);
   const bubbles = createdBubble ? [createdBubble, ...SOUND_BUBBLES] : SOUND_BUBBLES;
+
+  const closeCamera = () => {
+    cameraRequestId.current += 1;
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    setCameraStream(null);
+    setCameraStatus('idle');
+  };
+
+  const openCamera = async () => {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setCameraStatus('unavailable');
+      return;
+    }
+    const requestId = ++cameraRequestId.current;
+    setCameraStatus('requesting');
+    try {
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+      } catch (firstError) {
+        if (firstError?.name === 'NotAllowedError' || firstError?.name === 'SecurityError' || firstError?.name === 'NotFoundError') throw firstError;
+        stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+      }
+      if (requestId !== cameraRequestId.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+      cameraStreamRef.current = stream;
+      setCameraStream(stream);
+      setCameraStatus('active');
+    } catch (error) {
+      if (requestId !== cameraRequestId.current) return;
+      setCameraStatus(error?.name === 'NotAllowedError' || error?.name === 'SecurityError' ? 'denied' : 'unavailable');
+    }
+  };
+
+  useEffect(() => () => {
+    cameraRequestId.current += 1;
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    window.clearTimeout(captureTimer.current);
+  }, []);
 
   const requestPageChange = (nextPage) => {
     if (nextPage === 'roam') {
       if (page === 'roam') {
-        if (roamPhase !== 'ready') setRoamPhase('ready');
+        if (roamPhase !== 'ready') { setRoamProgress(1); setRoamPhase('ready'); }
         return;
       }
       setPage('roam');
+      roamStartedAt.current = performance.now();
+      setRoamProgress(0);
       setRoamPhase('scan');
+      openCamera();
       return;
     }
+    closeCamera();
     setPage(nextPage);
     setRoamPhase('ready');
+    setRoamProgress(0);
   };
 
   useEffect(() => {
     if (page !== 'roam' || roamPhase === 'ready') return undefined;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const duration = reducedMotion ? 220 : (roamPhase === 'scan' ? 880 : 620);
+    if (!roamStartedAt.current) roamStartedAt.current = performance.now();
+    const duration = reducedMotion ? 240 : (roamPhase === 'scan' ? 1120 : 900);
+    const start = roamStartedAt.current;
+    const timer = window.setInterval(() => setRoamProgress(Math.min(1, (performance.now() - start) / (reducedMotion ? 480 : 2020))), 40);
     const timeout = window.setTimeout(() => {
-      setRoamPhase(roamPhase === 'scan' ? 'buffer' : 'ready');
+      if (roamPhase === 'scan') setRoamPhase('buffer');
+      else { setRoamProgress(1); setRoamPhase('ready'); }
     }, duration);
-    return () => window.clearTimeout(timeout);
+    return () => { window.clearInterval(timer); window.clearTimeout(timeout); };
   }, [page, roamPhase]);
 
   const startBubblePlayback = (bubble) => {
@@ -1242,10 +1468,27 @@ function App() {
     return () => window.clearInterval(interval);
   }, [recording]);
 
-  const beginCapture = () => {
+  const beginCapture = (bubble) => {
+    const sound = bubble || SOUND_BUBBLES[selected - 1] || SOUND_BUBBLES[0];
     setCaptured(true);
+    setCapturedBubble(sound);
+    setCapturePhase('travelling');
     triggerDeviceEmission(18000);
-    startBubblePlayback(SOUND_BUBBLES[0]);
+    window.clearTimeout(captureTimer.current);
+    captureTimer.current = window.setTimeout(() => setCapturePhase('arrived'), 1180);
+  };
+
+  const listenCapturedBubble = () => {
+    if (!capturedBubble) return;
+    setCapturePhase('listening');
+    startBubblePlayback(capturedBubble);
+  };
+
+  const resetCapture = () => {
+    window.clearTimeout(captureTimer.current);
+    setCaptured(false);
+    setCapturedBubble(null);
+    setCapturePhase('idle');
   };
 
   const publishBubble = () => {
@@ -1280,11 +1523,11 @@ function App() {
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
       <header className="demo-header"><span className="wordmark">声景漫游</span><span className="demo-mode"><i /> DEMO 01</span></header>
       <div className="demo-stage">
-        <AudiencePreview page={page} selected={selected} captured={captured} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} roamPhase={roamPhase} />
+        <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} roamPhase={roamPhase} />
         <div className="phone-column">
           <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
           {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
-          {page === 'roam' && <RoamScreen selected={selected} onSelect={setSelected} captured={captured} onCapture={beginCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.5, Math.max(.75, v + step * .12)))} roamPhase={roamPhase} onRoamSkip={() => setRoamPhase('ready')} />}
+          {page === 'roam' && <RoamScreen selected={selected} onSelect={(index) => { setSelected(index); setZoom((value) => Math.max(1.16, Math.min(1.58, value))); }} captured={captured} capturedBubble={capturedBubble} capturePhase={capturePhase} onCapture={beginCapture} onListen={listenCapturedBubble} onResetCapture={resetCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.72, Math.max(.82, v + step * .14)))} roamPhase={roamPhase} roamProgress={roamProgress} onRoamSkip={() => { setRoamProgress(1); setRoamPhase('ready'); }} cameraStream={cameraStream} cameraStatus={cameraStatus} onOpenCamera={openCamera} onCloseCamera={closeCamera} />}
             {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={requestPageChange} />}
           </Phone>
           <div className={`device-status${playing || deviceEmitting ? ' is-playing' : ''}`}><span className="device-dot" /><span>{deviceEmitting ? 'EchoCaster 发泡演示中' : playing ? 'EchoCaster 播放演示中' : 'EchoCaster 演示装置'}</span><b>SIM</b></div>

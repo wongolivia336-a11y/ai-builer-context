@@ -22,5 +22,6 @@
 - 贴纸仅放在录音泡泡附近，不覆盖录制按钮、波形或状态文案。
 - WebP 泡泡资产只用于局部状态和缩略图。首页主要泡泡保留 CSS 绘制，以继续响应碰撞、筛选、点按和爆破动画。
 - 本轮 moodboard 的形状图、整页参考图和物件拼贴作为视觉方向，不直接铺成静态界面素材；首页异形泡泡、横向卫星轨道标签和 AR 插画由页面实时生成。
-- `roam-night-portrait.webp`、`roam-night-landscape.webp` 和 `create-open-sky.webp` 是静态演示底图，不代表实时相机、GPS 或 ARKit 场景锚定。
+- `roam-night-portrait.webp` 和 `roam-night-landscape.webp` 是漫游页的相机降级底图/大屏视觉底图；手机漫游页会优先申请浏览器摄像头。`create-open-sky.webp` 仍是共创页静态底图。漫游泡泡锚点是固定屏幕位置演示，不代表 GPS 或 ARKit 场景锚定。
+- AR 手绘花朵、星点、涂鸦弧线与捕捉渐变水流由 SVG/CSS 绘制；p5.brush 未作为运行时依赖引入。
 - 本轮素材接入浏览器 Demo。SwiftUI 文件目前没有配套 Xcode 工程或资源目录，暂不引用这些图片；后续若要在原生工程预览，需将对应文件放入 Asset Catalog。
