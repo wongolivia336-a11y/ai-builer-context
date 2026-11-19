@@ -11,7 +11,7 @@ Use the interaction-first route. Keep the full-screen personal Gallery and its e
 - Make the first, featured sound a clear pearl orb that reads as a small planet. Its title, sound type, duration, saves, and one short listener response form a single continuous line on a tilted elliptical orbit. The orbit turns slowly, pauses on hover, can be dragged on the ring, and does not cover the orb's tap target.
 - Increase the size range and overlap of the field with one hero, a few medium bubbles, and smaller satellites. Keep the irregular heart, star, flower, and cloud silhouettes among the spheres so the gallery has both close-up volume and shape variety.
 - Improve the material using layered soft reflections, a pale lower-edge tint, narrow iridescence, and a restrained depth shadow; keep the room behind the bubbles visible.
-- Replace uniform CSS spark dots with a shared Canvas 2D burst: a brief membrane contraction and asymmetric rupture, followed by curved film ribbons and translucent droplets that drift, spin, fall, and fade. The burst is an authored visual simulation; it does not claim fluid or membrane physics.
+- Replace uniform CSS spark dots with a shared Canvas 2D burst: a brief membrane contraction, a wider opening aligned to the tap point, two curling film lips, and translucent droplets with an impact impulse that drift, spin, fall, and fade. The burst is an authored visual simulation; it does not claim fluid or membrane physics.
 
 ### Rendering choice
 

@@ -8,13 +8,13 @@
 | [jeromeetienne/threex.bubble](https://github.com/jeromeetienne/threex.bubble) | MIT；Three.js Fresnel 泡泡材质扩展 | Fresnel 边缘高光、透明球面的空间感 | 作为 3D 材质灵感；其代码年代较早，需适配当前 Three.js。 |
 | [ozlphrt/bubble-project](https://github.com/ozlphrt/bubble-project) | MIT；粒子与泡沫模拟 | 泡沫之间的聚合、表面张力感 | 物理范围较大，适合作为未来真实吹泡泡特效的研究，不适合首页交互泡泡。 |
 | [pjt222/soap_bubble_simulation](https://github.com/pjt222/soap_bubble_simulation) | MIT；Rust + wgpu 薄膜干涉模拟 | 肥皂膜颜色随薄膜厚度变化 | 研究级模拟，当前 Web 原型不引入 Rust/wgpu。 |
+| [acamposuribe/p5.brush](https://github.com/acamposuribe/p5.brush) | MIT；p5.js 2.x + WEBGL 绘画媒材与流场笔触 | 纸感笔触、自然填色、流场线条 | 适合 moodboard 涂鸦、笔触和绘画式装饰；不是透明薄膜折射或泡泡破裂工具。为短时裂膜效果引入它还会增加 p5/WebGL 渲染层，因此当前继续使用 Canvas 2D。 |
 | [GSAP 官方文档](https://gsap.com/docs/v3/GSAP/) | GSAP 3 动画 API | Timeline 连续动效、弹层与气泡反馈 | 当前网页交互使用 GSAP 3.15.1。 |
 
 ## 当前采用
 
-- DOM 泡泡用 CSS 薄虹彩边缘、透明内层高光和 GSAP 挤压/破裂/回弹组合，保持移动端轻量和按钮可访问性。
+- DOM/SVG 泡泡用薄虹彩边缘、球面渐变与高光；GSAP 负责按压、缩放与回弹，Canvas 2D 绘制触点裂口、膜片和液滴，不模拟物理流体。
 - 装置展示直接使用本次提供的 STL 外形，Three.js 负责 PBR 材质、环境反射、设备冒泡动画和轨道控制。材质分区根据网格壳体推定，仍是概念演示效果。
-- GSAP 时间线负责连续破裂和弹层动效；Gallery 类型筛选采用轻量布局更新。
+- GSAP 时间线负责泡泡触感与弹层；Canvas 2D 只在点击后短暂绘制裂膜碎屑，Gallery 类型筛选采用轻量布局更新。
 
 新增第三方代码前，需再次核实版本、Node 支持范围、许可证和维护状态，并在仓库中记录来源。
-

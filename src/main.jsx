@@ -16,16 +16,15 @@ const DeviceViewer = lazy(() => import('./DeviceViewer'));
 
 const initialScreen = new URLSearchParams(location.search).get('screen');
 
-function Bubble({ size, className = '', label, onClick, style = {} }) {
+function Bubble({ size, className = '', label, onClick, style = {}, bubble }) {
   return (
     <button
-      className={`soap-bubble ${className}`}
+      className={`soap-bubble ${className}${bubble?.shape ? ` has-silhouette shape-${bubble.shape}` : ''}`}
       style={{ '--bubble-size': `${size}px`, ...style }}
       aria-label={label || '声音泡泡'}
       onClick={onClick}
     >
-      <span className="bubble-core" />
-      <span className="bubble-glint" />
+      {bubble?.shape ? <BubbleSilhouette bubble={bubble} /> : <><span className="bubble-core" /><span className="bubble-glint" /></>}
     </button>
   );
 }
@@ -75,18 +74,18 @@ function DevicePill({ playing, emitting = false }) {
 }
 
 const SOUND_BUBBLES = [
-  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 154, accent: 'blue', shape: 'orb', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
-  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 128, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
-  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 116, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
-  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 140, accent: 'lilac', shape: 'flower', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
-  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 106, accent: 'lilac', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
-  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 150, accent: 'blue', shape: 'flower', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
-  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 124, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
-  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 108, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
-  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 138, accent: 'rose', shape: 'flower', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
-  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 100, accent: 'gold', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
-  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 112, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
-  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 102, accent: 'lilac', shape: 'flower', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
+  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 190, accent: 'blue', shape: 'orb', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
+  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 146, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
+  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 128, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
+  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 154, accent: 'lilac', shape: 'flower', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
+  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 118, accent: 'lilac', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
+  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 170, accent: 'blue', shape: 'flower', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
+  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 136, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
+  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 120, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
+  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 148, accent: 'rose', shape: 'flower', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
+  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 108, accent: 'gold', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
+  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 130, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
+  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 116, accent: 'lilac', shape: 'flower', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
 ];
 
 const BUBBLE_FIELD_SEEDS = [
@@ -114,34 +113,34 @@ function BubbleSilhouette({ bubble }) {
     <svg className={`bubble-silhouette silhouette-${bubble.shape}`} viewBox="0 0 100 100" aria-hidden="true">
       <defs>
         <radialGradient id={fillId} cx="30%" cy="23%" r="82%">
-          <stop offset="0%" stopColor="#fff" stopOpacity=".98" />
-          <stop offset="22%" stopColor="var(--bubble-tint)" stopOpacity=".64" />
-          <stop offset="64%" stopColor="var(--bubble-tint)" stopOpacity=".42" />
-          <stop offset="88%" stopColor="var(--bubble-edge)" stopOpacity=".32" />
-          <stop offset="100%" stopColor="#fff" stopOpacity=".74" />
+          <stop offset="0%" stopColor="#fff" stopOpacity=".99" />
+          <stop offset="22%" stopColor="var(--bubble-tint)" stopOpacity=".82" />
+          <stop offset="64%" stopColor="var(--bubble-tint)" stopOpacity=".64" />
+          <stop offset="88%" stopColor="var(--bubble-edge)" stopOpacity=".46" />
+          <stop offset="100%" stopColor="#fff" stopOpacity=".88" />
         </radialGradient>
         <radialGradient id={`${fillId}-volume`} cx="69%" cy="78%" r="66%">
-          <stop offset="0%" stopColor="var(--bubble-edge)" stopOpacity=".18" />
-          <stop offset="52%" stopColor="var(--bubble-tint)" stopOpacity=".08" />
-          <stop offset="100%" stopColor="#fff" stopOpacity=".08" />
+          <stop offset="0%" stopColor="var(--bubble-edge)" stopOpacity=".36" />
+          <stop offset="52%" stopColor="var(--bubble-tint)" stopOpacity=".18" />
+          <stop offset="100%" stopColor="#fff" stopOpacity=".1" />
         </radialGradient>
         <linearGradient id={filmId} x1="0" y1="0" x2="1" y2="1">
           <stop stopColor="#fff" stopOpacity=".96" />
-          <stop offset=".34" stopColor="var(--bubble-edge)" stopOpacity=".72" />
-          <stop offset=".62" stopColor="#e7b9d7" stopOpacity=".66" />
-          <stop offset=".82" stopColor="#f4e7c8" stopOpacity=".64" />
+          <stop offset=".34" stopColor="var(--bubble-edge)" stopOpacity=".82" />
+          <stop offset=".62" stopColor="#e7b9d7" stopOpacity=".72" />
+          <stop offset=".82" stopColor="#f4e7c8" stopOpacity=".72" />
           <stop offset="1" stopColor="#fff" stopOpacity=".92" />
         </linearGradient>
         <clipPath id={clipId}><path d={path} /></clipPath>
       </defs>
       <path className="bubble-silhouette-surface" d={path} fill={`url(#${fillId})`} />
       <path d={path} fill={`url(#${fillId}-volume)`} />
-      <path className="bubble-silhouette-rim" d={path} fill="none" stroke={`url(#${filmId})`} strokeWidth="2" />
+      <path className="bubble-silhouette-rim" d={path} fill="none" stroke={`url(#${filmId})`} strokeWidth="2.3" />
       <g clipPath={`url(#${clipId})`}>
-        <ellipse cx="31" cy="24" rx="22" ry="10" transform="rotate(-28 31 24)" fill="#fff" opacity=".48" />
-        <ellipse cx="69" cy="76" rx="35" ry="25" fill="var(--bubble-edge)" opacity=".1" />
-        <path d="M20 43 C24 29 34 20 47 19" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" opacity=".72" />
-        <path d="M33 82 C46 87 66 85 77 76" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" opacity=".36" />
+        <ellipse cx="31" cy="24" rx="22" ry="10" transform="rotate(-28 31 24)" fill="#fff" opacity=".64" />
+        <ellipse cx="70" cy="76" rx="39" ry="29" fill="var(--bubble-edge)" opacity=".22" />
+        <path d="M20 43 C24 29 34 20 47 19" fill="none" stroke="#fff" strokeWidth="3.8" strokeLinecap="round" opacity=".84" />
+        <path d="M33 82 C46 87 66 85 77 76" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinecap="round" opacity=".52" />
       </g>
       {bubble.shape === 'flower' && <circle cx="50" cy="49" r="9" fill="#fff2cb" fillOpacity=".68" stroke="#fff" strokeOpacity=".8" strokeWidth="1.2" />}
       {bubble.shape === 'star' && <path d="M50 15 L53 43 L80 40 L57 53 L68 79 L50 59 L31 80 L43 53 L18 49 L45 44 Z" fill="#fff" fillOpacity=".1" />}
@@ -154,8 +153,8 @@ function OrbitTagTrack({ bubble }) {
   const tweenRef = useRef(null);
   const dragRef = useRef(null);
   const note = bubble.comments[0]?.text || bubble.quote;
-  const width = bubble.size + 112;
-  const height = bubble.size + 84;
+  const width = bubble.size + 134;
+  const height = bubble.size + 116;
   const cx = width / 2;
   const cy = height / 2;
   const rx = width / 2 - 9;
@@ -213,7 +212,7 @@ function OrbitTagTrack({ bubble }) {
     <div className="bubble-orbit-position" style={{ width, height }} aria-hidden="true">
       <svg ref={orbitRef} className="bubble-orbit-track" viewBox={`0 0 ${width} ${height}`} onPointerEnter={pauseOnHover} onPointerLeave={resumeAfterHover} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
         <defs><path id={pathId} d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} /></defs>
-        <g transform={`rotate(-13 ${cx} ${cy})`}>
+        <g transform={`rotate(-17 ${cx} ${cy})`}>
           <ellipse className="bubble-orbit-rail" cx={cx} cy={cy} rx={rx} ry={ry} />
           <path className="bubble-orbit-hit" d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} />
           <text className="bubble-orbit-copy" textAnchor="start">
@@ -244,10 +243,10 @@ function BubbleBurstLayer({ bursts }) {
     let pixelRatio = 1;
     let lastFrame = 0;
     const palette = {
-      blue: ['#eaf8ff', '#ffffff', '#a9d4e9'],
-      rose: ['#fff0f6', '#ffffff', '#e6a8c2'],
-      lilac: ['#f6f0ff', '#ffffff', '#c3b0df'],
-      gold: ['#fff8e9', '#ffffff', '#e7d39e'],
+      blue: ['#c6e0ed', '#ffffff', '#789caf'],
+      rose: ['#f0cbd9', '#ffffff', '#b87896'],
+      lilac: ['#ddd2ef', '#ffffff', '#9481b1'],
+      gold: ['#f0dfb7', '#ffffff', '#a18959'],
     };
     const resize = () => {
       const rect = field.getBoundingClientRect();
@@ -263,21 +262,24 @@ function BubbleBurstLayer({ bursts }) {
     const createParticles = (burst, now) => {
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const colors = palette[burst.accent] || palette.blue;
-      const particles = Array.from({ length: reducedMotion ? 0 : 29 }, (_, index) => {
-        const angle = (index / 29) * Math.PI * 2 + (Math.random() - 0.5) * 0.24;
-        const shell = index < 11;
-        const speed = shell ? 48 + Math.random() * 116 : 34 + Math.random() * 175;
+      const filmCount = 14;
+      const count = 44;
+      const particles = Array.from({ length: reducedMotion ? 0 : count }, (_, index) => {
+        const angle = (index / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.32;
+        const shell = index < filmCount;
+        const speed = shell ? 86 + Math.random() * 150 : 58 + Math.random() * 228;
+        const impactKick = shell ? 58 : 34;
         return {
           kind: shell ? 'film' : 'drop',
-          x: burst.x + Math.cos(angle) * burst.radius * (shell ? 0.68 : 0.38 + Math.random() * 0.52),
-          y: burst.y + Math.sin(angle) * burst.radius * (shell ? 0.68 : 0.38 + Math.random() * 0.52),
-          vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 36,
-          vy: Math.sin(angle) * speed - 22 - Math.random() * 42,
-          radius: 2 + Math.random() * (shell ? 2.4 : 7.2),
-          length: 9 + Math.random() * (shell ? 18 : 8),
-          spin: (Math.random() - 0.5) * 10,
+          x: burst.x + Math.cos(angle) * burst.radius * (shell ? 0.78 : 0.42 + Math.random() * 0.5),
+          y: burst.y + Math.sin(angle) * burst.radius * (shell ? 0.78 : 0.42 + Math.random() * 0.5),
+          vx: Math.cos(angle) * speed + Math.cos(burst.impactAngle) * impactKick + (Math.random() - 0.5) * 54,
+          vy: Math.sin(angle) * speed + Math.sin(burst.impactAngle) * impactKick - 28 - Math.random() * 62,
+          radius: shell ? 2.4 + Math.random() * 3.2 : 3.4 + Math.random() * 9.8,
+          length: shell ? 17 + Math.random() * 26 : 6 + Math.random() * 12,
+          spin: (Math.random() - 0.5) * 12,
           rotation: angle + Math.PI / 2,
-          life: 0.72 + Math.random() * 0.55,
+          life: shell ? 1.05 + Math.random() * 0.5 : 0.92 + Math.random() * 0.74,
           age: 0,
           colors,
         };
@@ -285,35 +287,79 @@ function BubbleBurstLayer({ bursts }) {
       return { ...burst, colors, particles, reducedMotion, startedAt: now };
     };
     const drawRupture = (burst, elapsed) => {
-      const progress = Math.min(1, elapsed / 0.48);
-      const ease = 1 - ((1 - progress) ** 3);
-      const pinch = burst.reducedMotion ? 0.96 : elapsed < 0.105 ? 1 - (elapsed / 0.105) * 0.64 : 0.36 + ease * 0.98;
-      const alpha = burst.reducedMotion ? 0.76 : elapsed < 0.105 ? 1 : Math.max(0, 1 - (elapsed - 0.105) / 0.39);
+      const progress = Math.min(1, elapsed / 0.94);
+      const snap = Math.min(1, elapsed / 0.085);
+      const open = Math.max(0, elapsed - 0.085);
+      const pinch = burst.reducedMotion ? 0.98 : elapsed < 0.085 ? 1 - snap * 0.3 : 0.7 + (1 - Math.exp(-open * 9)) * 0.39;
+      const alpha = burst.reducedMotion ? 0.82 : elapsed < 0.48 ? 1 : Math.max(0, 1 - (elapsed - 0.48) / 0.46);
       const gap = burst.reducedMotion ? 0 : burst.impactAngle;
+      const gapWidth = burst.reducedMotion ? 0 : 0.14 + Math.min(1, elapsed / 0.26) * 0.76;
+      const radius = burst.radius * pinch;
       context.save();
       context.translate(burst.x, burst.y);
-      context.rotate(burst.reducedMotion || elapsed < 0.105 ? 0 : (elapsed - 0.105) * -0.16);
-      context.beginPath();
-      for (let point = 0; point <= 54; point += 1) {
-        const angle = (point / 54) * Math.PI * 2;
-        let relative = Math.atan2(Math.sin(angle - gap), Math.cos(angle - gap));
-        if (!burst.reducedMotion && Math.abs(relative) < 0.48 && elapsed > 0.105) continue;
-        const ripple = burst.reducedMotion ? 1 : 1 + Math.sin(angle * 5 + elapsed * 24) * 0.018 + Math.sin(angle * 9 - elapsed * 18) * 0.012;
-        const radius = burst.radius * pinch * ripple;
-        const px = Math.cos(angle) * radius;
-        const py = Math.sin(angle) * radius * 0.92;
-        if (point === 0) context.moveTo(px, py); else context.lineTo(px, py);
+      context.rotate(burst.reducedMotion ? 0 : elapsed * -0.12);
+
+      // A brief pressure ring gives the rupture a readable outward snap.
+      if (!burst.reducedMotion && elapsed < 0.32) {
+        const ripple = Math.min(1, elapsed / 0.32);
+        context.beginPath();
+        context.ellipse(0, 0, radius * (0.42 + ripple * 0.72), radius * (0.42 + ripple * 0.72) * 0.92, 0, 0, Math.PI * 2);
+        context.strokeStyle = `rgba(255,255,255,${(1 - ripple) * 0.78})`;
+        context.lineWidth = 1.8 - ripple * 0.7;
+        context.shadowColor = burst.colors[0];
+        context.shadowBlur = 13;
+        context.stroke();
       }
-      const sheen = context.createLinearGradient(-burst.radius, -burst.radius, burst.radius, burst.radius);
-      sheen.addColorStop(0, `rgba(255,255,255,${0.9 * alpha})`);
-      sheen.addColorStop(0.42, `${burst.colors[2]}${Math.round(0.72 * alpha * 255).toString(16).padStart(2, '0')}`);
-      sheen.addColorStop(0.73, `rgba(255,255,255,${0.22 * alpha})`);
-      sheen.addColorStop(1, `rgba(255,255,255,${0.84 * alpha})`);
-      context.strokeStyle = sheen;
-      context.lineWidth = Math.max(1.1, burst.radius * 0.022 * (1 - progress * 0.55));
-      context.shadowColor = 'rgba(255,255,255,.85)';
-      context.shadowBlur = 11;
+
+      // Keep the membrane open at the impact point instead of closing it with a chord.
+      context.beginPath();
+      context.ellipse(0, 0, radius, radius * 0.92, 0, gap + gapWidth, gap + Math.PI * 2 - gapWidth);
+      const sheen = context.createLinearGradient(-radius, -radius, radius, radius);
+      sheen.addColorStop(0, `rgba(255,255,255,${0.98 * alpha})`);
+      sheen.addColorStop(0.28, `${burst.colors[0]}${Math.round(0.96 * alpha * 255).toString(16).padStart(2, '0')}`);
+      sheen.addColorStop(0.54, `${burst.colors[2]}${Math.round(0.88 * alpha * 255).toString(16).padStart(2, '0')}`);
+      sheen.addColorStop(0.77, `rgba(255,255,255,${0.95 * alpha})`);
+      sheen.addColorStop(1, `${burst.colors[0]}${Math.round(0.94 * alpha * 255).toString(16).padStart(2, '0')}`);
+      context.lineCap = 'round';
+      context.strokeStyle = `${burst.colors[2]}${Math.round(0.62 * alpha * 255).toString(16).padStart(2, '0')}`;
+      context.lineWidth = Math.max(3.5, burst.radius * 0.043 * (1 - progress * 0.14));
+      context.shadowColor = `${burst.colors[2]}99`;
+      context.shadowBlur = 12;
       context.stroke();
+      context.strokeStyle = sheen;
+      context.lineWidth = Math.max(2.2, burst.radius * 0.025 * (1 - progress * 0.1));
+      context.shadowColor = `${burst.colors[0]}ee`;
+      context.shadowBlur = 16;
+      context.stroke();
+
+      // Two curved film lips peel away from the puncture before breaking into droplets.
+      if (!burst.reducedMotion) {
+        [-1, 1].forEach((side) => {
+          const rootAngle = gap + side * gapWidth;
+          const tipAngle = gap + side * (gapWidth + 0.48);
+          const drift = elapsed * 58;
+          const root = { x: Math.cos(rootAngle) * radius * 0.99, y: Math.sin(rootAngle) * radius * 0.91 };
+          const control = { x: Math.cos(rootAngle + side * 0.14) * (radius + 13 + drift), y: Math.sin(rootAngle + side * 0.14) * (radius * 0.91 + 11 + drift) };
+          const tip = { x: Math.cos(tipAngle) * (radius + 24 + drift), y: Math.sin(tipAngle) * (radius * 0.92 + 20 + drift) };
+          context.beginPath();
+          context.moveTo(root.x, root.y);
+          context.quadraticCurveTo(control.x, control.y, tip.x, tip.y);
+          context.quadraticCurveTo(control.x * 0.9, control.y * 0.88, root.x, root.y);
+          const flap = context.createLinearGradient(root.x, root.y, tip.x, tip.y);
+          flap.addColorStop(0, `rgba(255,255,255,${0.9 * alpha})`);
+          flap.addColorStop(0.48, `${burst.colors[0]}${Math.round(0.7 * alpha * 255).toString(16).padStart(2, '0')}`);
+          flap.addColorStop(1, `${burst.colors[2]}${Math.round(0.2 * alpha * 255).toString(16).padStart(2, '0')}`);
+          context.fillStyle = flap;
+          context.globalAlpha = Math.max(0, 1 - elapsed / 0.82);
+          context.shadowColor = burst.colors[0];
+          context.shadowBlur = 12;
+          context.fill();
+          context.globalAlpha = alpha * Math.max(0, 1 - elapsed / 0.82);
+          context.lineWidth = 1.35;
+          context.strokeStyle = 'rgba(255,255,255,.92)';
+          context.stroke();
+        });
+      }
       context.restore();
     };
     const drawParticle = (particle, dt) => {
@@ -329,19 +375,19 @@ function BubbleBurstLayer({ bursts }) {
         context.save();
         context.translate(particle.x, particle.y);
         context.rotate(particle.rotation);
-        context.globalAlpha = fade * 0.78;
-        context.lineWidth = 1 + particle.radius * 0.24;
+        context.globalAlpha = fade * 0.94;
+        context.lineWidth = 1.3 + particle.radius * 0.34;
         context.lineCap = 'round';
         context.strokeStyle = particle.colors[0];
-        context.shadowColor = particle.colors[1];
-        context.shadowBlur = 8;
+        context.shadowColor = particle.colors[2];
+        context.shadowBlur = 11;
         context.beginPath();
         context.moveTo(-particle.length * 0.6, 0);
         context.quadraticCurveTo(-particle.length * 0.12, -particle.radius * 1.45, particle.length * 0.65, particle.radius * 0.2);
         context.stroke();
-        context.globalAlpha = fade * 0.58;
-        context.lineWidth = 0.7;
-        context.strokeStyle = particle.colors[2];
+        context.globalAlpha = fade * 0.9;
+        context.lineWidth = 1;
+        context.strokeStyle = particle.colors[1];
         context.beginPath();
         context.moveTo(-particle.length * 0.5, -0.5);
         context.quadraticCurveTo(0, -particle.radius, particle.length * 0.44, 0.8);
@@ -355,12 +401,12 @@ function BubbleBurstLayer({ bursts }) {
       context.scale(0.72, 1.18);
       const drop = context.createRadialGradient(-particle.radius * 0.32, -particle.radius * 0.42, 0.4, 0, 0, particle.radius * 1.3);
       drop.addColorStop(0, `rgba(255,255,255,${0.92 * fade})`);
-      drop.addColorStop(0.38, `${particle.colors[0]}${Math.round(0.68 * fade * 255).toString(16).padStart(2, '0')}`);
-      drop.addColorStop(0.8, `${particle.colors[2]}${Math.round(0.42 * fade * 255).toString(16).padStart(2, '0')}`);
-      drop.addColorStop(1, `rgba(255,255,255,${0.82 * fade})`);
+      drop.addColorStop(0.34, `${particle.colors[0]}${Math.round(0.86 * fade * 255).toString(16).padStart(2, '0')}`);
+      drop.addColorStop(0.78, `${particle.colors[2]}${Math.round(0.72 * fade * 255).toString(16).padStart(2, '0')}`);
+      drop.addColorStop(1, `rgba(255,255,255,${0.95 * fade})`);
       context.fillStyle = drop;
       context.shadowColor = particle.colors[1];
-      context.shadowBlur = 7;
+      context.shadowBlur = 10;
       context.beginPath();
       context.arc(0, 0, particle.radius, 0, Math.PI * 2);
       context.fill();
@@ -376,10 +422,10 @@ function BubbleBurstLayer({ bursts }) {
       const dt = lastFrame ? Math.min(0.032, (now - lastFrame) / 1000) : 0.016;
       lastFrame = now;
       context.clearRect(0, 0, width, height);
-      burstsRef.current = burstsRef.current.filter((burst) => now - burst.startedAt < (burst.reducedMotion ? 240 : 1500));
+      burstsRef.current = burstsRef.current.filter((burst) => now - burst.startedAt < (burst.reducedMotion ? 240 : 1900));
       burstsRef.current.forEach((burst) => {
         const elapsed = (now - burst.startedAt) / 1000;
-        if (elapsed < (burst.reducedMotion ? 0.24 : 0.58)) drawRupture(burst, elapsed);
+        if (elapsed < (burst.reducedMotion ? 0.24 : 0.94)) drawRupture(burst, elapsed);
         burst.particles.forEach((particle) => drawParticle(particle, dt));
       });
       if (burstsRef.current.length) raf = window.requestAnimationFrame(animate);
@@ -838,13 +884,15 @@ function AudiencePreview({ page, selected, captured, playing, emitting, recordin
             <div className="projection-home-title">听见<br /><em>留下</em></div>
             <div className="projection-bubble-field">
               {bubbles.map((bubble, index) => {
-                const coordinates = [[8, 31], [28, 29], [54, 24], [83, 30], [15, 52], [43, 47], [69, 52], [94, 58], [6, 77], [33, 75], [61, 82], [86, 79]];
+                const coordinates = [[48, 51], [14, 24], [82, 24], [13, 51], [85, 53], [17, 79], [48, 81], [83, 79], [30, 35], [68, 35], [31, 67], [67, 68]];
                 const point = coordinates[index % coordinates.length];
-                const size = Math.max(48, Math.min(126, bubble.size * 0.86));
+                const featured = index === 0;
+                const size = featured ? 164 : Math.max(58, Math.min(118, bubble.size * 0.76));
                 return (
-                  <div className={`projection-home-orb${bubble.saves >= 50 || bubble.comments.length >= 2 ? ' is-resonant' : ''}`} key={bubble.id} style={{ left: `${point[0]}%`, top: `${point[1]}%`, '--bubble-size': `${size}px`, '--float-delay': `${(index % 7) * -0.6}s` }}>
-                    <Bubble size={size} className={`accent-${bubble.accent}`} label={bubble.title} />
-                    <span>{bubble.title}</span>
+                  <div className={`projection-home-orb${featured ? ' is-featured' : ''}${bubble.saves >= 50 || bubble.comments.length >= 2 ? ' is-resonant' : ''}`} key={bubble.id} style={{ left: `${point[0]}%`, top: `${point[1]}%`, '--bubble-size': `${size}px`, '--float-delay': `${(index % 7) * -0.6}s` }}>
+                    <Bubble size={size} bubble={bubble} className={`accent-${bubble.accent}`} label={bubble.title} />
+                    {featured && <OrbitTagTrack bubble={bubble} />}
+                    <span>{featured ? '' : bubble.title}</span>
                   </div>
                 );
               })}
