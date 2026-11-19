@@ -153,7 +153,7 @@ function BubbleSilhouette({ bubble }) {
   );
 }
 
-function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase, nearSide }) {
+function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase, nearSide, outlinePoints }) {
   const cx = width / 2;
   const cy = height / 2;
   const rx = bubbleSize * 0.76;
@@ -161,7 +161,29 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
   const tilt = -0.16;
   const cosTilt = Math.cos(tilt);
   const sinTilt = Math.sin(tilt);
+  const shapeTrackScale = (bubbleSize + 30) / 100;
+  const pointOnOutline = (index) => {
+    const count = outlinePoints.length;
+    const position = ((index % count) + count) % count;
+    const firstIndex = Math.floor(position);
+    const fraction = position - firstIndex;
+    const first = outlinePoints[firstIndex];
+    const second = outlinePoints[(firstIndex + 1) % count];
+    const previous = outlinePoints[(firstIndex + count - 1) % count];
+    const next = outlinePoints[(firstIndex + 2) % count];
+    const x = first.x + (second.x - first.x) * fraction;
+    const y = first.y + (second.y - first.y) * fraction;
+    const tangentX = (next.x - previous.x) * (1 - fraction) + (second.x - first.x) * fraction;
+    const tangentY = (next.y - previous.y) * (1 - fraction) + (second.y - first.y) * fraction;
+    return {
+      x: cx + (x - 50) * shapeTrackScale,
+      y: cy + (y - 50) * shapeTrackScale,
+      depth: (y - 50) / 50,
+      tangent: Math.atan2(tangentY, tangentX),
+    };
+  };
   const pointAt = (angle) => {
+    if (outlinePoints?.length) return pointOnOutline((angle / (Math.PI * 2)) * outlinePoints.length);
     const x = rx * Math.cos(angle);
     const y = ry * Math.sin(angle);
     return { x: cx + x * cosTilt - y * sinTilt, y: cy + x * sinTilt + y * cosTilt };
@@ -173,12 +195,23 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
 
   context.save();
   context.beginPath();
-  const start = nearSide ? 0 : Math.PI;
-  const end = nearSide ? Math.PI : Math.PI * 2;
-  for (let step = 0; step <= 64; step += 1) {
-    const point = pointAt(start + ((end - start) * step) / 64);
-    if (step === 0) context.moveTo(point.x, point.y);
-    else context.lineTo(point.x, point.y);
+  if (outlinePoints?.length) {
+    let drawing = false;
+    outlinePoints.forEach((_, index) => {
+      const point = pointOnOutline(index);
+      const belongsToHemisphere = nearSide ? point.depth >= 0 : point.depth < 0;
+      if (!belongsToHemisphere) { drawing = false; return; }
+      if (!drawing) { context.moveTo(point.x, point.y); drawing = true; }
+      else context.lineTo(point.x, point.y);
+    });
+  } else {
+    const start = nearSide ? 0 : Math.PI;
+    const end = nearSide ? Math.PI : Math.PI * 2;
+    for (let step = 0; step <= 64; step += 1) {
+      const point = pointAt(start + ((end - start) * step) / 64);
+      if (step === 0) context.moveTo(point.x, point.y);
+      else context.lineTo(point.x, point.y);
+    }
   }
   context.lineWidth = nearSide ? 1.35 : 0.95;
   context.strokeStyle = nearSide ? 'rgba(255,255,255,.91)' : 'rgba(255,255,255,.37)';
@@ -190,10 +223,7 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
   context.shadowBlur = 0;
 
   const count = chars.length;
-  if (!count) {
-    context.restore();
-    return;
-  }
+  if (!count) { context.restore(); return; }
   const fontSize = Math.max(7, Math.min(9.6, bubbleSize * 0.048));
   context.font = `650 ${fontSize}px "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
   context.textAlign = 'center';
@@ -205,27 +235,27 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
 
   for (let index = 0; index < count; index += 1) {
     const angle = (index / count) * Math.PI * 2 + phase;
-    const depth = Math.sin(angle);
+    const point = pointAt(angle);
+    const depth = outlinePoints?.length ? point.depth : Math.sin(angle);
     const sideDistance = Math.abs(Math.cos(angle));
-    let opacity = nearSide
+    const opacity = nearSide
       ? smoothstep(0.02, 0.32, depth)
-      : smoothstep(0.82, 0.98, sideDistance) * 0.42;
+      : outlinePoints?.length ? smoothstep(0.02, 0.42, -depth) * 0.36 : smoothstep(0.82, 0.98, sideDistance) * 0.42;
     if (!opacity) continue;
 
-    const point = pointAt(angle);
     const glyphIndex = nearSide
       ? (count - 1 - index + count * 2) % count
       : (index + count * 2) % count;
     const glyph = chars[glyphIndex];
     if (!glyph || glyph === ' ') continue;
 
-    let tangent = Math.atan2(
+    let tangent = outlinePoints?.length ? point.tangent : Math.atan2(
       -rx * Math.sin(angle) * sinTilt + ry * Math.cos(angle) * cosTilt,
       -rx * Math.sin(angle) * cosTilt - ry * Math.cos(angle) * sinTilt,
     );
     while (tangent > Math.PI / 2) tangent -= Math.PI;
     while (tangent < -Math.PI / 2) tangent += Math.PI;
-    tangent = Math.max(-0.28, Math.min(0.28, tangent));
+    if (!outlinePoints?.length) tangent = Math.max(-0.28, Math.min(0.28, tangent));
     const scale = nearSide ? 0.94 + Math.max(0, depth) * 0.13 : 0.9;
 
     context.save();
@@ -243,17 +273,25 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
   context.restore();
 }
 
-function OrbitTagTrack({ bubble, size = bubble.size, children }) {
+function OrbitTagTrack({ bubble, size = bubble.size, children, focused = false }) {
   const backCanvasRef = useRef(null);
   const frontCanvasRef = useRef(null);
+  const outlinePathRef = useRef(null);
   const rotationRef = useRef(0);
   const dragRef = useRef(null);
   const pausedRef = useRef(false);
   const drawRef = useRef(() => {});
   const note = bubble.comments[0]?.text || bubble.quote;
-  const width = size + 124;
-  const height = size + 88;
-  const chars = Array.from(`${bubble.title}   ✦   ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}   ✦   ${note}   ✦   ${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`);
+  const outlinePath = bubble.shape && bubble.shape !== 'orb' ? BUBBLE_SHAPE_PATHS[bubble.shape] : null;
+  const compactText = `${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
+  const orbitText = outlinePath
+    ? `${compactText}${focused ? ` · ${note.slice(0, 12)}` : ''}   ✦   ${compactText}`
+    : `${bubble.title}   ✦   ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}   ✦   ${note}   ✦   ${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
+  const orbitFontSize = Math.max(7, Math.min(9.6, size * 0.048));
+  const orbitChars = Array.from(orbitText);
+  const chars = outlinePath ? orbitChars.slice(0, Math.max(26, Math.floor((size * 2.8) / orbitFontSize))) : orbitChars;
+  const width = size + (outlinePath ? 48 : 124);
+  const height = size + (outlinePath ? 48 : 88);
   const cx = width / 2;
   const cy = height / 2;
   const rx = size * 0.76;
@@ -267,6 +305,16 @@ function OrbitTagTrack({ bubble, size = bubble.size, children }) {
     const backContext = backCanvas?.getContext('2d');
     const frontContext = frontCanvas?.getContext('2d');
     if (!backCanvas || !frontCanvas || !backContext || !frontContext) return undefined;
+    let outlinePoints = null;
+    if (outlinePath && outlinePathRef.current) {
+      const path = outlinePathRef.current;
+      const length = path.getTotalLength();
+      const sampleCount = Math.max(160, Math.ceil(length));
+      outlinePoints = Array.from({ length: sampleCount }, (_, index) => {
+        const point = path.getPointAtLength((length * index) / sampleCount);
+        return { x: point.x, y: point.y };
+      });
+    }
 
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     [backCanvas, frontCanvas].forEach((canvas) => {
@@ -285,13 +333,17 @@ function OrbitTagTrack({ bubble, size = bubble.size, children }) {
       previousTime = time;
       if (!pausedRef.current && !reduced) rotationRef.current += delta * 0.00018;
       [backContext, frontContext].forEach((context) => context.clearRect(0, 0, width, height));
-      paintOrbitHemisphere(backContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: false });
-      paintOrbitHemisphere(frontContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: true });
+      paintOrbitHemisphere(backContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: false, outlinePoints });
+      paintOrbitHemisphere(frontContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: true, outlinePoints });
     };
     drawRef.current = draw;
     if (reduced) draw(performance.now());
     else {
       const tick = (time) => {
+        if (!focused && time - previousTime < 40) {
+          frame = requestAnimationFrame(tick);
+          return;
+        }
         draw(time);
         frame = requestAnimationFrame(tick);
       };
@@ -301,7 +353,7 @@ function OrbitTagTrack({ bubble, size = bubble.size, children }) {
       cancelAnimationFrame(frame);
       drawRef.current = () => {};
     };
-  }, [bubble.id, chars.join(''), height, size, width]);
+  }, [bubble.id, chars.join(''), focused, height, outlinePath, size, width]);
 
   const startDrag = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
@@ -324,17 +376,25 @@ function OrbitTagTrack({ bubble, size = bubble.size, children }) {
   };
   const pauseOnHover = (event) => { if (event.pointerType === 'mouse') pausedRef.current = true; };
   const resumeAfterHover = (event) => { if (event.pointerType === 'mouse' && !dragRef.current) pausedRef.current = false; };
-  const pointerProps = { onPointerEnter: pauseOnHover, onPointerLeave: resumeAfterHover, onPointerDown: startDrag, onPointerMove: moveDrag, onPointerUp: endDrag, onPointerCancel: endDrag };
+  const pointerProps = focused ? { onPointerEnter: pauseOnHover, onPointerLeave: resumeAfterHover, onPointerDown: startDrag, onPointerMove: moveDrag, onPointerUp: endDrag, onPointerCancel: endDrag } : {};
 
   return (
     <div className="bubble-orbit-position" style={{ width, height }}>
       <canvas ref={backCanvasRef} className="bubble-orbit-canvas bubble-orbit-back" aria-hidden="true" />
       {children}
       <canvas ref={frontCanvasRef} className="bubble-orbit-canvas bubble-orbit-front" aria-hidden="true" />
-      <svg className="bubble-orbit-input" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
-        <path d={rightHandle} {...pointerProps} />
-        <path d={leftHandle} {...pointerProps} />
-      </svg>
+      {outlinePath ? (
+        <svg className={`bubble-orbit-input${focused ? '' : ' is-passive'}`} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+          <g transform={`translate(${cx} ${cy}) scale(${(size + 30) / 100}) translate(-50 -50)`}>
+            <path ref={outlinePathRef} className={focused ? '' : 'is-passive'} d={outlinePath} {...pointerProps} />
+          </g>
+        </svg>
+      ) : focused && (
+        <svg className="bubble-orbit-input" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+          <path d={rightHandle} {...pointerProps} />
+          <path d={leftHandle} {...pointerProps} />
+        </svg>
+      )}
     </div>
   );
 }
@@ -908,9 +968,9 @@ function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onD
   );
 
   return (
-    <div className={`bubble-body kind-${bubble.kindKey}${focused ? ' is-orbit-focus' : ''}${filtered ? ' is-filtered' : ''}${highlighted ? ' is-highlighted' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} data-id={bubble.id} data-kind={bubble.kindKey} data-seed={index} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
+    <div className={`bubble-body kind-${bubble.kindKey} has-orbit${focused ? ' is-orbit-focus' : ''}${filtered ? ' is-filtered' : ''}${highlighted ? ' is-highlighted' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} data-id={bubble.id} data-kind={bubble.kindKey} data-seed={index} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
       <svg className="bubble-filter-lasso" viewBox="0 0 160 142" aria-hidden="true"><path d="M81 5C119 2 154 26 153 66S132 131 84 136 7 116 7 73 36 10 81 5Z" /></svg>
-      {focused && !popped ? <OrbitTagTrack bubble={bubble} size={bubble.size}>{bubbleButton}</OrbitTagTrack> : bubbleButton}
+      {!popped ? <OrbitTagTrack bubble={bubble} size={bubble.size} focused={focused}>{bubbleButton}</OrbitTagTrack> : bubbleButton}
       <span className="bubble-label"><strong>{bubble.title}</strong><small><i /> {bubble.kind} · {bubble.duration}</small></span>
     </div>
   );
@@ -984,13 +1044,18 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
         body.squish *= Math.exp(-dt * 7.5);
         const edgeX = Math.max(0, width - body.diameter);
         const edgeY = Math.max(0, height - body.diameter);
-        const orbitPadding = body.element.classList.contains('is-orbit-focus') ? 102 : 0;
-        const minX = Math.min(orbitPadding, edgeX / 2);
+        const isOrbitFocus = body.element.classList.contains('is-orbit-focus');
+        const hasOrbit = body.element.classList.contains('has-orbit');
+        const orbitPaddingX = isOrbitFocus ? 102 : hasOrbit ? 24 : 0;
+        const orbitPaddingY = isOrbitFocus ? 60 : hasOrbit ? 24 : 0;
+        const minX = Math.min(orbitPaddingX, edgeX / 2);
         const maxX = Math.max(minX, edgeX - minX);
+        const minY = Math.min(orbitPaddingY, edgeY / 2);
+        const maxY = Math.max(minY, edgeY - minY);
         if (body.x < minX) { body.x = minX; body.vx = body.dragging ? 0 : Math.abs(body.vx) * 0.88; }
         if (body.x > maxX) { body.x = maxX; body.vx = body.dragging ? 0 : -Math.abs(body.vx) * 0.88; }
-        if (body.y < 0) { body.y = 0; body.vy = body.dragging ? 0 : Math.abs(body.vy) * 0.88; }
-        if (body.y > edgeY) { body.y = edgeY; body.vy = body.dragging ? 0 : -Math.abs(body.vy) * 0.88; }
+        if (body.y < minY) { body.y = minY; body.vy = body.dragging ? 0 : Math.abs(body.vy) * 0.88; }
+        if (body.y > maxY) { body.y = maxY; body.vy = body.dragging ? 0 : -Math.abs(body.vy) * 0.88; }
       });
       const currentContacts = new Set();
       for (let i = 0; i < bodies.length; i += 1) {
