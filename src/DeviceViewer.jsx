@@ -3,7 +3,6 @@ import { gsap } from 'gsap';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import deviceModelPartOneUrl from './assets/soundscape-device.stl.gz.part-1?url';
@@ -17,6 +16,27 @@ const CMF = {
   metal: 0xc7d0d2,
   dark: 0x20343d,
 };
+
+const DEVICE_FEATURES = [
+  {
+    id: 'phone-bay',
+    index: '01',
+    title: '竖屏手机仓',
+    description: '手机竖直嵌入装置，取景、选泡与实体操作保持同一方向。',
+  },
+  {
+    id: 'sound-mouth',
+    index: '02',
+    title: '声音与出泡口',
+    description: '把声音回放和泡泡释放集中在装置上端，形成可见的回应。',
+  },
+  {
+    id: 'grip',
+    index: '03',
+    title: '手握柄位',
+    description: '掌心贴住柄部，手指回扣，手腕从下方自然延伸。',
+  },
+];
 
 function makePartMaterial(color, options = {}) {
   return new THREE.MeshPhysicalMaterial({
@@ -185,11 +205,12 @@ function createSoapBubbles(parent, outlet) {
 function createGripHand(parent) {
   const hand = new THREE.Group();
   hand.name = 'Virtual hand holding the EchoCaster grip';
-  hand.position.set(0.68, -0.88, -0.16);
+  // The STL grip sits low on the audience-facing side after the model flip.
+  hand.position.set(-0.88, -0.84, 0.72);
   hand.rotation.z = -0.08;
 
   const skin = new THREE.MeshPhysicalMaterial({
-    color: 0xd4a095,
+    color: 0xd6aa9e,
     roughness: 0.46,
     metalness: 0,
     clearcoat: 0.12,
@@ -306,67 +327,43 @@ function buildDevice(scene, sourceGeometry) {
     makePartMaterial(CMF.dark, { metalness: 0.18, roughness: 0.3, clearcoat: 0.4 }),
   ];
 
-  const phoneCradle = new THREE.Group();
-  // The screen sits on the opposite side of the model so the cradle stays
-  // vertical and faces the restored front view.
-  phoneCradle.position.set(0.8, 0.05, -0.1);
-  const phoneFrameGeometry = new RoundedBoxGeometry(0.98, 1.82, 0.085, 5, 0.11);
-  phoneFrameGeometry.rotateY(Math.PI / 2);
-  const phoneFrame = new THREE.Mesh(phoneFrameGeometry, makePartMaterial(CMF.teal, { roughness: 0.25, clearcoat: 0.55 }));
-  phoneFrame.castShadow = true;
-  phoneFrame.receiveShadow = true;
-  phoneCradle.add(phoneFrame);
-
-  const phoneScreenGeometry = new RoundedBoxGeometry(0.87, 1.68, 0.022, 5, 0.075);
-  phoneScreenGeometry.rotateY(Math.PI / 2);
-  const phoneScreen = new THREE.Mesh(phoneScreenGeometry, new THREE.MeshPhysicalMaterial({
-    color: 0x18242c,
-    metalness: 0.16,
-    roughness: 0.18,
-    clearcoat: 1,
-    clearcoatRoughness: 0.14,
-    side: THREE.DoubleSide,
-  }));
-  phoneScreen.position.x = -0.054;
-  phoneCradle.add(phoneScreen);
-
-  const phoneNotch = new THREE.Mesh(
-    new RoundedBoxGeometry(0.14, 0.024, 0.012, 4, 0.012),
-    new THREE.MeshBasicMaterial({ color: 0x52616b })
-  );
-  phoneNotch.geometry.rotateY(Math.PI / 2);
-  phoneNotch.position.set(-0.068, 0.78, -0.1);
-  phoneCradle.add(phoneNotch);
-
   const group = new THREE.Group();
   const orient = new THREE.Group();
-  // The phone cradle stays portrait while the horn points to the right.
-  // Reverse the source orientation so the horn reads toward the right; the
-  // phone screen is mounted on the opposite local face to remain camera-facing.
-  orient.rotation.y = -Math.PI / 2;
+  // Turn the assembled device around so its molded phone bay and grip face the viewer.
+  orient.rotation.y = Math.PI / 2;
   group.add(orient);
   const body = new THREE.Mesh(geometry, materials);
   body.castShadow = true;
   body.receiveShadow = true;
   orient.add(body);
-  orient.add(phoneCradle);
   scene.add(group);
 
   const hand = createGripHand(group);
-  const bubbles = createSoapBubbles(group, new THREE.Vector3(0.05, 0.92, 0.36));
+  const bubbles = createSoapBubbles(group, new THREE.Vector3(0.63, 1.18, -0.08));
+  const hotspotGeometry = new THREE.SphereGeometry(0.14, 12, 10);
+  const hotspotMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+  const hotspots = DEVICE_FEATURES.map((feature) => {
+    const hotspot = new THREE.Mesh(hotspotGeometry, hotspotMaterial);
+    hotspot.name = `Design point: ${feature.title}`;
+    hotspot.userData.featureId = feature.id;
+    if (feature.id === 'phone-bay') hotspot.position.set(0, 0.04, 0.78);
+    if (feature.id === 'sound-mouth') hotspot.position.set(0.63, 1.12, 0.08);
+    if (feature.id === 'grip') hotspot.position.set(-0.88, -0.86, 0.96);
+    group.add(hotspot);
+    return hotspot;
+  });
   const float = gsap.to(group.position, { y: 0.045, duration: 2.6, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  const turn = gsap.to(group.rotation, { y: -0.12, duration: 4.4, yoyo: true, repeat: -1, ease: 'sine.inOut' });
-  group.rotation.y = 0.12;
+  group.rotation.y = 0;
   return {
     group,
     geometry,
     materials,
     bubbles,
     float,
-    turn,
     hand,
-    auxiliaryGeometries: [phoneFrameGeometry, phoneScreenGeometry, phoneNotch.geometry],
-    auxiliaryMaterials: [phoneFrame.material, phoneScreen.material, phoneNotch.material],
+    hotspots,
+    hotspotGeometry,
+    hotspotMaterial,
     handGeometries: hand.geometries,
     handMaterials: hand.materials,
   };
@@ -376,7 +373,9 @@ function DeviceCanvas({ playing }) {
   const mountRef = useRef(null);
   const deviceRef = useRef(null);
   const playingRef = useRef(playing);
+  const hoveredFeatureRef = useRef(null);
   const [modelStatus, setModelStatus] = useState('loading');
+  const [hoveredFeature, setHoveredFeature] = useState(null);
 
   useEffect(() => {
     playingRef.current = playing;
@@ -390,7 +389,7 @@ function DeviceCanvas({ playing }) {
     if (!mount) return undefined;
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
-    camera.position.set(0.65, 1.35, 4.9);
+    camera.position.set(0.08, 0.26, 5.2);
     const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(mount.clientWidth, mount.clientHeight);
@@ -427,13 +426,35 @@ function DeviceCanvas({ playing }) {
     controls.enablePan = false;
     controls.enableZoom = false;
     controls.autoRotate = false;
-    controls.target.set(0, 0.04, 0);
+    controls.target.set(0, 0.02, 0);
 
     const timer = new THREE.Timer();
     timer.connect(document);
     let frame = 0;
     let disposed = false;
     let device;
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const setHovered = (id) => {
+      if (hoveredFeatureRef.current === id) return;
+      hoveredFeatureRef.current = id;
+      setHoveredFeature(id);
+      renderer.domElement.style.cursor = id ? 'pointer' : 'grab';
+    };
+    const findHoveredFeature = (event) => {
+      if (!device) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObjects(device.hotspots, false)[0]?.object;
+      setHovered(hit?.userData.featureId ?? null);
+    };
+    const clearHoveredFeature = () => setHovered(null);
+    renderer.domElement.addEventListener('pointermove', findHoveredFeature);
+    renderer.domElement.addEventListener('pointerdown', findHoveredFeature);
+    renderer.domElement.addEventListener('pointerleave', clearHoveredFeature);
+
     const render = (timestamp) => {
       if (disposed) return;
       frame = window.requestAnimationFrame(render);
@@ -442,6 +463,14 @@ function DeviceCanvas({ playing }) {
         const elapsed = timer.getElapsed();
         device.group.rotation.z = playingRef.current ? Math.sin(elapsed * 3.6) * 0.025 : device.group.rotation.z * 0.94;
         device.hand.hand.rotation.x = playingRef.current ? Math.sin(elapsed * 2.2) * 0.025 : device.hand.hand.rotation.x * 0.96;
+        const activeHotspot = device.hotspots.find((hotspot) => hotspot.userData.featureId === hoveredFeatureRef.current);
+        if (activeHotspot) {
+          const projected = activeHotspot.getWorldPosition(new THREE.Vector3()).project(camera);
+          const x = THREE.MathUtils.clamp(((projected.x + 1) / 2) * mount.clientWidth, 92, Math.max(92, mount.clientWidth - 92));
+          const y = THREE.MathUtils.clamp(((1 - projected.y) / 2) * mount.clientHeight, 86, Math.max(86, mount.clientHeight - 12));
+          mount.style.setProperty('--feature-x', `${x}px`);
+          mount.style.setProperty('--feature-y', `${y}px`);
+        }
       }
       controls.update();
       renderer.render(scene, camera);
@@ -500,9 +529,11 @@ function DeviceCanvas({ playing }) {
       resize.disconnect();
       controls.dispose();
       timer.dispose();
+      renderer.domElement.removeEventListener('pointermove', findHoveredFeature);
+      renderer.domElement.removeEventListener('pointerdown', findHoveredFeature);
+      renderer.domElement.removeEventListener('pointerleave', clearHoveredFeature);
       if (device) {
         device.float.kill();
-        device.turn.kill();
         device.bubbles.forEach(({ mesh, material }) => {
           gsap.killTweensOf(mesh.position);
           gsap.killTweensOf(mesh.scale);
@@ -510,8 +541,8 @@ function DeviceCanvas({ playing }) {
         });
         device.geometry.dispose();
         device.materials.forEach((material) => material.dispose());
-        device.auxiliaryGeometries.forEach((geometry) => geometry.dispose());
-        device.auxiliaryMaterials.forEach((material) => material.dispose());
+        device.hotspotGeometry.dispose();
+        device.hotspotMaterial.dispose();
         device.handGeometries.forEach((geometry) => geometry.dispose());
         device.handMaterials.forEach((material) => material.dispose());
         device.bubbles.forEach(({ mesh, material }) => {
@@ -528,9 +559,19 @@ function DeviceCanvas({ playing }) {
   }, []);
 
   return (
-    <div className={`device-canvas${playing ? ' is-playing' : ''}`} ref={mountRef} aria-label="可拖动旋转的 EchoCaster 手持式竖屏泡泡装置模型">
+    <div className={`device-canvas${playing ? ' is-playing' : ''}`} ref={mountRef} aria-label="可拖动旋转 EchoCaster。悬停或轻触标记可查看设计说明。">
       {modelStatus === 'loading' && <span className="device-model-state">载入 EchoCaster 模型…</span>}
       {modelStatus === 'error' && <span className="device-model-state is-error">模型载入失败</span>}
+      {hoveredFeature && (
+        <>
+          <span className="device-hotspot-pin" aria-hidden="true" />
+          <div className="device-feature-note" role="tooltip" aria-live="polite">
+            <span>DESIGN NOTE · {DEVICE_FEATURES.find((feature) => feature.id === hoveredFeature)?.index}</span>
+            <strong>{DEVICE_FEATURES.find((feature) => feature.id === hoveredFeature)?.title}</strong>
+            <p>{DEVICE_FEATURES.find((feature) => feature.id === hoveredFeature)?.description}</p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -563,7 +604,7 @@ export default function DeviceViewer({ open, onClose, playing }) {
       </header>
       <DeviceCanvas playing={playing} />
       <div className="device-viewer-foot">
-        <div className="device-detail"><span className={`device-live-dot${playing ? ' active' : ''}`} /><span>{playing ? '播放演示中 · 手握装置正在吐泡泡' : '拖动旋转 · 查看手握姿态与手机仓'}</span></div>
+        <div className="device-detail"><span className={`device-live-dot${playing ? ' active' : ''}`} /><span>{playing ? '播放演示中 · 发射口回应声音' : '悬停看设计点 · 拖动查看侧面'}</span></div>
         <div className="device-detail"><i className="device-key-icon" /> LINK · DEMO</div>
       </div>
     </section>
