@@ -116,6 +116,7 @@ function disposeResources(resources) {
   if (!resources || resources.closed) return;
   resources.closed = true;
   window.clearTimeout(resources.longPressTimer);
+  window.clearTimeout(resources.commentTimer);
   resources.renderer.setAnimationLoop(null);
   resources.hitSource?.cancel?.();
   resources.controller.removeEventListener('selectstart', resources.onSelectStart);
