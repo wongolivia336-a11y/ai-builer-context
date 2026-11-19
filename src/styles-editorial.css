@@ -591,3 +591,20 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .projection-home-orb.is-featured .bubble-orbit-position { z-index:5; }
 .projection-home-orb .soap-bubble.has-silhouette { overflow:visible; border-radius:50%; background:transparent; box-shadow:none; }
 .projection-home-orb .soap-bubble.has-silhouette::before,.projection-home-orb .soap-bubble.has-silhouette::after { display:none; }
+
+/* A close, crossed orbit gives the hero orb more of a small-planet volume. */
+.bubble-orbit-track { overflow:visible; }
+.bubble-orbit-cross-rail { fill:none; stroke:rgba(255,255,255,.45); stroke-width:1; stroke-dasharray:2 3; filter:drop-shadow(0 0 4px rgba(255,255,255,.65)); pointer-events:none; }
+.bubble-orbit-cross-copy { fill:rgba(81,91,117,.66); font:650 6.3px/1 ui-sans-serif,system-ui,sans-serif; letter-spacing:.08em; paint-order:stroke; stroke:rgba(252,252,248,.68); stroke-width:2px; stroke-linejoin:round; pointer-events:none; }
+.bubble-orbit-cross { opacity:.82; }
+.bubble-body .home-bubble { touch-action:none; cursor:grab; transform:rotate(var(--squish-angle,0rad)) scaleX(var(--squish-compress,1)) scaleY(var(--squish-stretch,1)) rotate(var(--squish-angle-reverse,0rad)); transform-origin:50% 50%; }
+.bubble-body.is-dragging { z-index:9; }
+.bubble-body.is-dragging .home-bubble { cursor:grabbing; filter:drop-shadow(0 15px 20px rgba(67,89,111,.21)) drop-shadow(0 0 15px rgba(255,255,255,.5)); }
+.bubble-contact-film { position:absolute; z-index:2; left:50%; top:50%; width:48%; height:27%; border:1px solid rgba(255,255,255,.78); border-radius:50%; background:radial-gradient(ellipse at 43% 43%,rgba(255,255,255,.76),color-mix(in srgb,var(--bubble-tint) 53%,transparent) 48%,color-mix(in srgb,var(--bubble-edge) 34%,transparent) 76%,transparent); box-shadow:0 0 12px color-mix(in srgb,var(--bubble-edge) 42%,transparent),inset 0 0 8px rgba(255,255,255,.76); opacity:0; filter:blur(.35px); transform:translate(-50%,-50%) rotate(var(--contact-angle,0rad)) translateX(70%) scaleX(.65) scaleY(.56); transform-origin:center; transition:opacity .12s ease; pointer-events:none; }
+.bubble-body.is-colliding .bubble-contact-film { opacity:calc(var(--contact-strength,0) * .82); animation:contact-film-pulse .32s ease-in-out infinite alternate; }
+.bubble-body.is-dragging.is-colliding .bubble-contact-film { opacity:calc(var(--contact-strength,0) * .96); }
+.bubble-body.is-dragging .bubble-label { opacity:.4; }
+@keyframes contact-film-pulse { from { filter:blur(.6px); } to { filter:blur(1.15px); } }
+@media (prefers-reduced-motion:reduce) {
+  .bubble-body.is-colliding .bubble-contact-film { animation:none; }
+}

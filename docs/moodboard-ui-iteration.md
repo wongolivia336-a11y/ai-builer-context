@@ -4,14 +4,15 @@
 
 Use the interaction-first route. Keep the full-screen personal Gallery and its existing floating/collision field. Add visual shape variety and a focused orbital label treatment without turning the moodboard image sheets into static app screens.
 
-## Second visual pass: close-up orbs and film pop
+## Second visual pass: crossed planet orbit, touch, and liquid pop
 
 ### Chosen direction
 
-- Make the first, featured sound a clear pearl orb that reads as a small planet. Its title, sound type, duration, saves, and one short listener response form a single continuous line on a tilted elliptical orbit. The orbit turns slowly, pauses on hover, can be dragged on the ring, and does not cover the orb's tap target.
+- Make the first, featured sound a clear pearl orb that reads as a small planet. Its title, sound type, duration, saves, and one short listener response follow a close, tilted elliptical orbit; a second crossed ring carries a short echo note to give the planet more depth. The tracks turn slowly, pause on hover, can be dragged on the ring, and do not cover the orb's tap target.
 - Increase the size range and overlap of the field with one hero, a few medium bubbles, and smaller satellites. Keep the irregular heart, star, flower, and cloud silhouettes among the spheres so the gallery has both close-up volume and shape variety.
 - Improve the material using layered soft reflections, a pale lower-edge tint, narrow iridescence, and a restrained depth shadow; keep the room behind the bubbles visible.
-- Replace uniform CSS spark dots with a shared Canvas 2D burst: a brief membrane contraction, a wider opening aligned to the tap point, two curling film lips, and translucent droplets with an impact impulse that drift, spin, fall, and fade. The burst is an authored visual simulation; it does not claim fluid or membrane physics.
+- Replace uniform CSS spark dots with a shared Canvas 2D burst: a brief buckling membrane, an opening aligned to the tap point, a small pulled film tongue, two curling film lips, and teardrop-shaped droplets with an impact impulse that drift, spin, fall, and fade. The burst is an authored visual simulation; it does not claim fluid or membrane physics.
+- Allow each bubble to be dragged directly. When two contact volumes overlap, move the free neighbor aside and briefly compress both surfaces toward the contact axis, with a translucent film bridge between them; the bubbles spring back when released. Keyboard/tap pop remains distinct from a drag.
 
 ### Rendering choice
 
@@ -21,9 +22,10 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 
 1. The featured orb and orbit read together like a planet with a moving text ring on phone and desktop widths.
 2. The gallery feels denser without hiding the filter, heading, tab bar, or target bubbles behind the orbit.
-3. Each pop has a visible membrane snap and a varied, gravity-led fragment trail, and still plays the selected sound example.
-4. `prefers-reduced-motion` keeps the controls usable and avoids the continuous orbit and ambient floating.
-5. README and demo-scope text describe the rupture as a visual simulation, not real fluid physics.
+3. Dragging moves the chosen bubble under the pointer; contact pushes its neighbor aside and briefly changes both silhouettes, while a click still triggers the selected sound and liquid-like rupture.
+4. Each pop has a visible membrane snap and a varied, gravity-led fragment trail, and still plays the selected sound example.
+5. `prefers-reduced-motion` keeps the controls usable and avoids the continuous orbit and ambient floating.
+6. README and demo-scope text describe contact and rupture as visual simulations, not real fluid physics.
 
 ## Screen and interaction changes
 
@@ -31,8 +33,8 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 
 - Keep all sound bubbles moving, colliding, and bouncing within the phone viewport. Physics continues to use each bubble's circular bounding volume; a visual silhouette can be a heart, star, flower, or soft organic shape.
 - Give bubbles four restrained material families drawn from the moodboard: clear pearl, pale sky-blue glass, blush opal, and a small number of lilac/chrome accents. Keep highlights soft and the thin iridescent film low contrast.
-- Make one pearl orb the current visual focus. A continuous string of short metadata (sound title, type, duration, saves, and one short listener response) follows a tilted elliptical orbit around it. Let the ring move slowly, pause on hover, and allow dragging directly on its outer stroke. The remaining bubbles keep their compact title labels.
-- Preserve tap-to-pop, sound playback simulation, content filters, and the existing filter lasso. Each non-circular silhouette must have a clear hit area, visible focus state, and reduced-motion fallback.
+- Make one pearl orb the current visual focus. A continuous string of short metadata (sound title, type, duration, saves, and one short listener response) follows a close tilted ellipse, crossed by a second, quieter orbit line carrying an echo note. Let the rings move slowly, pause on hover, and allow dragging directly on their outer stroke. The remaining bubbles keep their compact title labels.
+- Preserve tap-to-pop, sound playback simulation, content filters, and the existing filter lasso. Let bubbles move under pointer drag and give overlaps a brief aligned squash/stretch plus a translucent contact film. Each non-circular silhouette must have a clear hit area, visible focus state, and reduced-motion fallback.
 
 ### Roam / AR capture
 
@@ -55,7 +57,7 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 ## Acceptance review
 
 1. The Gallery still reads as an irregular, screen-filling bubble field, with visibly varied silhouettes and no loss of pop/playback or filter interactions.
-2. The focused orb's continuous orbit text is legible, manually browsable, and does not cover nearby controls or the orb's tap area.
+2. The focused orb's two crossed orbit lines read as separate near/far paths; the text remains legible, manually browsable, and does not cover nearby controls or the orb's tap area.
 3. Entering roam communicates scan → brief buffer → AR-style capture. Each state can finish, be skipped where appropriate, and responds to reduced motion.
 4. Roam overlays read as 2D illustrations in a real photographed scene, while the primary capture target remains the clearest object.
 5. README and demo-scope documentation describe only the capabilities present in this browser prototype.

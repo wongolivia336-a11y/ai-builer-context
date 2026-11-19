@@ -153,15 +153,20 @@ function OrbitTagTrack({ bubble }) {
   const tweenRef = useRef(null);
   const dragRef = useRef(null);
   const note = bubble.comments[0]?.text || bubble.quote;
-  const width = bubble.size + 134;
-  const height = bubble.size + 116;
+  const width = bubble.size + 94;
+  const height = bubble.size + 84;
   const cx = width / 2;
   const cy = height / 2;
   const rx = width / 2 - 9;
   const ry = height / 2 - 9;
   const circumference = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
   const pathId = `orbit-text-${bubble.id.replace(/[^a-z0-9-]/gi, '-')}`;
+  const crossRx = rx * 0.82;
+  const crossRy = ry * 0.78;
+  const crossCircumference = Math.PI * (3 * (crossRx + crossRy) - Math.sqrt((3 * crossRx + crossRy) * (crossRx + 3 * crossRy)));
+  const crossPathId = `orbit-cross-text-${bubble.id.replace(/[^a-z0-9-]/gi, '-')}`;
   const copy = [bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`, `「${note}」`, bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`].join('   ✦   ');
+  const crossCopy = [`ECHO / ${bubble.saves}`, note, bubble.kind, `声音留下 ${bubble.duration}`, `ECHO / ${bubble.saves}`].join('   ·   ');
 
   useLayoutEffect(() => {
     const orbit = orbitRef.current;
@@ -211,7 +216,17 @@ function OrbitTagTrack({ bubble }) {
   return (
     <div className="bubble-orbit-position" style={{ width, height }} aria-hidden="true">
       <svg ref={orbitRef} className="bubble-orbit-track" viewBox={`0 0 ${width} ${height}`} onPointerEnter={pauseOnHover} onPointerLeave={resumeAfterHover} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
-        <defs><path id={pathId} d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} /></defs>
+        <defs>
+          <path id={pathId} d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} />
+          <path id={crossPathId} d={`M ${cx} ${cy - crossRy} A ${crossRx} ${crossRy} 0 1 1 ${cx} ${cy + crossRy} A ${crossRx} ${crossRy} 0 1 1 ${cx} ${cy - crossRy}`} />
+        </defs>
+        <g className="bubble-orbit-cross" transform={`rotate(31 ${cx} ${cy})`}>
+          <ellipse className="bubble-orbit-cross-rail" cx={cx} cy={cy} rx={crossRx} ry={crossRy} />
+          <text className="bubble-orbit-cross-copy" textAnchor="start">
+            <textPath href={`#${crossPathId}`} startOffset="0" textLength={crossCircumference * 0.9} lengthAdjust="spacing">{crossCopy}</textPath>
+          </text>
+          <circle className="bubble-orbit-star orbit-cross-star" cx={cx + crossRx} cy={cy} r="1.7" />
+        </g>
         <g transform={`rotate(-17 ${cx} ${cy})`}>
           <ellipse className="bubble-orbit-rail" cx={cx} cy={cy} rx={rx} ry={ry} />
           <path className="bubble-orbit-hit" d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} />
@@ -299,6 +314,33 @@ function BubbleBurstLayer({ bursts }) {
       context.translate(burst.x, burst.y);
       context.rotate(burst.reducedMotion ? 0 : elapsed * -0.12);
 
+      // A thin, iridescent sheet buckles before the rim tears open.
+      if (!burst.reducedMotion && elapsed < 0.28) {
+        const sheetFade = 1 - elapsed / 0.28;
+        const points = 48;
+        context.beginPath();
+        for (let index = 0; index <= points; index += 1) {
+          const angle = (index / points) * Math.PI * 2;
+          const wobble = 1 + Math.sin(angle * 3 + elapsed * 19) * 0.018 + Math.sin(angle * 7 - elapsed * 13) * 0.012;
+          const x = Math.cos(angle) * radius * wobble;
+          const y = Math.sin(angle) * radius * 0.92 * wobble;
+          if (index === 0) context.moveTo(x, y);
+          else context.lineTo(x, y);
+        }
+        context.closePath();
+        const filmSheet = context.createRadialGradient(0, 0, radius * 0.34, 0, 0, radius * 1.05);
+        filmSheet.addColorStop(0, 'rgba(255,255,255,0)');
+        filmSheet.addColorStop(0.7, `${burst.colors[0]}${Math.round(0.055 * sheetFade * 255).toString(16).padStart(2, '0')}`);
+        filmSheet.addColorStop(0.9, `${burst.colors[2]}${Math.round(0.13 * sheetFade * 255).toString(16).padStart(2, '0')}`);
+        filmSheet.addColorStop(1, `rgba(255,255,255,${0.2 * sheetFade})`);
+        context.globalAlpha = 1;
+        context.fillStyle = filmSheet;
+        context.fill();
+        context.lineWidth = 1.15;
+        context.strokeStyle = `rgba(255,255,255,${0.42 * sheetFade})`;
+        context.stroke();
+      }
+
       // A brief pressure ring gives the rupture a readable outward snap.
       if (!burst.reducedMotion && elapsed < 0.32) {
         const ripple = Math.min(1, elapsed / 0.32);
@@ -313,7 +355,19 @@ function BubbleBurstLayer({ bursts }) {
 
       // Keep the membrane open at the impact point instead of closing it with a chord.
       context.beginPath();
-      context.ellipse(0, 0, radius, radius * 0.92, 0, gap + gapWidth, gap + Math.PI * 2 - gapWidth);
+      const rimStart = gap + gapWidth;
+      const rimSweep = Math.PI * 2 - gapWidth * 2;
+      const rimSegments = 104;
+      for (let index = 0; index <= rimSegments; index += 1) {
+        const angle = rimStart + (index / rimSegments) * rimSweep;
+        const ripple = Math.sin(angle * 3 + elapsed * 17) * 0.018 + Math.sin(angle * 6 - elapsed * 12) * 0.012;
+        const impactPull = Math.cos(angle - gap) * 0.045 * Math.exp(-elapsed * 7);
+        const rimRadius = radius * (1 + ripple + impactPull);
+        const x = Math.cos(angle) * rimRadius;
+        const y = Math.sin(angle) * rimRadius * 0.92;
+        if (index === 0) context.moveTo(x, y);
+        else context.lineTo(x, y);
+      }
       const sheen = context.createLinearGradient(-radius, -radius, radius, radius);
       sheen.addColorStop(0, `rgba(255,255,255,${0.98 * alpha})`);
       sheen.addColorStop(0.28, `${burst.colors[0]}${Math.round(0.96 * alpha * 255).toString(16).padStart(2, '0')}`);
@@ -334,6 +388,26 @@ function BubbleBurstLayer({ bursts }) {
 
       // Two curved film lips peel away from the puncture before breaking into droplets.
       if (!burst.reducedMotion) {
+        // The puncture briefly draws a glossy tongue of film toward the impact.
+        const tongueFade = Math.max(0, 1 - elapsed / 0.3);
+        if (tongueFade > 0) {
+          context.save();
+          context.rotate(gap);
+          const tongueLength = radius * (0.28 + Math.min(1, elapsed / 0.09) * 0.28);
+          context.beginPath();
+          context.moveTo(radius * 0.72, -radius * 0.11);
+          context.quadraticCurveTo(radius * 0.86, -radius * 0.02, radius + tongueLength, 0);
+          context.quadraticCurveTo(radius * 0.88, radius * 0.1, radius * 0.72, radius * 0.11);
+          const tongue = context.createLinearGradient(radius * 0.72, 0, radius + tongueLength, 0);
+          tongue.addColorStop(0, `rgba(255,255,255,${0.76 * tongueFade})`);
+          tongue.addColorStop(0.48, `${burst.colors[0]}${Math.round(0.44 * tongueFade * 255).toString(16).padStart(2, '0')}`);
+          tongue.addColorStop(1, `${burst.colors[2]}${Math.round(0.08 * tongueFade * 255).toString(16).padStart(2, '0')}`);
+          context.fillStyle = tongue;
+          context.shadowColor = burst.colors[0];
+          context.shadowBlur = 10;
+          context.fill();
+          context.restore();
+        }
         [-1, 1].forEach((side) => {
           const rootAngle = gap + side * gapWidth;
           const tipAngle = gap + side * (gapWidth + 0.48);
@@ -367,7 +441,7 @@ function BubbleBurstLayer({ bursts }) {
       const fade = Math.max(0, 1 - particle.age / particle.life);
       if (fade <= 0) return;
       particle.vx *= Math.pow(0.985, dt * 60);
-      particle.vy = particle.vy * Math.pow(0.992, dt * 60) + 300 * dt;
+      particle.vy = particle.vy * Math.pow(0.992, dt * 60) + 390 * dt;
       particle.x += particle.vx * dt;
       particle.y += particle.vy * dt;
       particle.rotation += particle.spin * dt;
@@ -399,6 +473,21 @@ function BubbleBurstLayer({ bursts }) {
       context.translate(particle.x, particle.y);
       context.rotate(particle.rotation);
       context.scale(0.72, 1.18);
+      const speed = Math.hypot(particle.vx, particle.vy);
+      const tail = Math.min(particle.radius * 2.1, speed * 0.018) * fade;
+      if (tail > 1) {
+        context.globalAlpha = fade * 0.38;
+        context.lineWidth = Math.max(0.8, particle.radius * 0.24);
+        context.lineCap = 'round';
+        context.strokeStyle = particle.colors[0];
+        context.shadowColor = particle.colors[1];
+        context.shadowBlur = 5;
+        context.beginPath();
+        context.moveTo(0, particle.radius * 0.8);
+        context.quadraticCurveTo(particle.radius * 0.5, particle.radius + tail * 0.6, 0, particle.radius + tail);
+        context.stroke();
+      }
+      context.globalAlpha = fade;
       const drop = context.createRadialGradient(-particle.radius * 0.32, -particle.radius * 0.42, 0.4, 0, 0, particle.radius * 1.3);
       drop.addColorStop(0, `rgba(255,255,255,${0.92 * fade})`);
       drop.addColorStop(0.34, `${particle.colors[0]}${Math.round(0.86 * fade * 255).toString(16).padStart(2, '0')}`);
@@ -408,7 +497,9 @@ function BubbleBurstLayer({ bursts }) {
       context.shadowColor = particle.colors[1];
       context.shadowBlur = 10;
       context.beginPath();
-      context.arc(0, 0, particle.radius, 0, Math.PI * 2);
+      context.moveTo(0, -particle.radius * 1.42);
+      context.bezierCurveTo(particle.radius * 0.98, -particle.radius * 0.72, particle.radius * 1.04, particle.radius * 0.58, 0, particle.radius * 1.18);
+      context.bezierCurveTo(-particle.radius * 1.04, particle.radius * 0.58, -particle.radius * 0.98, -particle.radius * 0.72, 0, -particle.radius * 1.42);
       context.fill();
       context.globalAlpha = fade * 0.82;
       context.fillStyle = '#fff';
@@ -511,13 +602,18 @@ function RoamEntryOverlay({ phase, onSkip }) {
   );
 }
 
-function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, highlighted }) {
+function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onDragEnd, onFocus, focused, filtered, highlighted }) {
   const buttonRef = useRef(null);
+  const gestureRef = useRef(null);
+  const suppressClickRef = useRef(false);
   const isResonant = bubble.saves >= 50 || bubble.comments.length >= 2;
 
   const pop = (event) => {
     const button = buttonRef.current;
-    if (!button || popped) return;
+    if (!button || popped || suppressClickRef.current) {
+      suppressClickRef.current = false;
+      return;
+    }
     gsap.killTweensOf(button);
     gsap.timeline()
       .to(button, { scaleX: 0.82, scaleY: 1.12, filter: 'brightness(1.32)', duration: 0.075, ease: 'power2.out' })
@@ -526,10 +622,43 @@ function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, 
     onPop(bubble, event);
   };
 
+  const pointerDown = (event) => {
+    if (popped || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    gestureRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    gsap.to(event.currentTarget, { scaleX: 0.94, scaleY: 1.05, duration: 0.12, ease: 'power2.out' });
+  };
+
+  const pointerMove = (event) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.id !== event.pointerId) return;
+    if (!gesture.dragged && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 7) {
+      gesture.dragged = true;
+      suppressClickRef.current = true;
+      window.setTimeout(() => { suppressClickRef.current = false; }, 600);
+      gsap.killTweensOf(event.currentTarget);
+      gsap.set(event.currentTarget, { clearProps: 'transform' });
+      onDragStart?.(bubble, event);
+    }
+    if (gesture.dragged) onDragMove?.(bubble, event);
+  };
+
+  const pointerEnd = (event) => {
+    const button = event.currentTarget;
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.id !== event.pointerId) return;
+    gestureRef.current = null;
+    if (gesture.dragged) {
+      gsap.set(button, { clearProps: 'transform' });
+      onDragEnd?.(bubble, event);
+    }
+    else gsap.to(button, { scaleX: 1, scaleY: 1, duration: 0.44, ease: 'elastic.out(1, 0.34)', onComplete: () => gsap.set(button, { clearProps: 'transform' }) });
+  };
+
   useEffect(() => {
     const button = buttonRef.current;
     if (popped || !button || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const rebound = gsap.fromTo(button, { scale: 0.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.56, ease: 'elastic.out(1, 0.48)' });
+    const rebound = gsap.fromTo(button, { scale: 0.12, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.56, ease: 'elastic.out(1, 0.48)', onComplete: () => gsap.set(button, { clearProps: 'transform' }) });
     return () => rebound.kill();
   }, [popped]);
 
@@ -539,13 +668,15 @@ function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, 
       <button
         ref={buttonRef}
         className={`soap-bubble home-bubble accent-${bubble.accent}${bubble.shape ? ` has-silhouette shape-${bubble.shape}` : ''}${isResonant ? ' bubble-hot' : ''}`}
-        aria-label={`戳开${bubble.kind}泡泡并回听：${bubble.title}`}
+        aria-label={`拖动或戳开${bubble.kind}泡泡并回听：${bubble.title}`}
         title={`${bubble.kind} · ${bubble.title}`}
-        onPointerDown={(event) => gsap.to(event.currentTarget, { scaleX: 0.91, scaleY: 1.07, duration: 0.1, ease: 'power2.out' })}
-        onPointerUp={(event) => gsap.to(event.currentTarget, { scaleX: 1, scaleY: 1, duration: 0.5, ease: 'elastic.out(1, 0.32)' })}
-        onPointerCancel={(event) => gsap.to(event.currentTarget, { scale: 1, duration: 0.24, ease: 'power2.out' })}
-        onClick={(event) => { onFocus?.(); pop(event); }}
+        onPointerDown={pointerDown}
+        onPointerMove={pointerMove}
+        onPointerUp={pointerEnd}
+        onPointerCancel={pointerEnd}
+        onClick={(event) => { if (suppressClickRef.current) { suppressClickRef.current = false; return; } onFocus?.(); pop(event); }}
       >
+        <span className="bubble-contact-film" aria-hidden="true" />
         <span className="bubble-core" />
         <span className="bubble-glint" />
         <BubbleSilhouette bubble={bubble} />
@@ -565,6 +696,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const [bursts, setBursts] = useState([]);
   const burstIdRef = useRef(0);
   const fieldRef = useRef(null);
+  const physicsRef = useRef({ bodies: [] });
   const kinds = [
     ['all', '全部', '◌'],
     ['voice', '人声', '◉'],
@@ -591,11 +723,13 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
       const x = Math.min(maxX, Math.max(0, seed[0] * maxX + (index % 2 ? 18 : -9)));
       const y = Math.min(maxY, Math.max(0, seed[1] * maxY + (index % 3 ? 12 : -8)));
       const angle = (index * 2.399) + 0.7;
-      const speed = 17 + (index % 5) * 5;
+      const speed = motionPreference.matches ? 0 : 17 + (index % 5) * 5;
       element.style.transform = `translate3d(${x}px,${y}px,0)`;
-      return { element, diameter, x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, phase: index * 1.7 };
+      return { element, diameter, x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, phase: index * 1.7, dragging: false, squish: 0, squishAngle: 0, contactAngle: 0 };
     });
-    if (motionPreference.matches || bodies.length < 2) return undefined;
+    physicsRef.current.bodies = bodies;
+    if (bodies.length < 2) return () => { physicsRef.current.bodies = []; };
+    const ambientMotion = !motionPreference.matches;
     let frame = 0;
     let last = performance.now();
     const resizeObserver = new ResizeObserver(() => {
@@ -613,20 +747,26 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
       const width = field.clientWidth;
       const height = field.clientHeight;
       bodies.forEach((body) => {
-        body.vx += Math.sin(now * 0.00019 + body.phase) * 0.08 * dt;
-        body.vy += Math.cos(now * 0.00017 + body.phase) * 0.1 * dt;
-        body.x += body.vx * dt;
-        body.y += body.vy * dt;
+        if (ambientMotion && !body.dragging) {
+          body.vx += Math.sin(now * 0.00019 + body.phase) * 0.08 * dt;
+          body.vy += Math.cos(now * 0.00017 + body.phase) * 0.1 * dt;
+        }
+        if (!body.dragging) {
+          body.x += body.vx * dt;
+          body.y += body.vy * dt;
+        }
+        body.squish *= Math.exp(-dt * 7.5);
         const edgeX = Math.max(0, width - body.diameter);
         const edgeY = Math.max(0, height - body.diameter);
         const orbitPadding = body.element.classList.contains('is-orbit-focus') ? 102 : 0;
         const minX = Math.min(orbitPadding, edgeX / 2);
         const maxX = Math.max(minX, edgeX - minX);
-        if (body.x < minX) { body.x = minX; body.vx = Math.abs(body.vx) * 0.88; }
-        if (body.x > maxX) { body.x = maxX; body.vx = -Math.abs(body.vx) * 0.88; }
-        if (body.y < 0) { body.y = 0; body.vy = Math.abs(body.vy) * 0.88; }
-        if (body.y > edgeY) { body.y = edgeY; body.vy = -Math.abs(body.vy) * 0.88; }
+        if (body.x < minX) { body.x = minX; body.vx = body.dragging ? 0 : Math.abs(body.vx) * 0.88; }
+        if (body.x > maxX) { body.x = maxX; body.vx = body.dragging ? 0 : -Math.abs(body.vx) * 0.88; }
+        if (body.y < 0) { body.y = 0; body.vy = body.dragging ? 0 : Math.abs(body.vy) * 0.88; }
+        if (body.y > edgeY) { body.y = edgeY; body.vy = body.dragging ? 0 : -Math.abs(body.vy) * 0.88; }
       });
+      const currentContacts = new Set();
       for (let i = 0; i < bodies.length; i += 1) {
         for (let j = i + 1; j < bodies.length; j += 1) {
           const a = bodies[i];
@@ -643,10 +783,24 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
           const nx = dx / distance;
           const ny = dy / distance;
           const overlap = minDistance - distance;
-          a.x -= nx * overlap * 0.5;
-          a.y -= ny * overlap * 0.5;
-          b.x += nx * overlap * 0.5;
-          b.y += ny * overlap * 0.5;
+          currentContacts.add(`${i}:${j}`);
+          const squeeze = Math.min(1, Math.max(0.18, overlap / (minDistance * 0.3) + (a.dragging || b.dragging ? 0.22 : 0)));
+          a.squish = Math.max(a.squish, squeeze);
+          b.squish = Math.max(b.squish, squeeze);
+          a.squishAngle = Math.atan2(ny, nx);
+          b.squishAngle = a.squishAngle;
+          a.contactAngle = a.squishAngle;
+          b.contactAngle = a.squishAngle + Math.PI;
+          if (!a.dragging) {
+            const correction = b.dragging ? overlap : overlap * 0.5;
+            a.x -= nx * correction;
+            a.y -= ny * correction;
+          }
+          if (!b.dragging) {
+            const correction = a.dragging ? overlap : overlap * 0.5;
+            b.x += nx * correction;
+            b.y += ny * correction;
+          }
           const relative = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
           if (relative < 0) {
             const impulse = -(1 + 0.86) * relative * 0.5;
@@ -657,11 +811,67 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
           }
         }
       }
-      bodies.forEach((body) => { body.element.style.transform = `translate3d(${body.x}px,${body.y}px,0)`; });
+      bodies.forEach((body, index) => {
+        let touching = false;
+        for (let otherIndex = 0; otherIndex < bodies.length; otherIndex += 1) {
+          if (otherIndex !== index && currentContacts.has(`${Math.min(index, otherIndex)}:${Math.max(index, otherIndex)}`)) { touching = true; break; }
+        }
+        body.element.classList.toggle('is-colliding', touching);
+        body.element.style.setProperty('--squish-compress', (1 - body.squish * 0.19).toFixed(3));
+        body.element.style.setProperty('--squish-stretch', (1 + body.squish * 0.13).toFixed(3));
+        body.element.style.setProperty('--squish-angle', `${body.squishAngle}rad`);
+        body.element.style.setProperty('--squish-angle-reverse', `${-body.squishAngle}rad`);
+        body.element.style.setProperty('--contact-angle', `${body.contactAngle}rad`);
+        body.element.style.setProperty('--contact-strength', body.squish.toFixed(3));
+        body.element.style.transform = `translate3d(${body.x}px,${body.y}px,0)`;
+      });
     };
     frame = window.requestAnimationFrame(animate);
-    return () => { window.cancelAnimationFrame(frame); resizeObserver.disconnect(); };
+    return () => { window.cancelAnimationFrame(frame); resizeObserver.disconnect(); physicsRef.current.bodies = []; };
   }, []);
+
+  const beginBubbleDrag = (bubble, event) => {
+    const body = physicsRef.current.bodies.find((item) => item.element.dataset.id === bubble.id);
+    const field = fieldRef.current;
+    if (!body || !field) return;
+    const rect = field.getBoundingClientRect();
+    body.dragging = true;
+    body.dragOffsetX = event.clientX - rect.left - body.x - body.diameter / 2;
+    body.dragOffsetY = event.clientY - rect.top - body.y - body.diameter / 2;
+    body.dragLastX = body.x;
+    body.dragLastY = body.y;
+    body.dragLastAt = performance.now();
+    body.vx = 0;
+    body.vy = 0;
+    body.element.classList.add('is-dragging');
+  };
+
+  const moveBubbleDrag = (bubble, event) => {
+    const body = physicsRef.current.bodies.find((item) => item.element.dataset.id === bubble.id);
+    const field = fieldRef.current;
+    if (!body?.dragging || !field) return;
+    const rect = field.getBoundingClientRect();
+    const now = performance.now();
+    const nextX = event.clientX - rect.left - body.dragOffsetX - body.diameter / 2;
+    const nextY = event.clientY - rect.top - body.dragOffsetY - body.diameter / 2;
+    const elapsed = Math.max(0.012, (now - body.dragLastAt) / 1000);
+    body.vx = Math.max(-360, Math.min(360, (nextX - body.dragLastX) / elapsed * 0.2));
+    body.vy = Math.max(-360, Math.min(360, (nextY - body.dragLastY) / elapsed * 0.2));
+    body.x = Math.max(0, Math.min(field.clientWidth - body.diameter, nextX));
+    body.y = Math.max(0, Math.min(field.clientHeight - body.diameter, nextY));
+    body.dragLastX = body.x;
+    body.dragLastY = body.y;
+    body.dragLastAt = now;
+    body.element.style.transform = `translate3d(${body.x}px,${body.y}px,0)`;
+  };
+
+  const endBubbleDrag = (bubble) => {
+    const body = physicsRef.current.bodies.find((item) => item.element.dataset.id === bubble.id);
+    if (!body?.dragging) return;
+    body.dragging = false;
+    body.element.classList.remove('is-dragging');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) body.vx = body.vy = 0;
+  };
 
   const handleBubblePop = (bubble, event) => {
     const field = fieldRef.current;
@@ -701,9 +911,9 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
             <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => setKindFilter(key)}><i>{symbol}</i><span>{label}</span></button>
           ))}
         </div>
-        <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="漂浮的个人声音泡泡">
+        <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="可拖动、相撞并戳开的个人声音泡泡">
           {bubbles.map((bubble, index) => (
-            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={handleBubblePop} onFocus={() => setFocusedId(bubble.id)} focused={focusedId === bubble.id} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
+            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={handleBubblePop} onDragStart={beginBubbleDrag} onDragMove={moveBubbleDrag} onDragEnd={endBubbleDrag} onFocus={() => setFocusedId(bubble.id)} focused={focusedId === bubble.id} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
           ))}
           <BubbleBurstLayer bursts={bursts} />
         </div>
