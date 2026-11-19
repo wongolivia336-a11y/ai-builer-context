@@ -1212,12 +1212,12 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
 
   return (
     <Scene className={`app-roam${cameraStream ? ' has-camera' : ''}${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")`, '--scene-zoom': zoom, '--focus-x': focusX, '--focus-y': focusY, '--focus-size': `${anchor.size * zoom}px` }}>
-      {cameraStream && <CameraPreview stream={cameraStream} />}
       <div className="screen-topline">
         <span className="place-chip ar-place-chip"><i /> 江湾 · 漫游取景</span>
         <DevicePill playing={playing} emitting={emitting} />
       </div>
       <div className="roam-world">
+        {cameraStream && <CameraPreview stream={cameraStream} />}
         <div className="roam-sort glass-surface">
           <button className="active" onClick={() => onSelect(selected)}>空间回声 <i>03</i></button>
           <span>长按泡泡 · 看留言</span>
