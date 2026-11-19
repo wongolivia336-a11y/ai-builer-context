@@ -153,94 +153,187 @@ function BubbleSilhouette({ bubble }) {
   );
 }
 
-function OrbitTagTrack({ bubble }) {
-  const orbitRef = useRef(null);
-  const tweenRef = useRef(null);
-  const dragRef = useRef(null);
-  const note = bubble.comments[0]?.text || bubble.quote;
-  const width = bubble.size + 94;
-  const height = bubble.size + 84;
+function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase, nearSide }) {
   const cx = width / 2;
   const cy = height / 2;
-  const rx = width / 2 - 9;
-  const ry = height / 2 - 9;
-  const circumference = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
-  const pathId = `orbit-text-${bubble.id.replace(/[^a-z0-9-]/gi, '-')}`;
-  const crossRx = rx * 0.82;
-  const crossRy = ry * 0.78;
-  const crossCircumference = Math.PI * (3 * (crossRx + crossRy) - Math.sqrt((3 * crossRx + crossRy) * (crossRx + 3 * crossRy)));
-  const crossPathId = `orbit-cross-text-${bubble.id.replace(/[^a-z0-9-]/gi, '-')}`;
-  const copy = [bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`, `「${note}」`, bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`].join('   ✦   ');
-  const crossCopy = [`ECHO / ${bubble.saves}`, note, bubble.kind, `声音留下 ${bubble.duration}`, `ECHO / ${bubble.saves}`].join('   ·   ');
+  const rx = bubbleSize * 0.76;
+  const ry = bubbleSize * 0.28;
+  const tilt = -0.16;
+  const cosTilt = Math.cos(tilt);
+  const sinTilt = Math.sin(tilt);
+  const pointAt = (angle) => {
+    const x = rx * Math.cos(angle);
+    const y = ry * Math.sin(angle);
+    return { x: cx + x * cosTilt - y * sinTilt, y: cy + x * sinTilt + y * cosTilt };
+  };
+  const smoothstep = (edge0, edge1, value) => {
+    const t = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  };
 
-  useLayoutEffect(() => {
-    const orbit = orbitRef.current;
-    if (!orbit) return undefined;
+  context.save();
+  context.beginPath();
+  const start = nearSide ? 0 : Math.PI;
+  const end = nearSide ? Math.PI : Math.PI * 2;
+  for (let step = 0; step <= 64; step += 1) {
+    const point = pointAt(start + ((end - start) * step) / 64);
+    if (step === 0) context.moveTo(point.x, point.y);
+    else context.lineTo(point.x, point.y);
+  }
+  context.lineWidth = nearSide ? 1.35 : 0.95;
+  context.strokeStyle = nearSide ? 'rgba(255,255,255,.91)' : 'rgba(255,255,255,.37)';
+  context.shadowColor = nearSide ? 'rgba(229,213,238,.82)' : 'rgba(210,224,236,.48)';
+  context.shadowBlur = nearSide ? 8 : 4;
+  context.setLineDash(nearSide ? [] : [2.2, 3.2]);
+  context.stroke();
+  context.setLineDash([]);
+  context.shadowBlur = 0;
+
+  const count = chars.length;
+  if (!count) {
+    context.restore();
+    return;
+  }
+  const fontSize = Math.max(7, Math.min(9.6, bubbleSize * 0.048));
+  context.font = `650 ${fontSize}px "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.lineJoin = 'round';
+  context.lineWidth = Math.max(2, fontSize * 0.32);
+  context.strokeStyle = 'rgba(250,252,255,.92)';
+  context.fillStyle = nearSide ? 'rgba(48,62,82,.94)' : 'rgba(65,78,94,.6)';
+
+  for (let index = 0; index < count; index += 1) {
+    const angle = (index / count) * Math.PI * 2 + phase;
+    const depth = Math.sin(angle);
+    const sideDistance = Math.abs(Math.cos(angle));
+    let opacity = nearSide
+      ? smoothstep(0.02, 0.32, depth)
+      : smoothstep(0.82, 0.98, sideDistance) * 0.42;
+    if (!opacity) continue;
+
+    const point = pointAt(angle);
+    const glyphIndex = nearSide
+      ? (count - 1 - index + count * 2) % count
+      : (index + count * 2) % count;
+    const glyph = chars[glyphIndex];
+    if (!glyph || glyph === ' ') continue;
+
+    let tangent = Math.atan2(
+      -rx * Math.sin(angle) * sinTilt + ry * Math.cos(angle) * cosTilt,
+      -rx * Math.sin(angle) * cosTilt - ry * Math.cos(angle) * sinTilt,
+    );
+    while (tangent > Math.PI / 2) tangent -= Math.PI;
+    while (tangent < -Math.PI / 2) tangent += Math.PI;
+    tangent = Math.max(-0.28, Math.min(0.28, tangent));
+    const scale = nearSide ? 0.94 + Math.max(0, depth) * 0.13 : 0.9;
+
+    context.save();
+    context.globalAlpha = opacity;
+    context.translate(point.x, point.y);
+    context.rotate(tangent);
+    context.scale(scale, scale);
+    context.shadowColor = nearSide ? 'rgba(255,255,255,.48)' : 'rgba(255,255,255,.26)';
+    context.shadowBlur = nearSide ? 3 : 1.5;
+    context.strokeText(glyph, 0, 0);
+    context.shadowBlur = 0;
+    context.fillText(glyph, 0, 0);
+    context.restore();
+  }
+  context.restore();
+}
+
+function OrbitTagTrack({ bubble, size = bubble.size, children }) {
+  const backCanvasRef = useRef(null);
+  const frontCanvasRef = useRef(null);
+  const rotationRef = useRef(0);
+  const dragRef = useRef(null);
+  const pausedRef = useRef(false);
+  const drawRef = useRef(() => {});
+  const note = bubble.comments[0]?.text || bubble.quote;
+  const width = size + 124;
+  const height = size + 88;
+  const chars = Array.from(`${bubble.title}   ✦   ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}   ✦   ${note}   ✦   ${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`);
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = size * 0.76;
+  const ry = size * 0.28;
+  const rightHandle = `M ${cx + rx * 0.8} ${cy - ry * 0.55} C ${cx + rx * 1.13} ${cy - ry * 0.46} ${cx + rx * 1.13} ${cy + ry * 0.46} ${cx + rx * 0.8} ${cy + ry * 0.55}`;
+  const leftHandle = `M ${cx - rx * 0.8} ${cy + ry * 0.55} C ${cx - rx * 1.13} ${cy + ry * 0.46} ${cx - rx * 1.13} ${cy - ry * 0.46} ${cx - rx * 0.8} ${cy - ry * 0.55}`;
+
+  useEffect(() => {
+    const backCanvas = backCanvasRef.current;
+    const frontCanvas = frontCanvasRef.current;
+    const backContext = backCanvas?.getContext('2d');
+    const frontContext = frontCanvas?.getContext('2d');
+    if (!backCanvas || !frontCanvas || !backContext || !frontContext) return undefined;
+
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    [backCanvas, frontCanvas].forEach((canvas) => {
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      canvas.getContext('2d').setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    });
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const spin = () => {
-      tweenRef.current = gsap.to(orbit, { rotation: '+=360', duration: 38, ease: 'none', repeat: -1 });
+    let frame = 0;
+    let previousTime = performance.now();
+    const draw = (time) => {
+      const delta = Math.min(48, time - previousTime);
+      previousTime = time;
+      if (!pausedRef.current && !reduced) rotationRef.current += delta * 0.00018;
+      [backContext, frontContext].forEach((context) => context.clearRect(0, 0, width, height));
+      paintOrbitHemisphere(backContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: false });
+      paintOrbitHemisphere(frontContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: true });
     };
-    gsap.set(orbit, { rotation: 0, transformOrigin: '50% 50%' });
-    if (!reduced) spin();
-    return () => { tweenRef.current?.kill(); tweenRef.current = null; };
-  }, [bubble.id]);
+    drawRef.current = draw;
+    if (reduced) draw(performance.now());
+    else {
+      const tick = (time) => {
+        draw(time);
+        frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      drawRef.current = () => {};
+    };
+  }, [bubble.id, chars.join(''), height, size, width]);
 
   const startDrag = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    const orbit = orbitRef.current;
-    if (!orbit) return;
-    tweenRef.current?.pause();
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    dragRef.current = { x: event.clientX, rotation: Number(gsap.getProperty(orbit, 'rotation')) || 0, pointerId: event.pointerId };
+    pausedRef.current = true;
+    dragRef.current = { x: event.clientX, rotation: rotationRef.current, pointerId: event.pointerId };
   };
   const moveDrag = (event) => {
     const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !orbitRef.current) return;
-    gsap.set(orbitRef.current, { rotation: drag.rotation + ((event.clientX - drag.x) / width) * 360 });
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    rotationRef.current = drag.rotation + ((event.clientX - drag.x) / width) * Math.PI * 2;
+    drawRef.current(performance.now());
   };
   const endDrag = (event) => {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    tweenRef.current?.kill();
-    tweenRef.current = null;
-    if (!event.currentTarget.matches(':hover') && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      tweenRef.current = gsap.to(orbitRef.current, { rotation: '+=360', duration: 38, ease: 'none', repeat: -1 });
-    }
+    pausedRef.current = event.currentTarget.matches(':hover');
+    drawRef.current(performance.now());
   };
-  const pauseOnHover = (event) => { if (event.pointerType === 'mouse') tweenRef.current?.pause(); };
-  const resumeAfterHover = (event) => {
-    if (event.pointerType !== 'mouse' || dragRef.current || !tweenRef.current?.paused()) return;
-    tweenRef.current.kill();
-    tweenRef.current = null;
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      tweenRef.current = gsap.to(orbitRef.current, { rotation: '+=360', duration: 38, ease: 'none', repeat: -1 });
-    }
-  };
+  const pauseOnHover = (event) => { if (event.pointerType === 'mouse') pausedRef.current = true; };
+  const resumeAfterHover = (event) => { if (event.pointerType === 'mouse' && !dragRef.current) pausedRef.current = false; };
+  const pointerProps = { onPointerEnter: pauseOnHover, onPointerLeave: resumeAfterHover, onPointerDown: startDrag, onPointerMove: moveDrag, onPointerUp: endDrag, onPointerCancel: endDrag };
 
   return (
-    <div className="bubble-orbit-position" style={{ width, height }} aria-hidden="true">
-      <svg ref={orbitRef} className="bubble-orbit-track" viewBox={`0 0 ${width} ${height}`} onPointerEnter={pauseOnHover} onPointerLeave={resumeAfterHover} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
-        <defs>
-          <path id={pathId} d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} />
-          <path id={crossPathId} d={`M ${cx} ${cy - crossRy} A ${crossRx} ${crossRy} 0 1 1 ${cx} ${cy + crossRy} A ${crossRx} ${crossRy} 0 1 1 ${cx} ${cy - crossRy}`} />
-        </defs>
-        <g className="bubble-orbit-cross" transform={`rotate(31 ${cx} ${cy})`}>
-          <ellipse className="bubble-orbit-cross-rail" cx={cx} cy={cy} rx={crossRx} ry={crossRy} />
-          <text className="bubble-orbit-cross-copy" textAnchor="start">
-            <textPath href={`#${crossPathId}`} startOffset="0" textLength={crossCircumference * 0.9} lengthAdjust="spacing">{crossCopy}</textPath>
-          </text>
-          <circle className="bubble-orbit-star orbit-cross-star" cx={cx + crossRx} cy={cy} r="1.7" />
-        </g>
-        <g transform={`rotate(-17 ${cx} ${cy})`}>
-          <ellipse className="bubble-orbit-rail" cx={cx} cy={cy} rx={rx} ry={ry} />
-          <path className="bubble-orbit-hit" d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} />
-          <text className="bubble-orbit-copy" textAnchor="start">
-            <textPath href={`#${pathId}`} startOffset="0" textLength={circumference * 0.94} lengthAdjust="spacing">{copy}</textPath>
-          </text>
-          <circle className="bubble-orbit-star" cx={cx + rx} cy={cy} r="2.2" />
-          <circle className="bubble-orbit-star orbit-star-two" cx={cx - rx} cy={cy} r="1.5" />
-        </g>
+    <div className="bubble-orbit-position" style={{ width, height }}>
+      <canvas ref={backCanvasRef} className="bubble-orbit-canvas bubble-orbit-back" aria-hidden="true" />
+      {children}
+      <canvas ref={frontCanvasRef} className="bubble-orbit-canvas bubble-orbit-front" aria-hidden="true" />
+      <svg className="bubble-orbit-input" viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+        <path d={rightHandle} {...pointerProps} />
+        <path d={leftHandle} {...pointerProps} />
       </svg>
     </div>
   );
@@ -792,29 +885,32 @@ function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onD
     return () => rebound.kill();
   }, [popped]);
 
+  const bubbleButton = (
+    <button
+      ref={buttonRef}
+      className={`soap-bubble home-bubble accent-${bubble.accent}${bubble.shape ? ` has-silhouette shape-${bubble.shape}` : ''}${isResonant ? ' bubble-hot' : ''}`}
+      aria-label={`拖动或戳开${bubble.kind}泡泡并回听：${bubble.title}`}
+      title={`${bubble.kind} · ${bubble.title}`}
+      onPointerDown={pointerDown}
+      onPointerMove={pointerMove}
+      onPointerUp={pointerEnd}
+      onPointerCancel={pointerEnd}
+      onClick={(event) => { if (suppressClickRef.current) { suppressClickRef.current = false; return; } onFocus?.(); pop(event); }}
+    >
+      <span className="bubble-contact-film" aria-hidden="true" />
+      <span className="bubble-core" />
+      <span className="bubble-glint" />
+      <BubbleSilhouette bubble={bubble} />
+      <span className="bubble-rank-aura" />
+      <span className="bubble-rank-mark">{isResonant ? `共鸣 ${bubble.saves}` : ''}</span>
+      <span className="pop-ripple" />
+    </button>
+  );
+
   return (
     <div className={`bubble-body kind-${bubble.kindKey}${focused ? ' is-orbit-focus' : ''}${filtered ? ' is-filtered' : ''}${highlighted ? ' is-highlighted' : ''}${isResonant ? ' is-resonant' : ''}${popped ? ' is-popped' : ''}`} data-id={bubble.id} data-kind={bubble.kindKey} data-seed={index} style={{ '--bubble-size': `${bubble.size}px`, '--bubble-accent': bubble.accent }}>
       <svg className="bubble-filter-lasso" viewBox="0 0 160 142" aria-hidden="true"><path d="M81 5C119 2 154 26 153 66S132 131 84 136 7 116 7 73 36 10 81 5Z" /></svg>
-      <button
-        ref={buttonRef}
-        className={`soap-bubble home-bubble accent-${bubble.accent}${bubble.shape ? ` has-silhouette shape-${bubble.shape}` : ''}${isResonant ? ' bubble-hot' : ''}`}
-        aria-label={`拖动或戳开${bubble.kind}泡泡并回听：${bubble.title}`}
-        title={`${bubble.kind} · ${bubble.title}`}
-        onPointerDown={pointerDown}
-        onPointerMove={pointerMove}
-        onPointerUp={pointerEnd}
-        onPointerCancel={pointerEnd}
-        onClick={(event) => { if (suppressClickRef.current) { suppressClickRef.current = false; return; } onFocus?.(); pop(event); }}
-      >
-        <span className="bubble-contact-film" aria-hidden="true" />
-        <span className="bubble-core" />
-        <span className="bubble-glint" />
-        <BubbleSilhouette bubble={bubble} />
-        <span className="bubble-rank-aura" />
-        <span className="bubble-rank-mark">{isResonant ? `共鸣 ${bubble.saves}` : ''}</span>
-        <span className="pop-ripple" />
-      </button>
-      {focused && !popped && <OrbitTagTrack bubble={bubble} />}
+      {focused && !popped ? <OrbitTagTrack bubble={bubble} size={bubble.size}>{bubbleButton}</OrbitTagTrack> : bubbleButton}
       <span className="bubble-label"><strong>{bubble.title}</strong><small><i /> {bubble.kind} · {bubble.duration}</small></span>
     </div>
   );
@@ -1265,8 +1361,11 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
                 const size = featured ? 164 : Math.max(58, Math.min(118, bubble.size * 0.76));
                 return (
                   <div className={`projection-home-orb${featured ? ' is-featured' : ''}${bubble.saves >= 50 || bubble.comments.length >= 2 ? ' is-resonant' : ''}`} key={bubble.id} style={{ left: `${point[0]}%`, top: `${point[1]}%`, '--bubble-size': `${size}px`, '--float-delay': `${(index % 7) * -0.6}s` }}>
-                    <Bubble size={size} bubble={bubble} className={`accent-${bubble.accent}`} label={bubble.title} />
-                    {featured && <OrbitTagTrack bubble={bubble} />}
+                    {featured ? (
+                      <OrbitTagTrack bubble={bubble} size={size}>
+                        <Bubble size={size} bubble={bubble} className={`accent-${bubble.accent}`} label={bubble.title} />
+                      </OrbitTagTrack>
+                    ) : <Bubble size={size} bubble={bubble} className={`accent-${bubble.accent}`} label={bubble.title} />}
                     <span>{featured ? '' : bubble.title}</span>
                   </div>
                 );

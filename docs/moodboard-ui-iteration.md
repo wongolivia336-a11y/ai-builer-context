@@ -33,7 +33,7 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 
 - Keep all sound bubbles moving, colliding, and bouncing within the phone viewport. Physics continues to use each bubble's circular bounding volume; a visual silhouette can be a heart, star, flower, or soft organic shape.
 - Give bubbles four restrained material families drawn from the moodboard: clear pearl, pale sky-blue glass, blush opal, and a small number of lilac/chrome accents. Keep highlights soft and the thin iridescent film low contrast.
-- Make one pearl orb the current visual focus. A continuous string of short metadata (sound title, type, duration, saves, and one short listener response) follows a close tilted ellipse, crossed by a second, quieter orbit line carrying an echo note. Let the rings move slowly, pause on hover, and allow dragging directly on their outer stroke. The remaining bubbles keep their compact title labels.
+- Make one pearl orb the current visual focus. Give it a tilted equatorial text orbit that passes across the bubble's volume. Paint the far-side rail and glyphs behind the bubble so its body masks them; paint the near-side rail and glyphs above the bubble, with perspective scale and soft fades as letters turn toward the viewer. The metadata string should keep circling so only its front-facing section becomes readable. Let the orbit move slowly, pause on hover, and allow dragging from the outer handles. The remaining bubbles keep their compact title labels.
 - Preserve tap-to-pop, sound playback simulation, content filters, and the existing filter lasso. Let bubbles move under pointer drag and give overlaps a brief aligned squash/stretch plus a translucent contact film. Each non-circular silhouette must have a clear hit area, visible focus state, and reduced-motion fallback.
 
 ### Roam / AR capture
@@ -58,7 +58,7 @@ Keep the current React, SVG, CSS, and GSAP setup. [`p5.brush`](https://github.co
 ## Acceptance review
 
 1. The Gallery still reads as an irregular, screen-filling bubble field, with visibly varied silhouettes and no loss of pop/playback or filter interactions.
-2. The focused orb's two crossed orbit lines read as separate near/far paths; the text remains legible, manually browsable, and does not cover nearby controls or the orb's tap area.
+2. The focused orb reads as a small volume with text passing around its equator: far-side letters disappear behind the bubble, and front-side letters cross its surface with a slow, readable rotation. The orbit remains manually browsable from its outer handles and does not block the bubble tap target.
 3. Entering roam communicates scan → brief buffer → AR-style capture. Each state can finish, be skipped where appropriate, and responds to reduced motion.
 4. Roam overlays read as 2D illustrations in a real photographed scene, while the primary capture target remains the clearest object.
 5. README and demo-scope documentation describe only the capabilities present in this browser prototype.
