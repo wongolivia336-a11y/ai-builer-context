@@ -1171,3 +1171,35 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
   .tab-liquid-indicator,.tab-liquid-tail,.spatial-ar-launch { transition-duration:.01ms!important; }
   .spatial-bubble-arrive,.spatial-bubble-breathe,.spatial-comment-in,.spatial-capture-flow path,.spatial-capture-flash { animation-duration:.01ms!important; }
 }
+
+
+/* The category selector stretches past its rail and leaves a short liquid wake while dragging. */
+.filter-liquid-indicator {
+  overflow:visible;
+  transform:translateX(var(--filter-progress,0%)) scaleX(var(--filter-stretch,1.06));
+  transform-origin:center center;
+  transition:transform .5s cubic-bezier(.18,.9,.24,1.14),filter .28s ease;
+  will-change:transform;
+}
+.filter-liquid-indicator .filter-liquid-tail {
+  position:absolute;
+  top:29%;
+  bottom:29%;
+  display:block;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(217,244,111,.88),rgba(247,255,218,.95));
+  box-shadow:0 0 9px rgba(213,255,111,.38);
+  opacity:.82;
+  transition:width .4s cubic-bezier(.18,.86,.2,1),opacity .25s ease;
+  pointer-events:none;
+}
+.filter-liquid-indicator .filter-liquid-tail.tail-left { right:calc(100% - 7px); width:var(--filter-tail-left,0px); transform-origin:right center; }
+.filter-liquid-indicator .filter-liquid-tail.tail-right { left:calc(100% - 7px); width:var(--filter-tail-right,0px); transform-origin:left center; }
+.gallery-filter.is-filter-dragging .filter-liquid-indicator {
+  filter:saturate(1.18) brightness(1.035);
+  transition:none;
+}
+.gallery-filter.is-filter-dragging .filter-liquid-tail {
+  opacity:1;
+  transition:none;
+}
