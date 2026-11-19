@@ -689,8 +689,8 @@ function CaptureWaterFlow({ anchorIndex }) {
         <filter id="capture-water-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.6" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
       </defs>
       <path className="water-flow-trail" d={path} />
-      <path className="water-flow-ribbon" d={path} pathLength="100" />
-      <path className="water-flow-core" d={path} pathLength="100" />
+      <path className="water-flow-ribbon" d={path} pathLength="100" stroke="url(#capture-water-gradient)" filter="url(#capture-water-glow)" />
+      <path className="water-flow-core" d={path} pathLength="100" stroke="url(#capture-water-gradient)" filter="url(#capture-water-glow)" />
       <circle className="water-flow-pearl" r="1.35" filter="url(#capture-water-glow)"><animateMotion dur="1.18s" fill="freeze" path={path} /></circle>
     </svg>
   );
