@@ -77,7 +77,6 @@ function TabBar({ active, onChange }) {
   };
   const handlePointerDown = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
     const progress = progressAtPointer(event);
     gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setDragProgress(progress);
@@ -1058,7 +1057,6 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const beginFilterGesture = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     const progress = filterProgressAtPointer(event);
-    event.currentTarget.setPointerCapture?.(event.pointerId);
     filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setFilterDragProgress(progress);
     setFilterPhysics({ stretch: 1.12, tailLeft: 0, tailRight: 0 });
