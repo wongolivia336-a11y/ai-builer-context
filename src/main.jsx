@@ -153,7 +153,7 @@ function BubbleSilhouette({ bubble }) {
   );
 }
 
-function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase, nearSide, outlinePoints }) {
+function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase, nearSide, outlinePoints, fontSize }) {
   const cx = width / 2;
   const cy = height / 2;
   const rx = bubbleSize * 0.76;
@@ -161,7 +161,7 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
   const tilt = -0.16;
   const cosTilt = Math.cos(tilt);
   const sinTilt = Math.sin(tilt);
-  const shapeTrackScale = (bubbleSize + 30) / 100;
+  const shapeTrackScale = (bubbleSize + 44) / 100;
   const pointOnOutline = (index) => {
     const count = outlinePoints.length;
     const position = ((index % count) + count) % count;
@@ -213,25 +213,26 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
       else context.lineTo(point.x, point.y);
     }
   }
-  context.lineWidth = nearSide ? 1.35 : 0.95;
-  context.strokeStyle = nearSide ? 'rgba(255,255,255,.91)' : 'rgba(255,255,255,.37)';
+  context.lineWidth = outlinePoints ? (nearSide ? 1.45 : 0.8) : (nearSide ? 1.35 : 0.95);
+  context.strokeStyle = outlinePoints
+    ? (nearSide ? 'rgba(255,255,255,.94)' : 'rgba(255,255,255,.22)')
+    : (nearSide ? 'rgba(255,255,255,.91)' : 'rgba(255,255,255,.37)');
   context.shadowColor = nearSide ? 'rgba(229,213,238,.82)' : 'rgba(210,224,236,.48)';
   context.shadowBlur = nearSide ? 8 : 4;
-  context.setLineDash(nearSide ? [] : [2.2, 3.2]);
+  context.setLineDash(nearSide ? [] : outlinePoints ? [1.8, 3.8] : [2.2, 3.2]);
   context.stroke();
   context.setLineDash([]);
   context.shadowBlur = 0;
 
   const count = chars.length;
   if (!count) { context.restore(); return; }
-  const fontSize = Math.max(7, Math.min(9.6, bubbleSize * 0.048));
   context.font = `650 ${fontSize}px "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.lineJoin = 'round';
-  context.lineWidth = Math.max(2, fontSize * 0.32);
-  context.strokeStyle = 'rgba(250,252,255,.92)';
-  context.fillStyle = nearSide ? 'rgba(48,62,82,.94)' : 'rgba(65,78,94,.6)';
+  context.lineWidth = Math.max(2.2, fontSize * (outlinePoints ? 0.38 : 0.32));
+  context.strokeStyle = outlinePoints ? 'rgba(250,252,255,.98)' : 'rgba(250,252,255,.92)';
+  context.fillStyle = nearSide ? 'rgba(41,53,72,.97)' : 'rgba(65,78,94,.48)';
 
   for (let index = 0; index < count; index += 1) {
     const angle = (index / count) * Math.PI * 2 + phase;
@@ -239,8 +240,8 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
     const depth = outlinePoints?.length ? point.depth : Math.sin(angle);
     const sideDistance = Math.abs(Math.cos(angle));
     const opacity = nearSide
-      ? smoothstep(0.02, 0.32, depth)
-      : outlinePoints?.length ? smoothstep(0.02, 0.42, -depth) * 0.36 : smoothstep(0.82, 0.98, sideDistance) * 0.42;
+      ? smoothstep(0.02, outlinePoints ? 0.25 : 0.32, depth)
+      : outlinePoints?.length ? smoothstep(0.02, 0.42, -depth) * 0.2 : smoothstep(0.82, 0.98, sideDistance) * 0.42;
     if (!opacity) continue;
 
     const glyphIndex = nearSide
@@ -256,7 +257,9 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
     while (tangent > Math.PI / 2) tangent -= Math.PI;
     while (tangent < -Math.PI / 2) tangent += Math.PI;
     if (!outlinePoints?.length) tangent = Math.max(-0.28, Math.min(0.28, tangent));
-    const scale = nearSide ? 0.94 + Math.max(0, depth) * 0.13 : 0.9;
+    const scale = outlinePoints
+      ? nearSide ? 0.96 + Math.max(0, depth) * 0.16 : 0.82
+      : nearSide ? 0.94 + Math.max(0, depth) * 0.13 : 0.9;
 
     context.save();
     context.globalAlpha = opacity;
@@ -285,13 +288,16 @@ function OrbitTagTrack({ bubble, size = bubble.size, children, focused = false }
   const outlinePath = bubble.shape && bubble.shape !== 'orb' ? BUBBLE_SHAPE_PATHS[bubble.shape] : null;
   const compactText = `${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
   const orbitText = outlinePath
-    ? `${compactText}${focused ? ` · ${note.slice(0, 12)}` : ''}   ✦   ${compactText}`
+    ? `${compactText}   ✦   ${focused ? `${note.slice(0, 10)}   ✦   ` : ''}${compactText}   ✦   ${compactText}`
     : `${bubble.title}   ✦   ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}   ✦   ${note}   ✦   ${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
-  const orbitFontSize = Math.max(7, Math.min(9.6, size * 0.048));
+  const orbitFontSize = outlinePath
+    ? Math.max(8.4, Math.min(11.2, size * 0.062))
+    : Math.max(7, Math.min(9.6, size * 0.048));
   const orbitChars = Array.from(orbitText);
-  const chars = outlinePath ? orbitChars.slice(0, Math.max(26, Math.floor((size * 2.8) / orbitFontSize))) : orbitChars;
-  const width = size + (outlinePath ? 48 : 124);
-  const height = size + (outlinePath ? 48 : 88);
+  const shapeGlyphCount = Math.ceil(((size + 44) * 3.05) / (orbitFontSize * 0.82));
+  const chars = outlinePath ? orbitChars.slice(0, Math.max(42, shapeGlyphCount)) : orbitChars;
+  const width = size + (outlinePath ? 76 : 124);
+  const height = size + (outlinePath ? 76 : 88);
   const cx = width / 2;
   const cy = height / 2;
   const rx = size * 0.76;
@@ -333,8 +339,8 @@ function OrbitTagTrack({ bubble, size = bubble.size, children, focused = false }
       previousTime = time;
       if (!pausedRef.current && !reduced) rotationRef.current += delta * 0.00018;
       [backContext, frontContext].forEach((context) => context.clearRect(0, 0, width, height));
-      paintOrbitHemisphere(backContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: false, outlinePoints });
-      paintOrbitHemisphere(frontContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: true, outlinePoints });
+      paintOrbitHemisphere(backContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: false, outlinePoints, fontSize: orbitFontSize });
+      paintOrbitHemisphere(frontContext, { width, height, bubbleSize: size, chars, phase: rotationRef.current, nearSide: true, outlinePoints, fontSize: orbitFontSize });
     };
     drawRef.current = draw;
     if (reduced) draw(performance.now());
@@ -1046,8 +1052,8 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
         const edgeY = Math.max(0, height - body.diameter);
         const isOrbitFocus = body.element.classList.contains('is-orbit-focus');
         const hasOrbit = body.element.classList.contains('has-orbit');
-        const orbitPaddingX = isOrbitFocus ? 102 : hasOrbit ? 24 : 0;
-        const orbitPaddingY = isOrbitFocus ? 60 : hasOrbit ? 24 : 0;
+        const orbitPaddingX = isOrbitFocus ? 102 : hasOrbit ? 40 : 0;
+        const orbitPaddingY = isOrbitFocus ? 60 : hasOrbit ? 40 : 0;
         const minX = Math.min(orbitPaddingX, edgeX / 2);
         const maxX = Math.max(minX, edgeX - minX);
         const minY = Math.min(orbitPaddingY, edgeY / 2);
