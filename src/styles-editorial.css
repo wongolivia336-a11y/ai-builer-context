@@ -985,7 +985,7 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .spatial-ar-entry {
   position:absolute;
   z-index:5;
-  top:77px;
+  top:105px;
   left:12px;
   right:12px;
   pointer-events:auto;
