@@ -75,18 +75,18 @@ function DevicePill({ playing, emitting = false }) {
 }
 
 const SOUND_BUBBLES = [
-  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 138, accent: 'blue', shape: 'heart', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
-  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 106, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
-  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 94, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
-  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 116, accent: 'lilac', shape: 'flower', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
-  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 86, accent: 'lilac', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
-  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 124, accent: 'blue', shape: 'flower', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
-  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 100, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
-  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 90, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
-  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 108, accent: 'rose', shape: 'flower', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
-  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 78, accent: 'gold', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
-  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 88, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
-  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 82, accent: 'lilac', shape: 'flower', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
+  { id: 'wind', title: '河面上的风', quote: '风从河面来，像一句没说完的话。', author: '林', duration: '12 秒', saves: 86, listens: 214, distance: 8, size: 154, accent: 'blue', shape: 'orb', kind: '环境声', kindKey: 'ambience', age: 5, comments: [{ author: '阿岚', text: '听完想多走一站。' }, { author: '木木', text: '像小时候傍晚的风。' }] },
+  { id: 'bell', title: '巷口的钟声', quote: '你听，巷子尽头的钟声又响了。', author: '阿岚', duration: '8 秒', saves: 54, listens: 172, distance: 18, size: 128, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 3, comments: [{ author: '小满', text: '这个回声好像从老房子里来。' }] },
+  { id: 'steps', title: '刚经过的人', quote: '有人刚刚从这里走过。', author: '匿名漫游者', duration: '6 秒', saves: 31, listens: 98, distance: 23, size: 116, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 1, comments: [{ author: '林', text: '谢谢你把这一刻留下。' }] },
+  { id: 'osmanthus', title: '桂花茶的下午', quote: '这家店的桂花茶，下午最香。', author: '小满', duration: '10 秒', saves: 22, listens: 61, distance: 31, size: 140, accent: 'lilac', shape: 'flower', kind: '碎念', kindKey: 'thought', age: 2, comments: [{ author: '匿名漫游者', text: '我也记得这个味道。' }] },
+  { id: 'rain', title: '雨停以后', quote: '雨停以后，石板路会闪一下。', author: '江边散步的人', duration: '9 秒', saves: 17, listens: 44, distance: 42, size: 106, accent: 'lilac', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 0, comments: [{ author: '阿岚', text: '雨后的路总像刚醒过来。' }] },
+  { id: 'market', title: '收摊前的灯', quote: '收摊前最后一盏灯亮着。', author: '路过的人', duration: '7 秒', saves: 28, listens: 73, distance: 15, size: 150, accent: 'blue', shape: 'flower', kind: '环境声', kindKey: 'ambience', age: 4, comments: [{ author: '小满', text: '听见塑料袋窸窣的声音了。' }] },
+  { id: 'goodnight', title: '没说出口的晚安', quote: '今天很累的话，就早点回家吧。', author: '夜行者', duration: '8 秒', saves: 42, listens: 106, distance: 26, size: 124, accent: 'rose', shape: 'heart', kind: '人声', kindKey: 'voice', age: 6, comments: [{ author: '林', text: '刚好在需要的时候听见。' }, { author: '阿岚', text: '像有人轻轻拍了拍肩。' }] },
+  { id: 'bicycle', title: '车铃经过', quote: '一声车铃，穿过树影。', author: '阿禾', duration: '5 秒', saves: 19, listens: 49, distance: 37, size: 108, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 7, comments: [{ author: '路过的人', text: '画面一下就出来了。' }] },
+  { id: 'smallwish', title: '给明天的小愿望', quote: '希望明天的自己轻松一点。', author: '匿名漫游者', duration: '6 秒', saves: 35, listens: 91, distance: 12, size: 138, accent: 'rose', shape: 'flower', kind: '人声', kindKey: 'voice', age: 8, comments: [{ author: '小满', text: '愿望已经收到。' }] },
+  { id: 'soda', title: '窗边的汽水', quote: '汽水打开的时候，天刚刚暗下来。', author: '栗子', duration: '7 秒', saves: 25, listens: 62, distance: 28, size: 100, accent: 'gold', shape: 'cloud', kind: '碎念', kindKey: 'thought', age: 9, comments: [{ author: '小满', text: '听见气泡声了。' }] },
+  { id: 'morning', title: '早班车经过', quote: '早班车带着风从桥上过去。', author: '阿禾', duration: '11 秒', saves: 47, listens: 131, distance: 34, size: 112, accent: 'blue', shape: 'star', kind: '环境声', kindKey: 'ambience', age: 10, comments: [{ author: '林', text: '这一段像电影开场。' }, { author: '阿岚', text: '桥上的风真的很特别。' }] },
+  { id: 'postcard', title: '给陌生人的明信片', quote: '如果你今天有点累，记得慢慢走。', author: '匿名漫游者', duration: '9 秒', saves: 39, listens: 104, distance: 19, size: 102, accent: 'lilac', shape: 'flower', kind: '人声', kindKey: 'voice', age: 11, comments: [{ author: '路过的人', text: '谢谢，这句我收下了。' }] },
 ];
 
 const BUBBLE_FIELD_SEEDS = [
@@ -96,6 +96,7 @@ const BUBBLE_FIELD_SEEDS = [
 ];
 
 const BUBBLE_SHAPE_PATHS = {
+  orb: 'M50 4 C76 3 96 23 96 49 C97 75 77 96 51 96 C25 97 4 77 4 51 C3 25 24 5 50 4 Z',
   heart: 'M50 94 C43 88 5 60 5 34 C5 15 29 6 50 28 C71 6 95 15 95 34 C95 60 57 88 50 94 Z',
   star: 'M50 4 C54 4 57 27 63 33 C69 39 90 34 94 39 C98 44 80 57 78 64 C76 71 88 89 83 94 C78 99 59 83 52 83 C45 83 27 99 22 94 C17 89 29 71 27 64 C25 57 7 44 11 39 C15 34 36 39 42 33 C48 27 46 4 50 4 Z',
   flower: 'M50 12 C41 1 27 7 29 21 C15 12 5 23 15 35 C1 41 7 56 22 58 C11 70 21 84 36 77 C39 93 56 95 62 79 C76 89 89 78 79 64 C96 59 93 44 79 40 C86 25 75 13 62 21 C59 15 55 12 50 12 Z',
@@ -113,10 +114,16 @@ function BubbleSilhouette({ bubble }) {
     <svg className={`bubble-silhouette silhouette-${bubble.shape}`} viewBox="0 0 100 100" aria-hidden="true">
       <defs>
         <radialGradient id={fillId} cx="30%" cy="23%" r="82%">
-          <stop offset="0%" stopColor="#fff" stopOpacity=".94" />
-          <stop offset="30%" stopColor="var(--bubble-tint)" stopOpacity=".72" />
-          <stop offset="73%" stopColor="var(--bubble-tint)" stopOpacity=".44" />
-          <stop offset="100%" stopColor="#fff" stopOpacity=".76" />
+          <stop offset="0%" stopColor="#fff" stopOpacity=".98" />
+          <stop offset="22%" stopColor="var(--bubble-tint)" stopOpacity=".64" />
+          <stop offset="64%" stopColor="var(--bubble-tint)" stopOpacity=".42" />
+          <stop offset="88%" stopColor="var(--bubble-edge)" stopOpacity=".32" />
+          <stop offset="100%" stopColor="#fff" stopOpacity=".74" />
+        </radialGradient>
+        <radialGradient id={`${fillId}-volume`} cx="69%" cy="78%" r="66%">
+          <stop offset="0%" stopColor="var(--bubble-edge)" stopOpacity=".18" />
+          <stop offset="52%" stopColor="var(--bubble-tint)" stopOpacity=".08" />
+          <stop offset="100%" stopColor="#fff" stopOpacity=".08" />
         </radialGradient>
         <linearGradient id={filmId} x1="0" y1="0" x2="1" y2="1">
           <stop stopColor="#fff" stopOpacity=".96" />
@@ -128,11 +135,13 @@ function BubbleSilhouette({ bubble }) {
         <clipPath id={clipId}><path d={path} /></clipPath>
       </defs>
       <path className="bubble-silhouette-surface" d={path} fill={`url(#${fillId})`} />
+      <path d={path} fill={`url(#${fillId}-volume)`} />
       <path className="bubble-silhouette-rim" d={path} fill="none" stroke={`url(#${filmId})`} strokeWidth="2" />
       <g clipPath={`url(#${clipId})`}>
-        <ellipse cx="31" cy="24" rx="22" ry="10" transform="rotate(-28 31 24)" fill="#fff" opacity=".42" />
-        <ellipse cx="70" cy="76" rx="31" ry="23" fill="var(--bubble-tint)" opacity=".2" />
-        <path d="M20 43 C24 29 34 20 47 19" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".63" />
+        <ellipse cx="31" cy="24" rx="22" ry="10" transform="rotate(-28 31 24)" fill="#fff" opacity=".48" />
+        <ellipse cx="69" cy="76" rx="35" ry="25" fill="var(--bubble-edge)" opacity=".1" />
+        <path d="M20 43 C24 29 34 20 47 19" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" opacity=".72" />
+        <path d="M33 82 C46 87 66 85 77 76" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" opacity=".36" />
       </g>
       {bubble.shape === 'flower' && <circle cx="50" cy="49" r="9" fill="#fff2cb" fillOpacity=".68" stroke="#fff" strokeOpacity=".8" strokeWidth="1.2" />}
       {bubble.shape === 'star' && <path d="M50 15 L53 43 L80 40 L57 53 L68 79 L50 59 L31 80 L43 53 L18 49 L45 44 Z" fill="#fff" fillOpacity=".1" />}
@@ -141,82 +150,270 @@ function BubbleSilhouette({ bubble }) {
 }
 
 function OrbitTagTrack({ bubble }) {
-  const trackRef = useRef(null);
-  const motionRef = useRef(null);
+  const orbitRef = useRef(null);
+  const tweenRef = useRef(null);
   const dragRef = useRef(null);
   const note = bubble.comments[0]?.text || bubble.quote;
-  const tags = [bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`, note];
+  const width = bubble.size + 112;
+  const height = bubble.size + 84;
+  const cx = width / 2;
+  const cy = height / 2;
+  const rx = width / 2 - 9;
+  const ry = height / 2 - 9;
+  const circumference = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry)));
+  const pathId = `orbit-text-${bubble.id.replace(/[^a-z0-9-]/gi, '-')}`;
+  const copy = [bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`, `「${note}」`, bubble.title, bubble.kind, bubble.duration, `♡ ${bubble.saves} 收藏`].join('   ✦   ');
 
   useLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track) return undefined;
-    const chips = [...track.querySelectorAll('.bubble-orbit-tag')];
-    const radiusX = bubble.size / 2 + 38;
-    const radiusY = bubble.size / 2 + 20;
-    const angle = { value: -90 };
-    const render = () => chips.forEach((chip, index) => {
-      const radians = ((angle.value + (index * 360) / chips.length) * Math.PI) / 180;
-      gsap.set(chip, {
-        xPercent: -50,
-        yPercent: -50,
-        x: Math.cos(radians) * radiusX,
-        y: Math.sin(radians) * radiusY,
-      });
-    });
+    const orbit = orbitRef.current;
+    if (!orbit) return undefined;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const spin = () => {
-      const tween = gsap.to(angle, { value: angle.value + 360, duration: 26, ease: 'none', onUpdate: render, onComplete: () => {
-        if (motionRef.current) spin();
-      } });
-      motionRef.current = { angle, tween, render, spin, radiusX };
+      tweenRef.current = gsap.to(orbit, { rotation: '+=360', duration: 38, ease: 'none', repeat: -1 });
     };
-    render();
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) spin();
-    else motionRef.current = { angle, tween: null, render, spin, radiusX };
-    return () => { motionRef.current?.tween?.kill(); motionRef.current = null; };
-  }, [bubble.id, bubble.size, tags.length]);
+    gsap.set(orbit, { rotation: 0, transformOrigin: '50% 50%' });
+    if (!reduced) spin();
+    return () => { tweenRef.current?.kill(); tweenRef.current = null; };
+  }, [bubble.id]);
 
   const startDrag = (event) => {
-    const motion = motionRef.current;
-    if (!motion || (event.pointerType === 'mouse' && event.button !== 0)) return;
-    motion.tween?.pause();
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const orbit = orbitRef.current;
+    if (!orbit) return;
+    tweenRef.current?.pause();
+    event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    dragRef.current = { x: event.clientX, angle: motion.angle.value, pointerId: event.pointerId };
+    dragRef.current = { x: event.clientX, rotation: Number(gsap.getProperty(orbit, 'rotation')) || 0, pointerId: event.pointerId };
   };
   const moveDrag = (event) => {
-    const motion = motionRef.current;
     const drag = dragRef.current;
-    if (!motion || !drag || drag.pointerId !== event.pointerId) return;
-    motion.angle.value = drag.angle + ((event.clientX - drag.x) / Math.max(1, motion.radiusX)) * 90;
-    motion.render();
+    if (!drag || drag.pointerId !== event.pointerId || !orbitRef.current) return;
+    gsap.set(orbitRef.current, { rotation: drag.rotation + ((event.clientX - drag.x) / width) * 360 });
   };
   const endDrag = (event) => {
     if (!dragRef.current || dragRef.current.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    const motion = motionRef.current;
-    if (!motion) return;
-    motion.tween?.kill();
-    motion.tween = null;
-    const pausedForHover = event.pointerType === 'mouse' && event.currentTarget.matches(':hover');
-    if (!pausedForHover && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) motion.spin();
+    tweenRef.current?.kill();
+    tweenRef.current = null;
+    if (!event.currentTarget.matches(':hover') && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      tweenRef.current = gsap.to(orbitRef.current, { rotation: '+=360', duration: 38, ease: 'none', repeat: -1 });
+    }
   };
-  const pauseOnHover = (event) => {
-    if (event.pointerType === 'mouse') motionRef.current?.tween?.pause();
-  };
+  const pauseOnHover = (event) => { if (event.pointerType === 'mouse') tweenRef.current?.pause(); };
   const resumeAfterHover = (event) => {
-    if (event.pointerType !== 'mouse' || dragRef.current) return;
-    const motion = motionRef.current;
-    if (!motion?.tween?.paused()) return;
-    motion.tween.kill();
-    motion.tween = null;
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) motion.spin();
+    if (event.pointerType !== 'mouse' || dragRef.current || !tweenRef.current?.paused()) return;
+    tweenRef.current.kill();
+    tweenRef.current = null;
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      tweenRef.current = gsap.to(orbitRef.current, { rotation: '+=360', duration: 38, ease: 'none', repeat: -1 });
+    }
   };
 
   return (
-    <div ref={trackRef} className="bubble-orbit-track" aria-hidden="true" onPointerEnter={pauseOnHover} onPointerLeave={resumeAfterHover} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
-      <span className="bubble-orbit-rail" />
-      {tags.map((tag, index) => <span className={`bubble-orbit-tag orbit-tag-${index}`} key={`${bubble.id}-${index}`}>{tag}</span>)}
+    <div className="bubble-orbit-position" style={{ width, height }} aria-hidden="true">
+      <svg ref={orbitRef} className="bubble-orbit-track" viewBox={`0 0 ${width} ${height}`} onPointerEnter={pauseOnHover} onPointerLeave={resumeAfterHover} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag}>
+        <defs><path id={pathId} d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} /></defs>
+        <g transform={`rotate(-13 ${cx} ${cy})`}>
+          <ellipse className="bubble-orbit-rail" cx={cx} cy={cy} rx={rx} ry={ry} />
+          <path className="bubble-orbit-hit" d={`M ${cx} ${cy - ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy + ry} A ${rx} ${ry} 0 1 1 ${cx} ${cy - ry}`} />
+          <text className="bubble-orbit-copy" textAnchor="start">
+            <textPath href={`#${pathId}`} startOffset="0" textLength={circumference * 0.94} lengthAdjust="spacing">{copy}</textPath>
+          </text>
+          <circle className="bubble-orbit-star" cx={cx + rx} cy={cy} r="2.2" />
+          <circle className="bubble-orbit-star orbit-star-two" cx={cx - rx} cy={cy} r="1.5" />
+        </g>
+      </svg>
     </div>
   );
+}
+
+function BubbleBurstLayer({ bursts }) {
+  const canvasRef = useRef(null);
+  const burstsRef = useRef([]);
+  const rendererRef = useRef(null);
+  const lastIdRef = useRef(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const field = canvas?.parentElement;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !field || !context) return undefined;
+    let raf = 0;
+    let width = 1;
+    let height = 1;
+    let pixelRatio = 1;
+    let lastFrame = 0;
+    const palette = {
+      blue: ['#eaf8ff', '#ffffff', '#a9d4e9'],
+      rose: ['#fff0f6', '#ffffff', '#e6a8c2'],
+      lilac: ['#f6f0ff', '#ffffff', '#c3b0df'],
+      gold: ['#fff8e9', '#ffffff', '#e7d39e'],
+    };
+    const resize = () => {
+      const rect = field.getBoundingClientRect();
+      width = Math.max(1, rect.width);
+      height = Math.max(1, rect.height);
+      pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(width * pixelRatio);
+      canvas.height = Math.round(height * pixelRatio);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    };
+    const createParticles = (burst, now) => {
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const colors = palette[burst.accent] || palette.blue;
+      const particles = Array.from({ length: reducedMotion ? 0 : 29 }, (_, index) => {
+        const angle = (index / 29) * Math.PI * 2 + (Math.random() - 0.5) * 0.24;
+        const shell = index < 11;
+        const speed = shell ? 48 + Math.random() * 116 : 34 + Math.random() * 175;
+        return {
+          kind: shell ? 'film' : 'drop',
+          x: burst.x + Math.cos(angle) * burst.radius * (shell ? 0.68 : 0.38 + Math.random() * 0.52),
+          y: burst.y + Math.sin(angle) * burst.radius * (shell ? 0.68 : 0.38 + Math.random() * 0.52),
+          vx: Math.cos(angle) * speed + (Math.random() - 0.5) * 36,
+          vy: Math.sin(angle) * speed - 22 - Math.random() * 42,
+          radius: 2 + Math.random() * (shell ? 2.4 : 7.2),
+          length: 9 + Math.random() * (shell ? 18 : 8),
+          spin: (Math.random() - 0.5) * 10,
+          rotation: angle + Math.PI / 2,
+          life: 0.72 + Math.random() * 0.55,
+          age: 0,
+          colors,
+        };
+      });
+      return { ...burst, colors, particles, reducedMotion, startedAt: now };
+    };
+    const drawRupture = (burst, elapsed) => {
+      const progress = Math.min(1, elapsed / 0.48);
+      const ease = 1 - ((1 - progress) ** 3);
+      const pinch = burst.reducedMotion ? 0.96 : elapsed < 0.105 ? 1 - (elapsed / 0.105) * 0.64 : 0.36 + ease * 0.98;
+      const alpha = burst.reducedMotion ? 0.76 : elapsed < 0.105 ? 1 : Math.max(0, 1 - (elapsed - 0.105) / 0.39);
+      const gap = burst.reducedMotion ? 0 : burst.impactAngle;
+      context.save();
+      context.translate(burst.x, burst.y);
+      context.rotate(burst.reducedMotion || elapsed < 0.105 ? 0 : (elapsed - 0.105) * -0.16);
+      context.beginPath();
+      for (let point = 0; point <= 54; point += 1) {
+        const angle = (point / 54) * Math.PI * 2;
+        let relative = Math.atan2(Math.sin(angle - gap), Math.cos(angle - gap));
+        if (!burst.reducedMotion && Math.abs(relative) < 0.48 && elapsed > 0.105) continue;
+        const ripple = burst.reducedMotion ? 1 : 1 + Math.sin(angle * 5 + elapsed * 24) * 0.018 + Math.sin(angle * 9 - elapsed * 18) * 0.012;
+        const radius = burst.radius * pinch * ripple;
+        const px = Math.cos(angle) * radius;
+        const py = Math.sin(angle) * radius * 0.92;
+        if (point === 0) context.moveTo(px, py); else context.lineTo(px, py);
+      }
+      const sheen = context.createLinearGradient(-burst.radius, -burst.radius, burst.radius, burst.radius);
+      sheen.addColorStop(0, `rgba(255,255,255,${0.9 * alpha})`);
+      sheen.addColorStop(0.42, `${burst.colors[2]}${Math.round(0.72 * alpha * 255).toString(16).padStart(2, '0')}`);
+      sheen.addColorStop(0.73, `rgba(255,255,255,${0.22 * alpha})`);
+      sheen.addColorStop(1, `rgba(255,255,255,${0.84 * alpha})`);
+      context.strokeStyle = sheen;
+      context.lineWidth = Math.max(1.1, burst.radius * 0.022 * (1 - progress * 0.55));
+      context.shadowColor = 'rgba(255,255,255,.85)';
+      context.shadowBlur = 11;
+      context.stroke();
+      context.restore();
+    };
+    const drawParticle = (particle, dt) => {
+      particle.age += dt;
+      const fade = Math.max(0, 1 - particle.age / particle.life);
+      if (fade <= 0) return;
+      particle.vx *= Math.pow(0.985, dt * 60);
+      particle.vy = particle.vy * Math.pow(0.992, dt * 60) + 300 * dt;
+      particle.x += particle.vx * dt;
+      particle.y += particle.vy * dt;
+      particle.rotation += particle.spin * dt;
+      if (particle.kind === 'film') {
+        context.save();
+        context.translate(particle.x, particle.y);
+        context.rotate(particle.rotation);
+        context.globalAlpha = fade * 0.78;
+        context.lineWidth = 1 + particle.radius * 0.24;
+        context.lineCap = 'round';
+        context.strokeStyle = particle.colors[0];
+        context.shadowColor = particle.colors[1];
+        context.shadowBlur = 8;
+        context.beginPath();
+        context.moveTo(-particle.length * 0.6, 0);
+        context.quadraticCurveTo(-particle.length * 0.12, -particle.radius * 1.45, particle.length * 0.65, particle.radius * 0.2);
+        context.stroke();
+        context.globalAlpha = fade * 0.58;
+        context.lineWidth = 0.7;
+        context.strokeStyle = particle.colors[2];
+        context.beginPath();
+        context.moveTo(-particle.length * 0.5, -0.5);
+        context.quadraticCurveTo(0, -particle.radius, particle.length * 0.44, 0.8);
+        context.stroke();
+        context.restore();
+        return;
+      }
+      context.save();
+      context.translate(particle.x, particle.y);
+      context.rotate(particle.rotation);
+      context.scale(0.72, 1.18);
+      const drop = context.createRadialGradient(-particle.radius * 0.32, -particle.radius * 0.42, 0.4, 0, 0, particle.radius * 1.3);
+      drop.addColorStop(0, `rgba(255,255,255,${0.92 * fade})`);
+      drop.addColorStop(0.38, `${particle.colors[0]}${Math.round(0.68 * fade * 255).toString(16).padStart(2, '0')}`);
+      drop.addColorStop(0.8, `${particle.colors[2]}${Math.round(0.42 * fade * 255).toString(16).padStart(2, '0')}`);
+      drop.addColorStop(1, `rgba(255,255,255,${0.82 * fade})`);
+      context.fillStyle = drop;
+      context.shadowColor = particle.colors[1];
+      context.shadowBlur = 7;
+      context.beginPath();
+      context.arc(0, 0, particle.radius, 0, Math.PI * 2);
+      context.fill();
+      context.globalAlpha = fade * 0.82;
+      context.fillStyle = '#fff';
+      context.beginPath();
+      context.ellipse(-particle.radius * 0.28, -particle.radius * 0.36, Math.max(0.8, particle.radius * 0.2), Math.max(0.6, particle.radius * 0.42), -0.42, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    };
+    const animate = (now) => {
+      raf = 0;
+      const dt = lastFrame ? Math.min(0.032, (now - lastFrame) / 1000) : 0.016;
+      lastFrame = now;
+      context.clearRect(0, 0, width, height);
+      burstsRef.current = burstsRef.current.filter((burst) => now - burst.startedAt < (burst.reducedMotion ? 240 : 1500));
+      burstsRef.current.forEach((burst) => {
+        const elapsed = (now - burst.startedAt) / 1000;
+        if (elapsed < (burst.reducedMotion ? 0.24 : 0.58)) drawRupture(burst, elapsed);
+        burst.particles.forEach((particle) => drawParticle(particle, dt));
+      });
+      if (burstsRef.current.length) raf = window.requestAnimationFrame(animate);
+      else lastFrame = 0;
+    };
+    const observer = new ResizeObserver(resize);
+    observer.observe(field);
+    resize();
+    rendererRef.current = (burst) => {
+      if (burst) {
+        const pointerAngle = Math.atan2(burst.pointerY - burst.y, burst.pointerX - burst.x);
+        burstsRef.current.push(createParticles({ ...burst, impactAngle: pointerAngle }, performance.now()));
+        if (burstsRef.current.length > 3) burstsRef.current.splice(0, burstsRef.current.length - 3);
+      }
+      if (!raf) raf = window.requestAnimationFrame(animate);
+    };
+    return () => {
+      window.cancelAnimationFrame(raf);
+      observer.disconnect();
+      rendererRef.current = null;
+      burstsRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    const fresh = bursts.filter((burst) => burst.id > lastIdRef.current);
+    if (!fresh.length) return;
+    fresh.forEach((burst) => {
+      lastIdRef.current = Math.max(lastIdRef.current, burst.id);
+      rendererRef.current?.(burst);
+    });
+  }, [bursts]);
+
+  return <canvas ref={canvasRef} className="bubble-burst-canvas" aria-hidden="true" />;
 }
 
 function ARIllustrations() {
@@ -270,44 +467,17 @@ function RoamEntryOverlay({ phase, onSkip }) {
 
 function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, highlighted }) {
   const buttonRef = useRef(null);
-  const [burst, setBurst] = useState(false);
   const isResonant = bubble.saves >= 50 || bubble.comments.length >= 2;
 
   const pop = (event) => {
     const button = buttonRef.current;
     if (!button || popped) return;
-    const field = button.closest('.bubble-field');
-    const particles = button.querySelectorAll('.pop-bit');
-    const ring = button.querySelector('.pop-ripple');
-    const flash = field?.querySelector('.bubble-pop-flash');
-    const radius = Math.max(86, button.getBoundingClientRect().width * 1.18);
-    setBurst(true);
+    gsap.killTweensOf(button);
     gsap.timeline()
-      .to(button, { scaleX: 1.24, scaleY: 0.72, filter: 'brightness(1.5)', duration: 0.11, ease: 'power2.out' })
-      .to(button, { scaleX: 0.78, scaleY: 1.28, duration: 0.1, ease: 'power3.in' })
-      .to(button, { scale: 0.015, opacity: 0, filter: 'brightness(2.6) blur(4px)', duration: 0.2, ease: 'power2.in' });
-    if (flash && field) {
-      const rect = field.getBoundingClientRect();
-      gsap.killTweensOf(flash);
-      gsap.set(flash, { left: event.clientX - rect.left, top: event.clientY - rect.top });
-      gsap.fromTo(flash, { scale: 0.1, opacity: 0.88 }, { scale: 9, opacity: 0, duration: 0.72, ease: 'power2.out' });
-      gsap.fromTo(field, { x: -3, y: 1 }, { x: 0, y: 0, duration: 0.32, ease: 'elastic.out(1, 0.42)' });
-    }
-    if (ring) gsap.fromTo(ring, { scale: 0.2, opacity: 0.9 }, { scale: 2.65, opacity: 0, duration: 0.66, ease: 'power2.out' });
-    if (particles.length) {
-      gsap.fromTo(particles, { x: 0, y: 0, scale: 0.2, rotation: 0, opacity: 1 }, {
-        x: (i) => Math.cos((i / particles.length) * Math.PI * 2 + index) * radius * (0.72 + (i % 3) * 0.2),
-        y: (i) => Math.sin((i / particles.length) * Math.PI * 2 + index) * radius * (0.72 + (i % 2) * 0.25),
-        scale: (i) => i % 3 === 0 ? 1.05 : 0.48,
-        rotation: (i) => i % 2 ? 92 : -72,
-        opacity: 0,
-        duration: 0.78,
-        stagger: 0.012,
-        ease: 'power3.out',
-      });
-    }
+      .to(button, { scaleX: 0.82, scaleY: 1.12, filter: 'brightness(1.32)', duration: 0.075, ease: 'power2.out' })
+      .to(button, { scaleX: 1.14, scaleY: 0.78, filter: 'brightness(1.8)', duration: 0.1, ease: 'power3.in' })
+      .to(button, { scale: 0.015, opacity: 0, filter: 'brightness(2.5) blur(4px)', duration: 0.2, ease: 'power2.in' });
     onPop(bubble, event);
-    window.setTimeout(() => setBurst(false), 860);
   };
 
   useEffect(() => {
@@ -336,7 +506,6 @@ function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, 
         <span className="bubble-rank-aura" />
         <span className="bubble-rank-mark">{isResonant ? `共鸣 ${bubble.saves}` : ''}</span>
         <span className="pop-ripple" />
-        {burst && <span className="pop-burst" aria-hidden="true">{Array.from({ length: 14 }, (_, i) => <i key={i} className="pop-bit" />)}</span>}
       </button>
       {focused && !popped && <OrbitTagTrack bubble={bubble} />}
       <span className="bubble-label"><strong>{bubble.title}</strong><small><i /> {bubble.kind} · {bubble.duration}</small></span>
@@ -347,6 +516,8 @@ function HomeBubble({ bubble, index, popped, onPop, onFocus, focused, filtered, 
 function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubblePop, onOpenLeaderboard }) {
   const [kindFilter, setKindFilter] = useState('all');
   const [focusedId, setFocusedId] = useState(bubbles[0]?.id || null);
+  const [bursts, setBursts] = useState([]);
+  const burstIdRef = useRef(0);
   const fieldRef = useRef(null);
   const kinds = [
     ['all', '全部', '◌'],
@@ -446,6 +617,24 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
     return () => { window.cancelAnimationFrame(frame); resizeObserver.disconnect(); };
   }, []);
 
+  const handleBubblePop = (bubble, event) => {
+    const field = fieldRef.current;
+    const rect = field?.getBoundingClientRect();
+    const bubbleRect = event.currentTarget.getBoundingClientRect();
+    if (rect) {
+      setBursts((current) => [...current.slice(-2), {
+        id: ++burstIdRef.current,
+        x: bubbleRect.left + bubbleRect.width / 2 - rect.left,
+        y: bubbleRect.top + bubbleRect.height / 2 - rect.top,
+        pointerX: event.clientX - rect.left,
+        pointerY: event.clientY - rect.top,
+        radius: bubbleRect.width * 0.48,
+        accent: bubble.accent,
+      }]);
+    }
+    onBubblePop(bubble);
+  };
+
   return (
     <Scene className="app-home gallery-home">
       <div className="screen-topline">
@@ -467,10 +656,10 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
           ))}
         </div>
         <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="漂浮的个人声音泡泡">
-          <span className="bubble-pop-flash" aria-hidden="true" />
           {bubbles.map((bubble, index) => (
-            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={onBubblePop} onFocus={() => setFocusedId(bubble.id)} focused={focusedId === bubble.id} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
+            <HomeBubble key={bubble.id} bubble={bubble} index={index} popped={poppedId === bubble.id} onPop={handleBubblePop} onFocus={() => setFocusedId(bubble.id)} focused={focusedId === bubble.id} filtered={kindFilter !== 'all' && bubble.kindKey !== kindFilter} highlighted={kindFilter !== 'all' && bubble.kindKey === kindFilter} />
           ))}
+          <BubbleBurstLayer bursts={bursts} />
         </div>
       </div>
       <TabBar active="home" onChange={onPageChange} />
