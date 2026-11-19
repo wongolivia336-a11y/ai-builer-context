@@ -70,3 +70,19 @@
 - [W3C Geolocation specification](https://www.w3.org/TR/geolocation/)
 
 W3C Geolocation 定义的 `accuracy` 是以米为单位的 68% 置信精度值，并且获取位置需要用户明确授权。它适合做附近筛选和质量提示；是否足以满足某个泡泡的空间锚定，需要结合目标点间距与现场定位实测判断。
+
+
+## 网页原型已接入的定位能力
+
+本轮网页端在用户进入漫游页时请求浏览器定位，并用高精度 watch 获取一次位置读数；精度达到 60 米以内即停止持续监听，超时 15 秒也会结束监听。界面显示浏览器报告的精度，并覆盖未授权、不可用、精度较粗等状态。坐标只保留在当前页面内存中，不写入本地存储，也不上传。
+
+当前示例声音泡泡的数据没有经纬度字段，因此网页还不能按真实距离筛选或排序这些泡泡。取景画面里的泡泡仍是屏幕坐标的视觉演示，文案已明确标记；此版本不会把 GPS 读数误当作稳定的空间锚点。要完成“附近回声”，下一步需给可发布回声定义经纬度与分享精度策略；要将泡泡固定在现实街景中，则需接入 ARKit Geo Tracking / ARCore Geospatial 原生会话。
+
+视觉识别方案也核对过：MindAR 官方项目面向图片目标与人脸追踪，适合“对准海报/印刷图像出现泡泡”的固定图像锚点；它不能替代开放街区的语义识别或地理锚定，所以这轮先不把它加进网页漫游链路。若后续展览点位能放置专属图像标记，再单独评估 MindAR 图片锚点。
+
+### p5.brush 进度条
+
+漫游 loading 的胶囊进度条现用 p5.brush standalone 构建绘制纹理液面与轻微起伏，并在不支持 WebGL2 时回退到 Canvas 2D 液体绘制。该 standalone 构建不依赖 p5.js，但要求浏览器支持 WebGL2；其代码按 MIT 许可随仓库提供，见 `src/vendor/p5-brush/LICENSE.md`。
+
+- [p5.brush standalone 文档](https://github.com/acamposuribe/p5.brush/blob/main/docs/standalone.md)
+- [MindAR 官方项目](https://github.com/hiukim/mind-ar-js)

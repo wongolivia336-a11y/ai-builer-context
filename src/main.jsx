@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
+import CapsuleWaterProgress from './components/CapsuleWaterProgress';
 import { Phone } from './kit/phone';
 import streetBackground from './assets/user-kit/roam-night-portrait.webp';
 import landscapeStreetBackground from './assets/user-kit/roam-night-landscape.webp';
@@ -855,7 +856,7 @@ function ARTargetBubble({ sound, anchor, selected, zoom, onSelect, onLongPress }
         onPointerCancel={pointerEnd}
         onContextMenu={(event) => { event.preventDefault(); onLongPress(sound); }}
       />
-      <span className="anchor-label"><b>{sound.title}</b><small>{anchor.depth} · {sound.distance}m</small></span>
+      <span className="anchor-label"><b>{sound.title}</b><small>{anchor.depth} · 视觉演示点位</small></span>
     </div>
   );
 }
@@ -918,7 +919,7 @@ function RoamArrivalBurst() {
   return <div className="roam-arrival-burst" aria-hidden="true">{bubbles.map(([x, y, size], index) => <i key={index} style={{ '--burst-x': `${x}vw`, '--burst-y': `${y}vh`, '--burst-size': `${size}px`, '--burst-delay': `${(index % 6) * 28}ms` }} />)}</div>;
 }
 
-function RoamEntryOverlay({ phase, progress, onSkip }) {
+function RoamEntryOverlay({ phase, progress, onSkip, locationStatus }) {
   const [skipVisible, setSkipVisible] = useState(false);
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -929,6 +930,7 @@ function RoamEntryOverlay({ phase, progress, onSkip }) {
     return () => window.clearTimeout(timeout);
   }, []);
   const scanning = phase === 'scan';
+  const scanHint = locationStatus === 'requesting' ? '获取定位精度与后置相机权限' : locationStatus === 'denied' ? '定位未授权 · 继续浏览演示点位' : locationStatus === 'unavailable' ? '定位暂不可用 · 使用演示点位' : locationStatus === 'weak' ? '定位精度较粗 · 使用演示点位' : locationStatus === 'active' ? '位置已取得 · 画面泡泡仍是演示点位' : '定位用于发现附近回声';
   return (
     <div className={`roam-entry-overlay phase-${phase}`} aria-live="polite" aria-label="漫游取景准备">
       <div className={`roam-entry-visual${scanning ? ' is-scanning' : ' is-buffering'}`} aria-hidden="true">
@@ -939,9 +941,9 @@ function RoamEntryOverlay({ phase, progress, onSkip }) {
       <div className="roam-entry-copy">
         <span className="entry-eyebrow">AR SPACE · VISUAL DEMO</span>
         <strong>{scanning ? '正在扫描周围空间' : '正在注入泡泡水'}</strong>
-        <small>{scanning ? '识别街景与可见空间' : '把声音泡泡轻轻放进这条街'}</small>
+        <small>{scanning ? scanHint : '泡泡水正在注入漫游视野'}</small>
       </div>
-      <div className="entry-progress" role="progressbar" aria-label="空间准备进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(progress * 100)}><i style={{ width: `${Math.max(4, progress * 100)}%` }} /><span style={{ left: `${progress * 100}%` }} /></div>
+      <CapsuleWaterProgress progress={progress} />
       {skipVisible && <button className="entry-skip" onClick={onSkip}>立即进入取景 <span>↗</span></button>}
     </div>
   );
@@ -1373,7 +1375,7 @@ function LeaderboardSheet({ open, onClose, onRoam, bubbles }) {
   );
 }
 
-function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase, onCapture, onListen, onResetCapture, playing, emitting, onPageChange, zoom, onZoom, roamPhase, roamProgress, onRoamSkip, cameraStream, cameraStatus, onOpenCamera, onCloseCamera }) {
+function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase, onCapture, onListen, onResetCapture, playing, emitting, onPageChange, zoom, onZoom, roamPhase, roamProgress, onRoamSkip, cameraStream, cameraStatus, locationStatus, locationAccuracy, onRequestLocation, onOpenCamera, onCloseCamera }) {
   const [commentBubble, setCommentBubble] = useState(null);
   const [showArrivalBurst, setShowArrivalBurst] = useState(false);
   const priorPhase = useRef(roamPhase);
@@ -1381,6 +1383,7 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
   const anchor = AR_ANCHORS.find((item) => item.index === selected) || AR_ANCHORS[0];
   const focusX = anchor.left;
   const focusY = anchor.top;
+  const locationCopy = locationStatus === 'requesting' ? '正在获取 GPS 定位…' : locationStatus === 'active' ? `GPS 已定位 · 精度 ±${locationAccuracy}m · 演示点位` : locationStatus === 'weak' ? `GPS 精度较粗 · ±${locationAccuracy}m · 演示点位` : locationStatus === 'denied' ? 'GPS 未授权 · 当前显示演示点位' : locationStatus === 'unavailable' ? 'GPS 暂不可用 · 当前显示演示点位' : 'GPS 待开启 · 当前显示演示点位';
 
   useEffect(() => {
     if (priorPhase.current !== 'ready' && roamPhase === 'ready') {
@@ -1396,7 +1399,7 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
   return (
     <Scene className={`app-roam${cameraStream ? ' has-camera' : ''}${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")`, '--scene-zoom': zoom, '--focus-x': focusX, '--focus-y': focusY, '--focus-size': `${anchor.size * zoom}px` }}>
       <div className="screen-topline">
-        <span className="place-chip ar-place-chip"><i /> 江湾 · 漫游取景</span>
+        <span className="place-chip ar-place-chip"><i /> 附近 · 漫游取景</span>
         <DevicePill playing={playing} emitting={emitting} />
       </div>
       <div className="roam-world">
@@ -1405,7 +1408,8 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
           <button className="active" onClick={() => onSelect(selected)}>空间回声 <i>03</i></button>
           <span>长按泡泡 · 看留言</span>
         </div>
-        <div className="camera-status-chip"><i className={cameraStream ? 'is-live' : ''} />{cameraStream ? '镜头已连接 · 演示锚点' : cameraStatus === 'requesting' ? '正在请求镜头…' : cameraStatus === 'denied' ? '照片取景 · 镜头未授权' : cameraStatus === 'unavailable' ? '照片取景 · 当前设备不可用' : '照片取景 · 可开启后置镜头'}</div>
+        <div className="camera-status-chip"><i className={cameraStream ? 'is-live' : ''} />{cameraStream ? '镜头已连接 · 屏幕预览' : cameraStatus === 'requesting' ? '正在请求镜头…' : cameraStatus === 'denied' ? '照片取景 · 镜头未授权' : cameraStatus === 'unavailable' ? '照片取景 · 当前设备不可用' : '照片取景 · 可开启后置镜头'}</div>
+        <button type="button" className={`location-status-chip state-${locationStatus}`} aria-live="polite" aria-label={locationCopy} title="点此重新获取定位" onClick={onRequestLocation}><i />{locationCopy}</button>
         <button className="camera-toggle glass-surface" onClick={cameraStream ? onCloseCamera : onOpenCamera} disabled={cameraStatus === 'requesting'}>
           <span>{cameraStream ? '关闭镜头' : cameraStatus === 'requesting' ? '开启中…' : '开启镜头'}</span><i>{cameraStream ? '●' : '↗'}</i>
         </button>
@@ -1418,7 +1422,7 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
         </div>
         {!captured && <>
           <div className="aim-ring"><i /><b /></div>
-          <div className="target-caption"><span>{targetSound.kind === '人声' ? '人声回响' : targetSound.title}</span><i>·</i><span>{targetSound.distance} m</span><b>{targetSound.saves} 收藏</b></div>
+          <div className="target-caption"><span>{targetSound.kind === '人声' ? '人声回响' : targetSound.title}</span><i>·</i><span>视觉示例</span><b>{targetSound.saves} 收藏</b></div>
         </>}
         <div className="zoom-control glass-surface" aria-label="取景缩放">
           <button aria-label="放大泡泡" onClick={() => onZoom(1)}>+</button><span /><button aria-label="缩小泡泡" onClick={() => onZoom(-1)}>−</button>
@@ -1453,7 +1457,7 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
         )}
       </div>
       <TabBar active="roam" onChange={onPageChange} />
-      {roamPhase !== 'ready' && <RoamEntryOverlay phase={roamPhase} progress={roamProgress} onSkip={onRoamSkip} />}
+      {roamPhase !== 'ready' && <RoamEntryOverlay phase={roamPhase} progress={roamProgress} onSkip={onRoamSkip} locationStatus={locationStatus} />}
       <ARCommentsSheet bubble={commentBubble} onClose={() => setCommentBubble(null)} />
     </Scene>
   );
@@ -1588,6 +1592,8 @@ function App() {
   const [roamProgress, setRoamProgress] = useState(0);
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraStatus, setCameraStatus] = useState('idle');
+  const [locationStatus, setLocationStatus] = useState('idle');
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
   const [playing, setPlaying] = useState(false);
   const [deviceEmitting, setDeviceEmitting] = useState(false);
   const [captured, setCaptured] = useState(false);
@@ -1613,6 +1619,10 @@ function App() {
   const captureTimer = useRef(null);
   const cameraStreamRef = useRef(null);
   const cameraRequestId = useRef(0);
+  const locationWatchId = useRef(null);
+  const locationRequestId = useRef(0);
+  const locationTimeout = useRef(null);
+  const locationPositionRef = useRef(null);
   const roamStartedAt = useRef(0);
   const recordingStartedAt = useRef(0);
   const bubbles = createdBubble ? [createdBubble, ...SOUND_BUBBLES] : SOUND_BUBBLES;
@@ -1623,6 +1633,60 @@ function App() {
     cameraStreamRef.current = null;
     setCameraStream(null);
     setCameraStatus('idle');
+  };
+
+  const clearLocationWatch = () => {
+    window.clearTimeout(locationTimeout.current);
+    locationTimeout.current = null;
+    if (locationWatchId.current !== null) {
+      navigator.geolocation?.clearWatch(locationWatchId.current);
+      locationWatchId.current = null;
+    }
+  };
+
+  const stopLocation = () => {
+    locationRequestId.current += 1;
+    clearLocationWatch();
+    locationPositionRef.current = null;
+    setLocationStatus('idle');
+    setLocationAccuracy(null);
+  };
+
+  const requestLocation = () => {
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setLocationStatus('unavailable');
+      return;
+    }
+    clearLocationWatch();
+    const requestId = ++locationRequestId.current;
+    locationPositionRef.current = null;
+    setLocationStatus('requesting');
+    setLocationAccuracy(null);
+    try {
+      locationWatchId.current = navigator.geolocation.watchPosition((position) => {
+        if (requestId !== locationRequestId.current) return;
+        const { latitude, longitude, accuracy } = position.coords;
+        const roundedAccuracy = Math.max(1, Math.round(accuracy));
+        locationPositionRef.current = { latitude, longitude, accuracy: roundedAccuracy };
+        setLocationAccuracy(roundedAccuracy);
+        setLocationStatus(accuracy <= 60 ? 'active' : 'weak');
+        if (accuracy <= 60) clearLocationWatch();
+      }, (error) => {
+        if (requestId !== locationRequestId.current) return;
+        clearLocationWatch();
+        if (error.code === 1) setLocationStatus('denied');
+        else if (locationPositionRef.current) setLocationStatus('weak');
+        else setLocationStatus('unavailable');
+      }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 14000 });
+      locationTimeout.current = window.setTimeout(() => {
+        if (requestId !== locationRequestId.current) return;
+        clearLocationWatch();
+        setLocationStatus((status) => status === 'requesting' ? 'unavailable' : status);
+      }, 15000);
+    } catch {
+      clearLocationWatch();
+      setLocationStatus('unavailable');
+    }
   };
 
   const openCamera = async () => {
@@ -1658,6 +1722,9 @@ function App() {
     cameraRequestId.current += 1;
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     window.clearTimeout(captureTimer.current);
+    locationRequestId.current += 1;
+    window.clearTimeout(locationTimeout.current);
+    if (locationWatchId.current !== null) navigator.geolocation?.clearWatch(locationWatchId.current);
   }, []);
 
   const requestPageChange = (nextPage) => {
@@ -1670,14 +1737,20 @@ function App() {
       roamStartedAt.current = performance.now();
       setRoamProgress(0);
       setRoamPhase('scan');
+      requestLocation();
       openCamera();
       return;
     }
     closeCamera();
+    stopLocation();
     setPage(nextPage);
     setRoamPhase('ready');
     setRoamProgress(0);
   };
+
+  useEffect(() => {
+    if (initialScreen === 'roam') requestLocation();
+  }, []);
 
   useEffect(() => {
     if (page !== 'roam' || roamPhase === 'ready') return undefined;
@@ -1829,7 +1902,7 @@ function App() {
         <div className="phone-column" ref={phoneColumnRef}>
           <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
           {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
-          {page === 'roam' && <RoamScreen selected={selected} onSelect={(index) => { setSelected(index); setZoom((value) => Math.max(1.16, Math.min(1.58, value))); }} captured={captured} capturedBubble={capturedBubble} capturePhase={capturePhase} onCapture={beginCapture} onListen={listenCapturedBubble} onResetCapture={resetCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.72, Math.max(.82, v + step * .14)))} roamPhase={roamPhase} roamProgress={roamProgress} onRoamSkip={() => { setRoamProgress(1); setRoamPhase('ready'); }} cameraStream={cameraStream} cameraStatus={cameraStatus} onOpenCamera={openCamera} onCloseCamera={closeCamera} />}
+          {page === 'roam' && <RoamScreen selected={selected} onSelect={(index) => { setSelected(index); setZoom((value) => Math.max(1.16, Math.min(1.58, value))); }} captured={captured} capturedBubble={capturedBubble} capturePhase={capturePhase} onCapture={beginCapture} onListen={listenCapturedBubble} onResetCapture={resetCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.72, Math.max(.82, v + step * .14)))} roamPhase={roamPhase} roamProgress={roamProgress} onRoamSkip={() => { setRoamProgress(1); setRoamPhase('ready'); }} cameraStream={cameraStream} cameraStatus={cameraStatus} locationStatus={locationStatus} locationAccuracy={locationAccuracy} onRequestLocation={requestLocation} onOpenCamera={openCamera} onCloseCamera={closeCamera} />}
             {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={requestPageChange} />}
           </Phone>
           <div className={`device-status${playing || deviceEmitting ? ' is-playing' : ''}`}><span className="device-dot" /><span>{deviceEmitting ? 'EchoCaster 发泡演示中' : playing ? 'EchoCaster 播放演示中' : 'EchoCaster 演示装置'}</span><b>SIM</b></div>
