@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { gsap } from 'gsap';
+import SpatialARStage from './components/SpatialARStage';
 import CapsuleWaterProgress from './components/CapsuleWaterProgress';
 import { Phone } from './kit/phone';
 import streetBackground from './assets/user-kit/roam-night-portrait.webp';
@@ -60,6 +61,7 @@ function TabBar({ active, onChange }) {
   const activeIndex = Math.max(0, tabs.findIndex(([id]) => id === active));
   const [dragProgress, setDragProgress] = useState(activeIndex);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragPhysics, setDragPhysics] = useState({ stretch: 1, tailLeft: 0, tailRight: 0 });
   const gestureRef = useRef(null);
   const suppressClickRef = useRef(false);
 
@@ -76,13 +78,23 @@ function TabBar({ active, onChange }) {
   const handlePointerDown = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     const progress = progressAtPointer(event);
-    gestureRef.current = { pointerId: event.pointerId, startX: event.clientX };
+    gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setDragProgress(progress);
+    setDragPhysics({ stretch: 1.035, tailLeft: 0, tailRight: 0 });
     setIsDragging(true);
   };
   const handlePointerMove = (event) => {
-    if (gestureRef.current?.pointerId !== event.pointerId) return;
+    const gesture = gestureRef.current;
+    if (gesture?.pointerId !== event.pointerId) return;
+    const dx = event.clientX - gesture.previousX;
+    gesture.previousX = event.clientX;
+    const tail = Math.min(24, Math.abs(dx) * 0.7);
     setDragProgress(progressAtPointer(event));
+    setDragPhysics({
+      stretch: 1 + Math.min(0.24, Math.abs(dx) / 100),
+      tailLeft: dx > 0 ? tail : 0,
+      tailRight: dx < 0 ? tail : 0,
+    });
   };
   const finishGesture = (event, cancelled = false) => {
     const gesture = gestureRef.current;
@@ -93,6 +105,7 @@ function TabBar({ active, onChange }) {
     gestureRef.current = null;
     setIsDragging(false);
     setDragProgress(targetIndex);
+    setDragPhysics({ stretch: 1, tailLeft: 0, tailRight: 0 });
     if (!didSwipe) return;
     suppressClickRef.current = true;
     if (targetIndex !== activeIndex) onChange(tabs[targetIndex][0]);
@@ -103,13 +116,18 @@ function TabBar({ active, onChange }) {
     <nav
       className={`tab-glass${isDragging ? ' is-dragging' : ''}`}
       aria-label="主导航"
-      style={{ '--tab-progress': `${(isDragging ? dragProgress : activeIndex) * 100}%` }}
+      style={{
+        '--tab-progress': `${(isDragging ? dragProgress : activeIndex) * 100}%`,
+        '--tab-stretch': dragPhysics.stretch,
+        '--tab-tail-left': `${dragPhysics.tailLeft}px`,
+        '--tab-tail-right': `${dragPhysics.tailRight}px`,
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={finishGesture}
       onPointerCancel={(event) => finishGesture(event, true)}
     >
-      <span className="tab-liquid-indicator" aria-hidden="true" />
+      <span className="tab-liquid-indicator" aria-hidden="true"><i className="tab-liquid-tail tail-left" /><i className="tab-liquid-tail tail-right" /></span>
       {tabs.map(([id, label]) => (
         <button
           key={id}
@@ -814,53 +832,6 @@ function CameraPreview({ stream, className = '' }) {
   return <video ref={videoRef} className={`ar-camera-video ${className}`} autoPlay muted playsInline aria-hidden="true" />;
 }
 
-const AR_ANCHORS = [
-  { index: 1, left: '52%', top: '20%', size: 92, depth: '近景' },
-  { index: 2, left: '24%', top: '45%', size: 74, depth: '中景' },
-  { index: 3, left: '76%', top: '56%', size: 63, depth: '远景' },
-];
-
-function ARTargetBubble({ sound, anchor, selected, zoom, onSelect, onLongPress }) {
-  const holdTimer = useRef(null);
-  const didLongPress = useRef(false);
-  const clearHold = () => window.clearTimeout(holdTimer.current);
-  const pointerDown = (event) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-    didLongPress.current = false;
-    clearHold();
-    holdTimer.current = window.setTimeout(() => {
-      didLongPress.current = true;
-      onLongPress(sound);
-    }, 480);
-  };
-  const pointerEnd = () => clearHold();
-  const handleClick = () => {
-    if (didLongPress.current) {
-      didLongPress.current = false;
-      return;
-    }
-    onSelect(anchor.index);
-  };
-  useEffect(() => () => clearHold(), []);
-  return (
-    <div className={`ar-anchor ${selected ? 'is-selected' : ''}`} style={{ left: anchor.left, top: anchor.top, '--anchor-size': `${anchor.size * (selected ? zoom : 1)}px`, '--anchor-depth': anchor.depth }}>
-      <Bubble
-        size={anchor.size * (selected ? zoom : 1)}
-        bubble={sound}
-        className={`target-bubble accent-${sound.accent}${selected ? ' target-selected' : ''}`}
-        label={`${sound.title}，轻点瞄准，长按查看留言`}
-        onClick={handleClick}
-        onPointerDown={pointerDown}
-        onPointerUp={pointerEnd}
-        onPointerCancel={pointerEnd}
-        onContextMenu={(event) => { event.preventDefault(); onLongPress(sound); }}
-      />
-      <span className="anchor-label"><b>{sound.title}</b><small>{anchor.depth} · 视觉演示点位</small></span>
-    </div>
-  );
-}
-
 function ARCommentsSheet({ bubble, onClose }) {
   useEffect(() => {
     if (!bubble) return undefined;
@@ -894,10 +865,10 @@ function ARCommentsSheet({ bubble, onClose }) {
 }
 
 function CaptureWaterFlow({ anchorIndex }) {
-  const anchor = AR_ANCHORS.find((item) => item.index === anchorIndex) || AR_ANCHORS[0];
-  const startX = parseFloat(anchor.left) < 40 ? 4 : parseFloat(anchor.left) > 65 ? 96 : 5;
-  const startY = parseFloat(anchor.top) < 40 ? 8 : 92;
-  const path = `M ${startX} ${startY} C ${startX < 50 ? 28 : 72} ${startY - 26}, ${startX < 50 ? 72 : 28} 74, 50 47`;
+  const edge = Math.abs(Number(anchorIndex) || 1) % 4;
+  const starts = [[4, 42], [96, 38], [12, 92], [88, 92]];
+  const [startX, startY] = starts[edge];
+  const path = `M ${startX} ${startY} C ${startX < 50 ? 28 : 72} ${Math.max(8, startY - 22)}, ${startX < 50 ? 72 : 28} 72, 50 47`;
   return (
     <svg className="capture-water-flow" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <defs>
@@ -1046,6 +1017,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const [bursts, setBursts] = useState([]);
   const [filterDragProgress, setFilterDragProgress] = useState(0);
   const [isFilterDragging, setIsFilterDragging] = useState(false);
+  const [filterPhysics, setFilterPhysics] = useState({ stretch: 1.06, tailLeft: 0, tailRight: 0 });
   const burstIdRef = useRef(0);
   const fieldRef = useRef(null);
   const filterGestureRef = useRef(null);
@@ -1071,6 +1043,10 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   };
   const updateFilterGesture = (event) => {
     if (filterGestureRef.current?.pointerId !== event.pointerId) return;
+    const dx = event.clientX - filterGestureRef.current.previousX;
+    filterGestureRef.current.previousX = event.clientX;
+    const tail = Math.min(17, Math.abs(dx) * 0.68);
+    setFilterPhysics({ stretch: 1 + Math.min(0.23, Math.abs(dx) / 105), tailLeft: dx > 0 ? tail : 0, tailRight: dx < 0 ? tail : 0 });
     const progress = filterProgressAtPointer(event);
     const targetIndex = Math.round(progress);
     filterGestureRef.current.targetIndex = targetIndex;
@@ -1081,8 +1057,9 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const beginFilterGesture = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     const progress = filterProgressAtPointer(event);
-    filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX };
+    filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setFilterDragProgress(progress);
+    setFilterPhysics({ stretch: 1.12, tailLeft: 0, tailRight: 0 });
     setIsFilterDragging(true);
   };
   const finishFilterGesture = (event, cancelled = false) => {
@@ -1094,6 +1071,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
     filterGestureRef.current = null;
     setIsFilterDragging(false);
     setFilterDragProgress(targetIndex);
+    setFilterPhysics({ stretch: 1.06, tailLeft: 0, tailRight: 0 });
     if (didSwipe) {
       setKindFilter(kinds[targetIndex][0]);
       suppressFilterClickRef.current = true;
@@ -1311,13 +1289,13 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
           className={`gallery-filter${isFilterDragging ? ' is-filter-dragging' : ''}`}
           role="tablist"
           aria-label="用泡泡聚焦不同声音类型"
-          style={{ '--filter-progress': `${(isFilterDragging ? filterDragProgress : selectedFilterIndex) * 100}%` }}
+          style={{ '--filter-progress': `${(isFilterDragging ? filterDragProgress : selectedFilterIndex) * 100}%`, '--filter-stretch': filterPhysics.stretch, '--filter-tail-left': `${filterPhysics.tailLeft}px`, '--filter-tail-right': `${filterPhysics.tailRight}px` }}
           onPointerDown={beginFilterGesture}
           onPointerMove={updateFilterGesture}
           onPointerUp={finishFilterGesture}
           onPointerCancel={(event) => finishFilterGesture(event, true)}
         >
-          <span className="filter-liquid-indicator" aria-hidden="true" />
+          <span className="filter-liquid-indicator" aria-hidden="true"><i className="filter-liquid-tail tail-left" /><i className="filter-liquid-tail tail-right" /></span>
           {kinds.map(([key, label, symbol]) => (
             <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => { if (!suppressFilterClickRef.current) setKindFilter(key); }}><i>{symbol}</i><span>{label}</span></button>
           ))}
@@ -1380,9 +1358,6 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
   const [showArrivalBurst, setShowArrivalBurst] = useState(false);
   const priorPhase = useRef(roamPhase);
   const targetSound = SOUND_BUBBLES[selected - 1] || SOUND_BUBBLES[0];
-  const anchor = AR_ANCHORS.find((item) => item.index === selected) || AR_ANCHORS[0];
-  const focusX = anchor.left;
-  const focusY = anchor.top;
   const locationCopy = locationStatus === 'requesting' ? '正在获取 GPS 定位…' : locationStatus === 'active' ? `GPS 已定位 · 精度 ±${locationAccuracy}m · 演示点位` : locationStatus === 'weak' ? `GPS 精度较粗 · ±${locationAccuracy}m · 演示点位` : locationStatus === 'denied' ? 'GPS 未授权 · 当前显示演示点位' : locationStatus === 'unavailable' ? 'GPS 暂不可用 · 当前显示演示点位' : 'GPS 待开启 · 当前显示演示点位';
 
   useEffect(() => {
@@ -1397,7 +1372,7 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
   }, [roamPhase]);
 
   return (
-    <Scene className={`app-roam${cameraStream ? ' has-camera' : ''}${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")`, '--scene-zoom': zoom, '--focus-x': focusX, '--focus-y': focusY, '--focus-size': `${anchor.size * zoom}px` }}>
+    <Scene className={`app-roam${cameraStream ? ' has-camera' : ''}${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")`, '--scene-zoom': zoom, '--focus-x': '50%', '--focus-y': '48%' }}>
       <div className="screen-topline">
         <span className="place-chip ar-place-chip"><i /> 附近 · 漫游取景</span>
         <DevicePill playing={playing} emitting={emitting} />
@@ -1418,11 +1393,11 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
           <div className="floor-line floor-front"><span>一层</span></div>
           <div className="distant-architecture" />
           <ARIllustrations />
-          {AR_ANCHORS.map((item) => <ARTargetBubble key={item.index} anchor={item} sound={SOUND_BUBBLES[item.index - 1]} selected={selected === item.index} zoom={zoom} onSelect={onSelect} onLongPress={setCommentBubble} />)}
         </div>
+        <SpatialARStage sounds={SOUND_BUBBLES} zoom={zoom} onZoom={onZoom} onSelect={onSelect} onCapture={onCapture} onLongPress={setCommentBubble} onCloseCamera={onCloseCamera} capturedBubble={capturedBubble} capturePhase={capturePhase} playing={playing} onListen={onListen} />
         {!captured && <>
           <div className="aim-ring"><i /><b /></div>
-          <div className="target-caption"><span>{targetSound.kind === '人声' ? '人声回响' : targetSound.title}</span><i>·</i><span>视觉示例</span><b>{targetSound.saves} 收藏</b></div>
+          <div className="target-caption"><span>{targetSound.kind === '人声' ? '人声回响' : targetSound.title}</span><i>·</i><span>平面识别后可捕捉</span><b>附近 {targetSound.distance}m</b></div>
         </>}
         <div className="zoom-control glass-surface" aria-label="取景缩放">
           <button aria-label="放大泡泡" onClick={() => onZoom(1)}>+</button><span /><button aria-label="缩小泡泡" onClick={() => onZoom(-1)}>−</button>

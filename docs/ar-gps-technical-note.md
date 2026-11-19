@@ -10,7 +10,7 @@
 1. **附近发现：GPS / Geolocation。** 用坐标计算附近回声、距离和大致方向；把定位精度作为 UI 状态。工程推断：GPS 的精度圈可能大于相邻泡泡间距，所以不要仅凭 GPS 把泡泡画成稳定的实体空间锚点。
 2. **场景锚定：平台 AR 地理锚点。** iOS 用 ARKit 地理追踪与 `ARGeoAnchor`；Android 用 ARCore Geospatial API。它们会结合设备传感器、GPS 与视觉定位信息。覆盖或设备检查失败时，回退到附近列表/雷达式界面。
 
-对于现有 Vite/React 网页，适合先做“真实定位的附近发现 + 摄像头交互演示”；据 W3C Geolocation 接口定义作出的实现判断：浏览器地理定位只提供设备坐标，不会自动让网页中的泡泡固定在真实地点。现有网页里的泡泡锚点仍是屏幕坐标演示，不能作为 GPS AR 验收。
+对于现有 Vite/React 网页，浏览器地理定位只提供设备坐标，不会自动让网页中的泡泡固定到真实地点。更新后的网页原型另加入了 Android WebXR 平面追踪：在兼容设备上可以将泡泡放进现实表面并保持会话内空间锚定；这不等于 GPS 地理锚点。
 
 ## 平台路线
 
@@ -34,8 +34,9 @@
 - 用户点“开启漫游”后再请求定位权限，明确说明定位用于发现附近回声。
 - 获取坐标与 `accuracy`，用 WGS84 球面距离排序附近泡泡；把精度显示成可理解的状态，例如“定位较准 / 正在寻找更准的位置”。
 - 用精度半径筛选可确认的近场目标；阈值做成可调参数，在真实场地测试后再定。
-- 摄像头中的泡泡继续明确作为“AR 交互预览”显示。未接入 AR 地理追踪前，不宣称泡泡已锁定到真实墙面、地面或 GPS 点。
-
+- WebXR 兼容设备用 hit-test 做会话内的真实平面放置；不兼容设备显示相机/照片预览并明确降级。两者都不把 GPS 读数说成稳定的场景锚点。
+- 实际 GPS 泡泡仍需要声音数据包含坐标，并需定义分享半径、精度与过期规则。
+  
 ### 2. iPhone 竖向切片
 
 1. 在目标展示地点检查 ARKit Geo Tracking 可用性。
@@ -76,7 +77,7 @@ W3C Geolocation 定义的 `accuracy` 是以米为单位的 68% 置信精度值�
 
 本轮网页端在用户进入漫游页时请求浏览器定位，并用高精度 watch 获取一次位置读数；精度达到 60 米以内即停止持续监听，超时 15 秒也会结束监听。界面显示浏览器报告的精度，并覆盖未授权、不可用、精度较粗等状态。坐标只保留在当前页面内存中，不写入本地存储，也不上传。
 
-当前示例声音泡泡的数据没有经纬度字段，因此网页还不能按真实距离筛选或排序这些泡泡。取景画面里的泡泡仍是屏幕坐标的视觉演示，文案已明确标记；此版本不会把 GPS 读数误当作稳定的空间锚点。要完成“附近回声”，下一步需给可发布回声定义经纬度与分享精度策略；要将泡泡固定在现实街景中，则需接入 ARKit Geo Tracking / ARCore Geospatial 原生会话。
+当前示例声音泡泡的数据没有经纬度字段，因此网页还不能按真实距离筛选或排序这些泡泡。WebXR 平面锚定仅在当前 AR 会话内定位，不能把泡泡固定到录音时的 GPS 地点；完成“附近回声”仍需给可发布声音定义经纬度与分享精度策略，跨旅程地理复现需接入 ARKit Geo Tracking / ARCore Geospatial。
 
 视觉识别方案也核对过：MindAR 官方项目面向图片目标与人脸追踪，适合“对准海报/印刷图像出现泡泡”的固定图像锚点；它不能替代开放街区的语义识别或地理锚定，所以这轮先不把它加进网页漫游链路。若后续展览点位能放置专属图像标记，再单独评估 MindAR 图片锚点。
 
@@ -86,3 +87,19 @@ W3C Geolocation 定义的 `accuracy` 是以米为单位的 68% 置信精度值�
 
 - [p5.brush standalone 文档](https://github.com/acamposuribe/p5.brush/blob/main/docs/standalone.md)
 - [MindAR 官方项目](https://github.com/hiukim/mind-ar-js)
+
+## WebXR 平面 AR 原型实现（2026-11-19 更新）
+
+本轮已在浏览器漫游页加入设备能力探测和空间 AR 入口。支持 immersive AR 的 Android Chrome/ARCore 设备会请求 `hit-test`，用户移动手机扫描真实环境，准星命中地面、桌面或墙面后轻点放置泡泡组。泡泡以 Three.js 虹彩 Fresnel 材质、异形挤出贴纸轮廓和轻量轨道构成；支持的会话会尝试创建 WebXR Anchor，并按锚点姿态持续更新。轻点泡泡触发捕捉，长按显示留言，缩放按钮调整泡泡组大小。
+
+这条路线不需要海报或图片标记，也不把 GPS 坐标直接当作相机空间坐标。浏览器 GPS 仍只用于附近发现状态；示例回声还没有真实经纬度，因此当前网页不能按地理位置复现公共泡泡。浏览器不支持 WebXR AR 时保留相机预览并显示明确说明；iOS 地理空间体验需要后续原生 ARKit 工程。空间贴纸与触摸特效属于渲染动画，真正的平面命中与跟踪依赖设备/浏览器运行时。
+
+### 设备与技术边界
+
+- Google 的 WebXR Android 路径需要 immersive AR 会话与 hit-test；本原型按该接口请求会话和表面命中。参见 [Google WebXR AR 指南](https://developers.google.com/ar/develop/webxr/hello-webxr) 与 [WebXR hit-test 说明](https://github.com/immersive-web/hit-test/blob/main/hit-testing-explainer.md)。
+- WebXR 兼容性依赖 Android 设备、Chrome、ARCore 服务与安全上下文；此原型没有现场 Android 设备验证，因此仓库能力标注为已实现代码路径，物理设备验收仍待完成。
+- 当前 iPhone 网页端不保证提供稳定的 immersive WebXR AR；本原型会按运行时能力检测并降级为相机预览。GPS 点位空间复现应采用原生 ARKit Geo Tracking，且需检查目标场地是否覆盖；Android 原生 GPS 锚点可评估 ARCore Geospatial / VPS。
+- WebXR 平面锚定只保证会话内的本地空间定位语义；它不会让声音在之后的旅程中自动固定到同一个 GPS 坐标。
+- 当前泡泡数据只有示例标题、声音类型和距离展示值，没有实际坐标。附近发现与场景锚定仍应按两层系统开发：GPS/VPS/Geo Tracking 决定“附近哪些声音”，WebXR hit-test 决定“泡泡贴在眼前哪片表面”。
+
+官方资料：[Google WebXR AR](https://developers.google.com/ar/develop/webxr/hello-webxr)、[Google WebXR 与 ARCore 比较](https://developers.google.com/ar/develop/webxr/arcore-comparison)、[Immersive Web hit-test](https://github.com/immersive-web/hit-test/blob/main/hit-testing-explainer.md)、[Apple ARGeoTrackingConfiguration](https://developer.apple.com/documentation/arkit/argeotrackingconfiguration)、[Apple 地理位置 AR](https://developer.apple.com/documentation/arkit/tracking-geographic-locations-in-ar)。
