@@ -747,3 +747,132 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
   .roam-arrival-burst i { opacity:.6; }
   .ar-comments-sheet,.ar-comments-backdrop { animation:none; }
 }
+
+/* Liquid Glass navigation: the selected surface glides underneath the tabs. */
+.tab-glass {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  justify-content:stretch;
+  gap:0;
+  isolation:isolate;
+  overflow:visible;
+  touch-action:pan-y;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.tab-liquid-indicator {
+  position:absolute;
+  z-index:0;
+  left:5px;
+  top:5px;
+  bottom:5px;
+  width:calc(33.3333% - 3.333px);
+  border:1px solid rgba(255,255,255,.78);
+  border-radius:28px;
+  background:linear-gradient(145deg,rgba(255,255,255,.84),rgba(224,236,230,.58) 48%,rgba(213,228,241,.72));
+  box-shadow:0 4px 14px rgba(59,84,85,.1),inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(182,202,205,.15);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+  transform:translateX(var(--tab-progress,0%));
+  transition:transform .56s cubic-bezier(.18,.92,.26,1.18),filter .28s ease;
+  pointer-events:none;
+}
+.tab-liquid-indicator::before {
+  content:"";
+  position:absolute;
+  inset:1px 12% auto;
+  height:44%;
+  border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.84),rgba(255,255,255,0));
+  opacity:.9;
+}
+.tab-glass.is-dragging .tab-liquid-indicator {
+  filter:saturate(1.18) brightness(1.025);
+  transition:none;
+}
+.tab-item,.gallery-home .tab-item,.app-roam .tab-item {
+  position:relative;
+  z-index:1;
+  width:auto;
+  min-width:0;
+  flex:1 1 0;
+  background:transparent;
+  transition:color .24s ease,transform .2s ease;
+}
+.tab-item.active,.gallery-home .tab-item.active,.app-roam .tab-item.active {
+  color:rgba(34,62,61,.92);
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.tab-item:active { transform:scale(.94); }
+.tab-glass.is-dragging .tab-item { transition:none; }
+
+.gallery-filter {
+  display:flex;
+  gap:0;
+  padding:4px;
+  overflow:hidden;
+  isolation:isolate;
+  touch-action:pan-y;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.filter-liquid-indicator {
+  position:absolute;
+  z-index:0;
+  left:4px;
+  top:4px;
+  bottom:4px;
+  width:calc(25% - 2px);
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:15px 19px 13px 18px;
+  background:linear-gradient(145deg,rgba(217,240,77,.72),rgba(255,255,255,.74) 54%,rgba(208,228,227,.63));
+  box-shadow:0 2px 8px rgba(73,92,63,.1),inset 0 1px 0 rgba(255,255,255,.95);
+  -webkit-backdrop-filter:blur(16px) saturate(180%);
+  backdrop-filter:blur(16px) saturate(180%);
+  transform:translateX(var(--filter-progress,0%));
+  transition:transform .52s cubic-bezier(.18,.92,.26,1.18),filter .25s ease;
+  pointer-events:none;
+}
+.filter-liquid-indicator::before {
+  content:"";
+  position:absolute;
+  inset:1px 16% auto;
+  height:43%;
+  border-radius:inherit;
+  background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0));
+}
+.gallery-filter button {
+  z-index:1;
+  flex:1 1 0;
+  background:transparent;
+  transition:color .2s ease,transform .2s ease;
+}
+.gallery-filter button.selected {
+  color:#263b39;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:translateY(0);
+}
+.gallery-filter button.selected i { opacity:1; }
+.gallery-filter.is-filter-dragging .filter-liquid-indicator { filter:saturate(1.16) brightness(1.02); transition:none; }
+.gallery-filter.is-filter-dragging button { transition:none; }
+
+.bubble-orbit-copy {
+  fill:rgba(34,48,62,.96);
+  stroke:rgba(255,255,255,.98);
+  stroke-width:3.2px;
+  filter:drop-shadow(0 1px 2px rgba(59,76,91,.13));
+}
+.bubble-orbit-cross-copy {
+  fill:rgba(64,78,94,.72);
+  stroke:rgba(252,252,248,.82);
+}
+@media (max-width:700px) {
+  .tab-glass { width:min(255px,calc(100vw - 40px)); }
+  .bubble-orbit-copy { font-size:8.9px; stroke-width:3px; }
+  .gallery-filter { gap:0; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .tab-liquid-indicator,.filter-liquid-indicator,.tab-item,.gallery-filter button { transition:none!important; }
+}

@@ -56,10 +56,66 @@ function TabBar({ active, onChange }) {
     ['roam', '漫游'],
     ['create', '共创'],
   ];
+  const activeIndex = Math.max(0, tabs.findIndex(([id]) => id === active));
+  const [dragProgress, setDragProgress] = useState(activeIndex);
+  const [isDragging, setIsDragging] = useState(false);
+  const gestureRef = useRef(null);
+  const suppressClickRef = useRef(false);
+
+  useEffect(() => {
+    if (!isDragging) setDragProgress(activeIndex);
+  }, [activeIndex, isDragging]);
+
+  const progressAtPointer = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const inset = 5;
+    const slotWidth = (rect.width - inset * 2) / tabs.length;
+    return Math.max(0, Math.min(tabs.length - 1, (event.clientX - rect.left - inset) / slotWidth - 0.5));
+  };
+  const handlePointerDown = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const progress = progressAtPointer(event);
+    gestureRef.current = { pointerId: event.pointerId, startX: event.clientX };
+    setDragProgress(progress);
+    setIsDragging(true);
+  };
+  const handlePointerMove = (event) => {
+    if (gestureRef.current?.pointerId !== event.pointerId) return;
+    setDragProgress(progressAtPointer(event));
+  };
+  const finishGesture = (event, cancelled = false) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const progress = cancelled ? activeIndex : progressAtPointer(event);
+    const targetIndex = Math.round(progress);
+    const didSwipe = !cancelled && Math.abs(event.clientX - gesture.startX) > 14;
+    gestureRef.current = null;
+    setIsDragging(false);
+    setDragProgress(targetIndex);
+    if (!didSwipe) return;
+    suppressClickRef.current = true;
+    if (targetIndex !== activeIndex) onChange(tabs[targetIndex][0]);
+    window.setTimeout(() => { suppressClickRef.current = false; }, 420);
+  };
+
   return (
-    <nav className="tab-glass" aria-label="主导航">
+    <nav
+      className={`tab-glass${isDragging ? ' is-dragging' : ''}`}
+      aria-label="主导航"
+      style={{ '--tab-progress': `${(isDragging ? dragProgress : activeIndex) * 100}%` }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishGesture}
+      onPointerCancel={(event) => finishGesture(event, true)}
+    >
+      <span className="tab-liquid-indicator" aria-hidden="true" />
       {tabs.map(([id, label]) => (
-        <button key={id} className={`tab-item${active === id ? ' active' : ''}`} onClick={() => onChange(id)}>
+        <button
+          key={id}
+          className={`tab-item${active === id ? ' active' : ''}`}
+          aria-current={active === id ? 'page' : undefined}
+          onClick={() => { if (!suppressClickRef.current) onChange(id); }}
+        >
           <span className={`tab-mark mark-${id}`} aria-hidden="true">{id === 'home' ? <span className="mini-orbs"><i /><i /><i /></span> : id === 'roam' ? <span className="aim-mark" /> : <span className="plus-mark">+</span>}</span>
           <span>{label}</span>
         </button>
@@ -67,7 +123,6 @@ function TabBar({ active, onChange }) {
     </nav>
   );
 }
-
 function DevicePill({ playing, emitting = false }) {
   return (
     <div className={`device-pill${playing ? ' playing' : ''}`}>
@@ -226,13 +281,13 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
 
   const count = chars.length;
   if (!count) { context.restore(); return; }
-  context.font = `650 ${fontSize}px "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
+  context.font = `700 ${fontSize}px "PingFang SC", "Microsoft YaHei", system-ui, sans-serif`;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.lineJoin = 'round';
-  context.lineWidth = Math.max(2.2, fontSize * (outlinePoints ? 0.38 : 0.32));
-  context.strokeStyle = outlinePoints ? 'rgba(250,252,255,.98)' : 'rgba(250,252,255,.92)';
-  context.fillStyle = nearSide ? 'rgba(41,53,72,.97)' : 'rgba(65,78,94,.48)';
+  context.lineWidth = Math.max(2.1, fontSize * (nearSide ? 0.43 : 0.34));
+  context.strokeStyle = nearSide ? 'rgba(255,255,255,.99)' : 'rgba(247,250,255,.42)';
+  context.fillStyle = nearSide ? 'rgba(28,43,58,.99)' : 'rgba(62,78,96,.4)';
 
   for (let index = 0; index < count; index += 1) {
     const angle = (index / count) * Math.PI * 2 + phase;
@@ -241,7 +296,7 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
     const sideDistance = Math.abs(Math.cos(angle));
     const opacity = nearSide
       ? smoothstep(0.02, outlinePoints ? 0.25 : 0.32, depth)
-      : outlinePoints?.length ? smoothstep(0.02, 0.42, -depth) * 0.2 : smoothstep(0.82, 0.98, sideDistance) * 0.42;
+      : outlinePoints?.length ? smoothstep(0.02, 0.42, -depth) * 0.1 : smoothstep(0.82, 0.98, sideDistance) * 0.2;
     if (!opacity) continue;
 
     const glyphIndex = nearSide
@@ -257,6 +312,7 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
     while (tangent > Math.PI / 2) tangent -= Math.PI;
     while (tangent < -Math.PI / 2) tangent += Math.PI;
     if (!outlinePoints?.length) tangent = Math.max(-0.28, Math.min(0.28, tangent));
+    else tangent = Math.max(-0.72, Math.min(0.72, tangent));
     const scale = outlinePoints
       ? nearSide ? 0.96 + Math.max(0, depth) * 0.16 : 0.82
       : nearSide ? 0.94 + Math.max(0, depth) * 0.13 : 0.9;
@@ -267,7 +323,7 @@ function paintOrbitHemisphere(context, { width, height, bubbleSize, chars, phase
     context.rotate(tangent);
     context.scale(scale, scale);
     context.shadowColor = nearSide ? 'rgba(255,255,255,.48)' : 'rgba(255,255,255,.26)';
-    context.shadowBlur = nearSide ? 3 : 1.5;
+    context.shadowBlur = nearSide ? 2.2 : 0.8;
     context.strokeText(glyph, 0, 0);
     context.shadowBlur = 0;
     context.fillText(glyph, 0, 0);
@@ -291,10 +347,10 @@ function OrbitTagTrack({ bubble, size = bubble.size, children, focused = false }
     ? `${compactText}   ✦   ${focused ? `${note.slice(0, 10)}   ✦   ` : ''}${compactText}   ✦   ${compactText}`
     : `${bubble.title}   ✦   ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}   ✦   ${note}   ✦   ${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
   const orbitFontSize = outlinePath
-    ? Math.max(8.4, Math.min(11.2, size * 0.062))
+    ? Math.max(9.3, Math.min(12.1, size * 0.067))
     : Math.max(7, Math.min(9.6, size * 0.048));
   const orbitChars = Array.from(orbitText);
-  const shapeGlyphCount = Math.ceil(((size + 44) * 3.05) / (orbitFontSize * 0.82));
+  const shapeGlyphCount = Math.ceil(((size + 44) * 2.28) / (orbitFontSize * 0.98));
   const chars = outlinePath ? orbitChars.slice(0, Math.max(42, shapeGlyphCount)) : orbitChars;
   const width = size + (outlinePath ? 76 : 124);
   const height = size + (outlinePath ? 76 : 88);
@@ -986,8 +1042,12 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const [kindFilter, setKindFilter] = useState('all');
   const [focusedId, setFocusedId] = useState(bubbles[0]?.id || null);
   const [bursts, setBursts] = useState([]);
+  const [filterDragProgress, setFilterDragProgress] = useState(0);
+  const [isFilterDragging, setIsFilterDragging] = useState(false);
   const burstIdRef = useRef(0);
   const fieldRef = useRef(null);
+  const filterGestureRef = useRef(null);
+  const suppressFilterClickRef = useRef(false);
   const physicsRef = useRef({ bodies: [] });
   const kinds = [
     ['all', '全部', '◌'],
@@ -995,7 +1055,49 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
     ['ambience', '环境声', '◌'],
     ['thought', '碎念', '✳'],
   ];
+  const selectedFilterIndex = Math.max(0, kinds.findIndex(([key]) => key === kindFilter));
 
+  useEffect(() => {
+    if (!isFilterDragging) setFilterDragProgress(selectedFilterIndex);
+  }, [selectedFilterIndex, isFilterDragging]);
+
+  const filterProgressAtPointer = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const inset = 4;
+    const slotWidth = (rect.width - inset * 2) / kinds.length;
+    return Math.max(0, Math.min(kinds.length - 1, (event.clientX - rect.left - inset) / slotWidth - 0.5));
+  };
+  const updateFilterGesture = (event) => {
+    if (filterGestureRef.current?.pointerId !== event.pointerId) return;
+    const progress = filterProgressAtPointer(event);
+    const targetIndex = Math.round(progress);
+    filterGestureRef.current.targetIndex = targetIndex;
+    setFilterDragProgress(progress);
+    const nextKind = kinds[targetIndex][0];
+    setKindFilter((current) => current === nextKind ? current : nextKind);
+  };
+  const beginFilterGesture = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const progress = filterProgressAtPointer(event);
+    filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX };
+    setFilterDragProgress(progress);
+    setIsFilterDragging(true);
+  };
+  const finishFilterGesture = (event, cancelled = false) => {
+    const gesture = filterGestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const progress = cancelled ? selectedFilterIndex : filterProgressAtPointer(event);
+    const targetIndex = Math.round(progress);
+    const didSwipe = !cancelled && Math.abs(event.clientX - gesture.startX) > 12;
+    filterGestureRef.current = null;
+    setIsFilterDragging(false);
+    setFilterDragProgress(targetIndex);
+    if (didSwipe) {
+      setKindFilter(kinds[targetIndex][0]);
+      suppressFilterClickRef.current = true;
+      window.setTimeout(() => { suppressFilterClickRef.current = false; }, 420);
+    }
+  };
   useEffect(() => {
     if (kindFilter === 'all') return;
     const firstMatch = bubbles.find((bubble) => bubble.kindKey === kindFilter);
@@ -1203,9 +1305,19 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
             <span>↗</span><small>回声留言榜</small>
           </button>
         </div>
-        <div className="gallery-filter" role="tablist" aria-label="用泡泡聚焦不同声音类型">
+        <div
+          className={`gallery-filter${isFilterDragging ? ' is-filter-dragging' : ''}`}
+          role="tablist"
+          aria-label="用泡泡聚焦不同声音类型"
+          style={{ '--filter-progress': `${(isFilterDragging ? filterDragProgress : selectedFilterIndex) * 100}%` }}
+          onPointerDown={beginFilterGesture}
+          onPointerMove={updateFilterGesture}
+          onPointerUp={finishFilterGesture}
+          onPointerCancel={(event) => finishFilterGesture(event, true)}
+        >
+          <span className="filter-liquid-indicator" aria-hidden="true" />
           {kinds.map(([key, label, symbol]) => (
-            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => setKindFilter(key)}><i>{symbol}</i><span>{label}</span></button>
+            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => { if (!suppressFilterClickRef.current) setKindFilter(key); }}><i>{symbol}</i><span>{label}</span></button>
           ))}
         </div>
         <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="可拖动、相撞并戳开的个人声音泡泡">
@@ -1452,6 +1564,26 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
 
 function App() {
   const [page, setPage] = useState(['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
+  const phoneColumnRef = useRef(null);
+  const previousPageRef = useRef(page);
+
+  useLayoutEffect(() => {
+    const column = phoneColumnRef.current;
+    const scene = column?.querySelector('.scene');
+    if (!scene) return undefined;
+    const previousPage = previousPageRef.current;
+    previousPageRef.current = page;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const order = { home: 0, roam: 1, create: 2 };
+    const direction = (order[page] ?? 0) >= (order[previousPage] ?? 0) ? 1 : -1;
+    const context = gsap.context(() => {
+      gsap.fromTo(scene,
+        { autoAlpha: 0, x: direction * 16, scale: 0.988, filter: 'blur(7px)' },
+        { autoAlpha: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 0.54, ease: 'power3.out', clearProps: 'transform,filter,opacity,visibility' },
+      );
+    }, column);
+    return () => context.revert();
+  }, [page]);
   const [roamPhase, setRoamPhase] = useState(initialScreen === 'roam' ? 'scan' : 'ready');
   const [roamProgress, setRoamProgress] = useState(0);
   const [cameraStream, setCameraStream] = useState(null);
@@ -1694,7 +1826,7 @@ function App() {
       <header className="demo-header"><span className="wordmark">声景漫游</span><span className="demo-mode"><i /> DEMO 01</span></header>
       <div className="demo-stage">
         <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} roamPhase={roamPhase} />
-        <div className="phone-column">
+        <div className="phone-column" ref={phoneColumnRef}>
           <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
           {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
           {page === 'roam' && <RoamScreen selected={selected} onSelect={(index) => { setSelected(index); setZoom((value) => Math.max(1.16, Math.min(1.58, value))); }} captured={captured} capturedBubble={capturedBubble} capturePhase={capturePhase} onCapture={beginCapture} onListen={listenCapturedBubble} onResetCapture={resetCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.72, Math.max(.82, v + step * .14)))} roamPhase={roamPhase} roamProgress={roamProgress} onRoamSkip={() => { setRoamProgress(1); setRoamPhase('ready'); }} cameraStream={cameraStream} cameraStatus={cameraStatus} onOpenCamera={openCamera} onCloseCamera={closeCamera} />}
