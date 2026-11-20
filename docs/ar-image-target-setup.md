@@ -44,7 +44,7 @@
 配置方式：
 
 - 部署/演示时添加查询参数 `?deviceWs=wss%3A%2F%2Fbridge.example%2Fevents`。
-- 或在构建环境设置 `VITE_ECHOCASTER_WS`。
+- 或在构建环境设置 `VITE_MEMO_CATCHER_WS`（旧变量 `VITE_ECHOCASTER_WS` 仍可用）。
 - 默认没有 endpoint，界面显示演示模式，并提供可见的模拟按键。
 
 浏览器网页不能读取任意附近 Wi-Fi 设备的 RSSI，也不会自动发现 ESP32。Wi-Fi 连接状态或实体按键需由模块/桥接服务主动发送到 WebSocket。HTTPS 页面应使用有效证书的 WSS；浏览器会阻止不安全页面通过 `ws://` 混合内容访问。固件协议、鉴权、断线恢复和硬件测试仍需与装置团队一起确认。

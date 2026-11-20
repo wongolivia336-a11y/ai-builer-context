@@ -319,7 +319,7 @@ private struct BubbleHome: View {
                         .padding(.vertical, 6)
                         .glassEffect(.regular, in: Capsule())
                         Spacer()
-                        Label("EchoCaster · DEMO", systemImage: "dot.radiowaves.left.and.right")
+                        Label("Memo Catcher", systemImage: "dot.radiowaves.left.and.right")
                             .font(.system(size: 8, weight: .medium))
                             .foregroundStyle(PopPalette.forest.opacity(0.64))
                     }
@@ -724,14 +724,14 @@ private struct RoamEntryOverlay: View {
                     }
                 }
                 VStack(spacing: 7) {
-                    Text("AR SPACE · VISUAL DEMO")
+                    Text("MEMO GARDEN")
                         .font(.system(size: 7, weight: .bold, design: .monospaced))
                         .tracking(1.2)
                         .foregroundStyle(.white.opacity(0.72))
-                    Text(phase == .scan ? "正在扫描周围空间" : "正在整理取景画面")
+                    Text(phase == .scan ? "正在寻找声音泡泡" : "泡泡即将浮现")
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                    Text(phase == .scan ? "寻找可放置泡泡的地面与墙面" : "把声音泡泡轻轻放进这条街")
+                    Text(phase == .scan ? "把声音图卡移入镜头" : "把声音泡泡轻轻带到身边")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(.white.opacity(0.72))
                 }
@@ -791,7 +791,7 @@ private struct CreateScreen: View {
             HStack {
                 Label("江湾 · 01", systemImage: "location.fill")
                 Spacer()
-                Label("EchoCaster · DEMO", systemImage: "dot.radiowaves.left.and.right")
+                Label("Memo Catcher", systemImage: "dot.radiowaves.left.and.right")
             }
             .font(.system(size: 10))
             .foregroundStyle(.secondary)
@@ -799,7 +799,7 @@ private struct CreateScreen: View {
             Spacer(minLength: 12)
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("FIELD RECORDING / 01")
+                    Text("给下一位")
                         .font(.system(size: 8, weight: .bold, design: .monospaced))
                         .tracking(0.8)
                         .foregroundStyle(PopPalette.forest.opacity(0.62))
@@ -809,7 +809,7 @@ private struct CreateScreen: View {
                         .foregroundStyle(PopPalette.ink)
                 }
                 Spacer()
-                Text("REC")
+                Text(recording ? "录音中" : "轻触录音")
                     .font(.system(size: 8, weight: .black, design: .monospaced))
                     .foregroundStyle(PopPalette.ink)
                     .padding(.horizontal, 8)

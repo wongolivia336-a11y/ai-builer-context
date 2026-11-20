@@ -147,7 +147,7 @@ function DevicePill({ playing, emitting = false }) {
   return (
     <div className={`device-pill${playing ? ' playing' : ''}`}>
       <i />
-      <span>{playing ? '声音正在流动' : emitting ? '泡泡正在舒展 · SIM' : 'EchoCaster · DEMO'}</span>
+      <span>{playing ? '声音正在流动' : emitting ? '泡泡正在舒展' : 'Memo Catcher'}</span>
     </div>
   );
 }
@@ -894,7 +894,7 @@ function ARCommentsSheet({ bubble, onClose, global = false }) {
           <input aria-label="写一条留言" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="留一句回声…" maxLength={80} />
           <button type="submit" disabled={!draft.trim()}>发送</button>
         </form>
-        <div className="ar-comment-footnote"><i /> 留言保存在本次演示会话中</div>
+        <div className="ar-comment-footnote"><i /> 留下你的回应</div>
       </section>
     </div>
   );
@@ -937,7 +937,7 @@ function RoamEntryOverlay({ phase, progress, onSkip, locationStatus }) {
     return () => window.clearTimeout(timeout);
   }, []);
   const scanning = phase === 'scan';
-  const scanHint = locationStatus === 'requesting' ? '获取定位精度与后置相机权限' : locationStatus === 'denied' ? '定位未授权 · 继续浏览演示点位' : locationStatus === 'unavailable' ? '定位暂不可用 · 使用演示点位' : locationStatus === 'weak' ? '定位精度较粗 · 使用演示点位' : locationStatus === 'active' ? '位置已取得 · 画面泡泡仍是演示点位' : '定位用于发现附近回声';
+  const scanHint = locationStatus === 'requesting' ? '正在准备镜头与位置' : locationStatus === 'denied' ? '允许定位，寻找身边的声音' : locationStatus === 'unavailable' ? '移动镜头，寻找声音图卡' : locationStatus === 'weak' ? '继续移动镜头，寻找声音图卡' : locationStatus === 'active' ? '位置已准备好' : '镜头就绪，寻找声音图卡';
   return (
     <div className={`roam-entry-overlay phase-${phase}`} aria-live="polite" aria-label="漫游取景准备">
       <div className={`roam-entry-visual${scanning ? ' is-scanning' : ' is-buffering'}`} aria-hidden="true">
@@ -946,8 +946,8 @@ function RoamEntryOverlay({ phase, progress, onSkip, locationStatus }) {
         <span className="entry-buffer-ring"><i /></span>
       </div>
       <div className="roam-entry-copy">
-        <span className="entry-eyebrow">AR SPACE · VISUAL DEMO</span>
-        <strong>{scanning ? '正在扫描周围空间' : '正在注入泡泡水'}</strong>
+        <span className="entry-eyebrow">MEMO GARDEN</span>
+        <strong>{scanning ? '正在扫描' : '泡泡正在聚集'}</strong>
         <small>{scanning ? scanHint : '泡泡水正在注入漫游视野'}</small>
       </div>
       <CapsuleWaterProgress progress={progress} />
@@ -1416,24 +1416,18 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
   return (
     <Scene className={`app-roam image-target-roam${captured ? ' capture-done' : ''}`} style={{ '--street-image': `url("${streetBackground}")` }}>
       <div className="screen-topline">
-        <span className="place-chip ar-place-chip"><i /> 图像识别 · 漫游取景</span>
+        <span className="place-chip ar-place-chip"><i /> 漫游</span>
         <DevicePill playing={playing} emitting={emitting} />
       </div>
       <div className="roam-world">
-        <div className="roam-sort glass-surface">
-          <button className="active" onClick={() => onSelect(selected)}>附近回声 <i>08</i></button>
-          <span>IMAGE TARGETS · DEMO DAY</span>
-        </div>
         <div className="ar-zoom-stage">
-          <div className="floor-line floor-back"><span>图像锚点</span></div>
-          <div className="floor-line floor-front"><span>重力漂浮</span></div>
+          <div className="floor-line floor-back" />
+          <div className="floor-line floor-front" />
           <div className="distant-architecture" />
           <ARIllustrations />
         </div>
         <div className="image-ar-scene-caption">
-          <span>MEMO GARDEN / FIELD NOTES</span>
           <strong>让一张图，浮起一段回声</strong>
-          <i>8 张独立识别图 · 8 颗空间泡泡</i>
         </div>
         <ImageTargetARStage
           sounds={SOUND_BUBBLES}
@@ -1482,9 +1476,12 @@ const RECORDING_FORMS = [
   { id: 'echo-flower', shape: 'flower', accent: 'lilac', label: '花音' },
 ];
 
-function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, recordingForm, onRecordingForm, emitting, onRecord, transcript, onPublish, published, onPageChange }) {
+function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, recordingForm, onRecordingForm, emitting, onRecord, recordingAudio, recordError, previewingRecording, onPreviewRecording, onPublish, published, onPageChange }) {
   const form = recordingForm || RECORDING_FORMS[0];
   const formIndex = Math.max(0, RECORDING_FORMS.findIndex(item => item.id === form.id));
+  const hasAudio = Boolean(recordingAudio);
+  const seconds = Math.max(0, recordingSeconds | 0);
+  const timeLabel = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   const [squeezing, setSqueezing] = useState(false);
   const cycleRecordingForm = () => onRecordingForm(RECORDING_FORMS[(formIndex + 1) % RECORDING_FORMS.length]);
   const pressRecordingBubble = (event) => {
@@ -1503,17 +1500,17 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
       <div className="create-content">
         <div className="create-heading">
           <div className="create-title-copy">
-            <span className="eyebrow">FIELD RECORDING / 01</span>
+            <span className="eyebrow">一段声音 · 一颗泡泡</span>
             <h1>留一句</h1>
           </div>
-          <span className="create-rec"><i /> {recording ? 'REC · SIM' : 'VOICE NOTE'}</span>
+          <span className="create-rec"><i /> {recording ? '正在录音' : hasAudio ? '已录好' : '声音备忘'}</span>
         </div>
         <div className={`create-orbit${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}>
           <span className="create-aura" />
           <span className="record-shape-wave" aria-hidden="true" />
           <img className="create-sticker sticker-star-mint" src={stickerStarMint} alt="" aria-hidden="true" />
           <img className="create-sticker sticker-star-blue" src={stickerStarBlue} alt="" aria-hidden="true" />
-          <Bubble size={128} className={`record-bubble accent-${form.accent}${recording ? ' recording' : ''}${squeezing ? ' is-squeezed' : ''}`} label={recording ? `录音模拟中，${form.label}泡泡随声音起伏；按住挤压，松开回弹` : `轻点切换形状与颜色，当前是${form.label}`} onClick={recording ? undefined : cycleRecordingForm} onPointerDown={pressRecordingBubble} onPointerUp={releaseRecordingBubble} onPointerCancel={releaseRecordingBubble} style={{ '--record-energy': recordingEnergy }} bubble={form} />
+          <Bubble size={128} className={`record-bubble accent-${form.accent}${recording ? ' recording' : ''}${squeezing ? ' is-squeezed' : ''}`} label={recording ? `正在录音，${form.label}泡泡随声音起伏；按住挤压，松开回弹` : `轻点切换形状与颜色，当前是${form.label}`} onClick={recording ? undefined : cycleRecordingForm} onPointerDown={pressRecordingBubble} onPointerUp={releaseRecordingBubble} onPointerCancel={releaseRecordingBubble} style={{ '--record-energy': recordingEnergy }} bubble={form} />
           <Bubble size={34} className="create-satellite sat-a" />
           <Bubble size={24} className="create-satellite sat-b" />
           <Bubble size={17} className="create-satellite sat-c" />
@@ -1525,14 +1522,15 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
         </div>
         <div className={`record-panel glass-surface${recording ? ' is-recording' : ''}`}>
           <span className="record-prompt">{prompt === 'next' ? '说一句，留给下一个路过的人' : '说一句，此刻的你和这里'}</span>
-          {transcript ? <span className="transcript">“{transcript}”</span> : <span className="transcript placeholder">{published ? '声音已留在江湾' : '一段话，刚刚好'}</span>}
+          <span className={`transcript${hasAudio || recording ? '' : ' placeholder'}`} aria-live="polite">{recordError || (recording ? '正在录下你此刻的声音' : hasAudio ? '声音已收下，可以试听' : published ? '声音已留在这里' : '轻轻说下此刻的想法')}</span>
           <div className="record-row">
             <button className={`record-button${recording ? ' recording' : ''}`} onClick={onRecord}><span className="record-button-inner" /></button>
-            <Waveform active={recording || !!transcript} />
-            <span className="record-time">00:{String(recordingSeconds).padStart(2, '0')}</span>
+            <Waveform active={recording || previewingRecording} />
+            <span className="record-time">{timeLabel}</span>
+            {hasAudio && !recording && <button className="record-preview" type="button" onClick={onPreviewRecording}>{previewingRecording ? '暂停' : '试听'}</button>}
           </div>
         </div>
-        <GlassButton className="publish-button" onClick={recording ? onRecord : transcript ? onPublish : onRecord}>{recording ? '完成录音' : published ? '已留在这里' : transcript ? '留下这句话' : '开始录音'} <span className="arrow-out">↗</span></GlassButton>
+        <GlassButton className="publish-button" onClick={recording ? onRecord : hasAudio ? onPublish : onRecord}>{recording ? '完成录音' : published ? '已留在这里' : hasAudio ? '留下这段声音' : '开始录音'} <span className="arrow-out">↗</span></GlassButton>
       </div>
       <TabBar active="create" onChange={onPageChange} />
     </Scene>
@@ -1544,8 +1542,7 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
     <section className="audience-window">
       <div className="audience-chrome">
         <span className="chrome-lights"><i /><i /><i /></span>
-        <span className="audience-title">现场镜像</span>
-        <span className="live-pill"><i /> LIVE</span>
+        <span className="audience-title">空间回声</span>
       </div>
       <Scene className={`projection-scene projection-${page}`} style={page === 'roam' ? { '--street-image': `url("${landscapeStreetBackground}")` } : page === 'create' ? { '--create-image': `url("${createBackground}")` } : undefined}>
         <div className="projection-location"><i /> {page === 'home' ? '我的回声' : '江湾 · 01'} <span>{page === 'home' ? '个人图鉴' : '空间回声'}</span></div>
@@ -1565,7 +1562,7 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
         ) : page === 'create' ? (
           <>
             <div className={`projection-create-cluster${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}><span className="projection-record-wave" /><Bubble size={135} className={`projection-record-bubble accent-${recordingForm.accent}${recording ? ' recording' : ''}${published ? ' published-bubble' : ''}`} style={{ '--record-energy': recordingEnergy }} bubble={recordingForm} /><Bubble size={53} /><Bubble size={31} /></div>
-            <div className="projection-caption"><span>{recording ? '声音正在呼吸 · REC SIM' : published ? '声音已经留下' : '一段新声音，正在诞生'}</span><strong>{published ? 'EchoCaster 泡泡发射演示' : '一句话 · 一个位置'}</strong></div>
+            <div className="projection-caption"><span>{recording ? '声音正在呼吸' : published ? '声音已经留下' : '一段新声音，正在诞生'}</span><strong>{published ? '声音泡泡已浮现' : '一句话 · 一个位置'}</strong></div>
           </>
         ) : (
           <>
@@ -1617,12 +1614,13 @@ function App() {
     const previousPage = previousPageRef.current;
     previousPageRef.current = page;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    if (previousPage === page) return undefined;
     const order = { home: 0, roam: 1, create: 2 };
     const direction = (order[page] ?? 0) >= (order[previousPage] ?? 0) ? 1 : -1;
     const context = gsap.context(() => {
       gsap.fromTo(scene,
-        { autoAlpha: 0, x: direction * 16, scale: 0.988, filter: 'blur(7px)' },
-        { autoAlpha: 1, x: 0, scale: 1, filter: 'blur(0px)', duration: 0.54, ease: 'power3.out', clearProps: 'transform,filter,opacity,visibility' },
+        { autoAlpha: 0, x: direction * 10, y: 5, scale: 0.992, filter: 'blur(2px)' },
+        { autoAlpha: 1, x: 0, y: 0, scale: 1, filter: 'blur(0px)', duration: 0.42, ease: 'power3.out', clearProps: 'transform,filter,opacity,visibility' },
       );
     }, column);
     return () => context.revert();
@@ -1647,7 +1645,9 @@ function App() {
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordingEnergy, setRecordingEnergy] = useState(0.18);
-  const [transcript, setTranscript] = useState('');
+  const [recordingAudio, setRecordingAudio] = useState(null);
+  const [recordError, setRecordError] = useState('');
+  const [previewingRecording, setPreviewingRecording] = useState(false);
   const [published, setPublished] = useState(false);
   const [createdBubble, setCreatedBubble] = useState(null);
   const [poppedId, setPoppedId] = useState(null);
@@ -1667,6 +1667,15 @@ function App() {
   const locationPositionRef = useRef(null);
   const roamStartedAt = useRef(0);
   const recordingStartedAt = useRef(0);
+  const recordingStartGuardRef = useRef(false);
+  const mediaRecorderRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  const recordingChunksRef = useRef([]);
+  const analyserRef = useRef(null);
+  const analyserDataRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const audioPlayerRef = useRef(null);
+  const recordingUrlsRef = useRef(new Set());
   const bubbles = createdBubble ? [createdBubble, ...SOUND_BUBBLES] : SOUND_BUBBLES;
 
   const closeCamera = () => {
@@ -1763,6 +1772,11 @@ function App() {
   useEffect(() => () => {
     cameraRequestId.current += 1;
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaRecorderRef.current?.stop?.();
+    recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+    audioPlayerRef.current?.pause?.();
+    audioContextRef.current?.close?.().catch?.(() => {});
+    recordingUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     window.clearTimeout(captureTimer.current);
     locationRequestId.current += 1;
     window.clearTimeout(locationTimeout.current);
@@ -1770,6 +1784,8 @@ function App() {
   }, []);
 
   const requestPageChange = (nextPage) => {
+    if (nextPage === page) return;
+    if (recording) finishRecording();
     if (nextPage === 'roam') {
       if (page !== 'roam') {
         setPage('roam');
@@ -1789,7 +1805,31 @@ function App() {
     const token = ++playbackToken.current;
     window.clearTimeout(playbackTimer.current);
     window.clearTimeout(playbackFallback.current);
+    audioPlayerRef.current?.pause?.();
+    audioPlayerRef.current = null;
+    setPreviewingRecording(false);
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     setPlaying(true);
+    if (bubble.audioUrl) {
+      const player = new Audio(bubble.audioUrl);
+      audioPlayerRef.current = player;
+      player.onended = () => {
+        if (token !== playbackToken.current) return;
+        audioPlayerRef.current = null;
+        setPlaying(false);
+      };
+      player.onerror = () => {
+        if (token !== playbackToken.current) return;
+        audioPlayerRef.current = null;
+        setPlaying(false);
+      };
+      player.play().catch(() => {
+        if (token !== playbackToken.current) return;
+        audioPlayerRef.current = null;
+        setPlaying(false);
+      });
+      return;
+    }
     const minDuration = Math.max(2200, bubble.quote.length * 130);
     const startedAt = Date.now();
     const finish = () => {
@@ -1840,34 +1880,145 @@ function App() {
     popTimer.current = window.setTimeout(() => setPoppedId(null), 1650);
   };
 
-  const finishRecording = () => {
-    setRecording(false);
-    setTranscript('风从河面来，像一句没说完的话。');
-    setRecordingEnergy(0.22);
+  const releaseRecordingInputs = () => {
+    recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+    recordingStreamRef.current = null;
+    analyserRef.current = null;
+    analyserDataRef.current = null;
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') audioContextRef.current.close().catch(() => {});
+    audioContextRef.current = null;
   };
 
-  const toggleRecording = () => {
+  const finishRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    const elapsed = Math.min(30, Math.max(0, (performance.now() - recordingStartedAt.current) / 1000));
+    setRecordingSeconds(Math.floor(elapsed));
+    setRecording(false);
+    setRecordingEnergy(0.22);
+    if (recorder && recorder.state === 'recording') recorder.stop();
+    else releaseRecordingInputs();
+  };
+
+  const stopRecordingPreview = () => {
+    audioPlayerRef.current?.pause?.();
+    audioPlayerRef.current = null;
+    setPreviewingRecording(false);
+  };
+
+  const previewRecording = () => {
+    if (previewingRecording) {
+      stopRecordingPreview();
+      return;
+    }
+    if (!recordingAudio?.url) return;
+    const player = new Audio(recordingAudio.url);
+    audioPlayerRef.current = player;
+    player.onended = stopRecordingPreview;
+    player.onerror = stopRecordingPreview;
+    setPreviewingRecording(true);
+    player.play().catch(stopRecordingPreview);
+  };
+
+  const toggleRecording = async () => {
     if (recording) {
       finishRecording();
       return;
     }
-    setTranscript('');
+    if (recordingStartGuardRef.current) return;
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      setRecordError('请在安全连接下打开麦克风。');
+      return;
+    }
+    if (typeof window.MediaRecorder !== 'function') {
+      setRecordError('当前浏览器暂不支持录音。');
+      return;
+    }
+    recordingStartGuardRef.current = true;
+    setRecordError('');
     setPublished(false);
     setRecordingSeconds(0);
     setRecordingEnergy(0.2);
-    recordingStartedAt.current = performance.now();
-    setRecording(true);
+    stopRecordingPreview();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      recordingChunksRef.current = [];
+      const supportedTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+      const mimeType = supportedTypes.find((type) => window.MediaRecorder.isTypeSupported?.(type));
+      const recorder = new window.MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = recorder;
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          const context = new AudioContextClass();
+          const analyser = context.createAnalyser();
+          analyser.fftSize = 512;
+          context.createMediaStreamSource(stream).connect(analyser);
+          audioContextRef.current = context;
+          analyserRef.current = analyser;
+          analyserDataRef.current = new Uint8Array(analyser.fftSize);
+        }
+      } catch {
+        analyserRef.current = null;
+      }
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size) recordingChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordingChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+        const duration = Math.max(1, Math.min(30, Math.round((performance.now() - recordingStartedAt.current) / 1000)));
+        if (blob.size) {
+          const url = URL.createObjectURL(blob);
+          recordingUrlsRef.current.add(url);
+          setRecordingAudio({ url, duration, type: blob.type });
+          setRecordingSeconds(duration);
+        } else {
+          setRecordError('没有录到声音，再试一次吧。');
+        }
+        releaseRecordingInputs();
+        mediaRecorderRef.current = null;
+        recordingChunksRef.current = [];
+      };
+      recorder.onerror = () => {
+        setRecordError('录音中断了，请再试一次。');
+        setRecording(false);
+        releaseRecordingInputs();
+        mediaRecorderRef.current = null;
+      };
+      recordingStartedAt.current = performance.now();
+      recorder.start(250);
+      setRecording(true);
+    } catch (error) {
+      releaseRecordingInputs();
+      mediaRecorderRef.current = null;
+      const message = error?.name === 'NotAllowedError' || error?.name === 'SecurityError'
+        ? '允许使用麦克风，才能录下这段声音。'
+        : error?.name === 'NotFoundError'
+          ? '没有找到可用的麦克风。'
+          : '无法开始录音，请再试一次。';
+      setRecordError(message);
+    } finally {
+      recordingStartGuardRef.current = false;
+    }
   };
 
   useEffect(() => {
     if (!recording) return undefined;
     const interval = window.setInterval(() => {
       const elapsed = (performance.now() - recordingStartedAt.current) / 1000;
-      const seconds = Math.min(6, Math.floor(elapsed));
-      const breath = 0.16 + Math.abs(Math.sin(elapsed * 4.9)) * 0.58 + Math.abs(Math.sin(elapsed * 1.7 + 0.9)) * 0.18;
+      const seconds = Math.min(30, Math.floor(elapsed));
+      let breath;
+      if (analyserRef.current && analyserDataRef.current) {
+        analyserRef.current.getByteTimeDomainData(analyserDataRef.current);
+        let sum = 0;
+        analyserDataRef.current.forEach((sample) => { const wave = (sample - 128) / 128; sum += wave * wave; });
+        breath = Math.min(0.96, Math.max(0.12, Math.sqrt(sum / analyserDataRef.current.length) * 3.4));
+      } else {
+        breath = 0.16 + Math.abs(Math.sin(elapsed * 4.9)) * 0.58 + Math.abs(Math.sin(elapsed * 1.7 + 0.9)) * 0.18;
+      }
       setRecordingSeconds(seconds);
       setRecordingEnergy(Math.min(0.96, breath));
-      if (elapsed >= 6) finishRecording();
+      if (elapsed >= 30) finishRecording();
     }, 90);
     return () => window.clearInterval(interval);
   }, [recording]);
@@ -1896,13 +2047,14 @@ function App() {
   };
 
   const publishBubble = () => {
-    if (!transcript) return;
+    if (!recordingAudio) return;
     const bubble = {
       id: `my-echo-${Date.now()}`,
-      title: '给下一位的声音',
-      quote: transcript,
+      title: prompt === 'next' ? '给下一位的声音' : '留给此刻的声音',
+      quote: prompt === 'next' ? '一段留给下一位路过者的声音。' : '一段留给此刻自己的声音。',
+      audioUrl: recordingAudio.url,
       author: '你',
-      duration: `${Math.max(1, recordingSeconds)} 秒`,
+      duration: `${recordingAudio.duration} 秒`,
       saves: 1,
       listens: 1,
       distance: 0,
@@ -1925,21 +2077,21 @@ function App() {
   return (
     <main className="demo-canvas">
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
-      <header className="demo-header"><span className="wordmark">Memo garden</span><span className="demo-mode"><i /> DEMO 01</span></header>
+      <header className="demo-header"><span className="wordmark">Memo Garden</span></header>
       <div className="demo-stage">
         {showAudiencePreview && <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} recordingForm={recordingForm} published={published} bubbles={bubbles} roamPhase={roamPhase} />}
         <div className="phone-column" ref={phoneColumnRef}>
           <Phone width={398} frame="android" island={false} status={false} time="20:31" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
           {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
           {page === 'roam' && <RoamScreen selected={selected} onSelect={(index) => { setSelected(index); }} arActive={arActive} onModeChange={setArActive} captured={captured} capturedBubble={capturedBubble} capturePhase={capturePhase} onCapture={beginCapture} onListen={listenCapturedBubble} onResetCapture={resetCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={value => setZoom(Math.max(.72, Math.min(2.2, value)))} onCloseCamera={closeCamera} />}
+          {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} recordingForm={recordingForm} onRecordingForm={setRecordingForm} emitting={deviceEmitting} onRecord={toggleRecording} recordingAudio={recordingAudio} recordError={recordError} previewingRecording={previewingRecording} onPreviewRecording={previewRecording} onPublish={publishBubble} published={published} onPageChange={requestPageChange} />}
           </Phone>
-          <div className={`device-status${playing || deviceEmitting ? ' is-playing' : ''}`}><span className="device-dot" /><span>{deviceEmitting ? 'EchoCaster 发泡演示中' : playing ? 'EchoCaster 播放演示中' : 'EchoCaster 演示装置'}</span><b>SIM</b></div>
         </div>
       </div>
       <div className="stage-floor" />
-      <button className={`device-launcher${deviceOpen ? ' is-open' : ''}`} onClick={() => setDeviceOpen((open) => !open)} aria-expanded={deviceOpen} aria-label={deviceOpen ? '收起声景装置' : '展开声景装置'}>
+      <button className={`device-launcher${deviceOpen ? ' is-open' : ''}`} onClick={() => setDeviceOpen((open) => !open)} aria-expanded={deviceOpen} aria-label={deviceOpen ? '收起 Memo Catcher' : '查看 Memo Catcher'}>
         <span className="device-launcher-orb"><i /><i /><i /></span>
-        <span>{deviceOpen ? '收起 EchoCaster' : '查看 EchoCaster'}</span>
+        <span>{deviceOpen ? '收起 Memo Catcher' : '查看 Memo Catcher'}</span>
         <b>{deviceOpen ? '−' : '↗'}</b>
       </button>
       {deviceOpen && <Suspense fallback={<div className="device-viewer device-viewer-loading glass-surface" role="status">装置载入中…</div>}><DeviceViewer open onClose={() => setDeviceOpen(false)} playing={playing || deviceEmitting} /></Suspense>}
