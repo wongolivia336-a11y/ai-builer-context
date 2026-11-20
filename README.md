@@ -1,8 +1,14 @@
-# Memo Garden · 声景漫游
+# MEMO Garden · 声景漫游
 
 **走进街道，捕捉留在这里的声音。**
 
-Memo Garden 把城市里的声音变成可以发现、聆听和接力的泡泡。用户可以在取景中发现回声，也可以录下一句话留给后来经过的人。
+MEMO Garden 把城市里的声音变成可以发现、聆听和接力的泡泡。用户可以在取景中发现回声，也可以录下一句话留给后来经过的人。
+
+**MEMO Garden 创建并珍藏声景记忆，MEMO Catcher 硬件则捕捉一个个“声音泡泡”，让声音成为可回味的记忆。**
+
+> MEMO Garden is a mini-program that creates and preserves soundscape memories, while the MEMO Catcher hardware captures “sound bubbles,” turning everyday sounds into memories you can revisit.
+
+网页首页是产品导览，介绍声景漫游、MEMO Catcher 概念和当前原型边界。首页的泡泡质感标题是本次网页的视觉表达素材，不替代项目正式 Logo。M01–M03 动效探索可通过首页的“比较 M01–M03 动效方案”进入；这些 A/B/C 选项是独立预览，尚未覆盖正式 App 交互。
 
 > 当前仓库提供适配 Android 浏览器的 Vite + React 应用，以及独立的 SwiftUI 视觉原型；还没有 Android 工程或可安装 APK。漫游页使用 8 张可单独下载的图像识别图：首次扫描时在浏览器中编译目标并缓存，识别到目标后显示唯一映射的 3D 泡泡。相机需要 HTTPS/localhost 与用户授权；泡泡上下浮动可读取设备运动传感器。共创页使用浏览器麦克风录制并在本机试听，录音保留在当前会话中，不会上传或跨设备同步。实体按键可通过 WebSocket 桥接；实体装置、GPS 地理锚定、评论服务与机械吹泡尚未接入。
 
@@ -58,9 +64,11 @@ npm run dev
 
 Vite 会输出本地地址。可直接访问不同页面：
 
+- `/` 产品 landing page
 - `/?screen=home` 泡泡
 - `/?screen=roam` 漫游
 - `/?screen=create` 共创
+- `/?preview=motion` M01–M03 交互方案预览
 
 浏览器应用包含首页泡泡物理、回声榜留言，以及基于 MindAR 的图像识别 AR。共创页使用 `MediaRecorder` 录制最多 30 秒的本地音频，并支持试听；录音只在当前浏览器会话可用，不含语音转写或服务端保存。8 张识别图位于 `public/markers/`，可从漫游页单张下载；首次扫描在线载入识别引擎、编译并把目标库缓存到 IndexedDB。相机需 HTTPS/localhost 和浏览器授权，设备重力动画按浏览器传感器权限工作，否则使用轻柔浮动。设备信号通过 `?deviceWs=wss://…`、`VITE_MEMO_CATCHER_WS`（兼容旧名 `VITE_ECHOCASTER_WS`）配置 WebSocket 消息桥接；默认没有硬件连接。细节见 [图像识别 AR 与设备桥接说明](./docs/ar-image-target-setup.md)。本仓库尚无 Android 原生工程、APK 签名配置、真实 GPS 锚点、评论后端或 ESP32 固件。
 

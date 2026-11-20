@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createPortal } from 'react-dom';
 import { gsap } from 'gsap';
 import ImageTargetARStage from './components/ImageTargetARStage';
+import LandingPage from './components/LandingPage';
 import CapsuleWaterProgress from './components/CapsuleWaterProgress';
 import { Phone } from './kit/phone';
 import streetBackground from './assets/user-kit/roam-night-portrait.webp';
@@ -16,8 +17,10 @@ import './styles-v2.css';
 import './styles-editorial.css';
 
 const DeviceViewer = lazy(() => import('./DeviceViewer'));
+const MotionLab = lazy(() => import('./components/MotionLab'));
 
 const initialScreen = new URLSearchParams(location.search).get('screen');
+const initialPreview = new URLSearchParams(location.search).get('preview');
 
 function Bubble({ size, className = '', label, onClick, onPointerDown, onPointerUp, onPointerCancel, onContextMenu, style = {}, bubble }) {
   return (
@@ -1739,7 +1742,8 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
 }
 
 function App() {
-  const [page, setPage] = useState(['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
+  const [page, setPage] = useState(() => ['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'landing');
+  const [motionPreview, setMotionPreview] = useState(initialPreview === 'motion');
   const phoneColumnRef = useRef(null);
   const previousPageRef = useRef(page);
 
@@ -2217,11 +2221,33 @@ function App() {
     triggerDeviceEmission(24000);
     startBubblePlayback(bubble);
   };
+  const enterApp = (screen = 'home') => {
+    const nextScreen = ['home', 'roam', 'create'].includes(screen) ? screen : 'home';
+    window.history.replaceState({}, '', `${window.location.pathname}?screen=${nextScreen}`);
+    setMotionPreview(false);
+    setPage(nextScreen);
+  };
+  const openMotionLab = () => {
+    window.history.replaceState({}, '', `${window.location.pathname}?preview=motion`);
+    setMotionPreview(true);
+  };
+  const closeMotionLab = () => {
+    window.history.replaceState({}, '', window.location.pathname);
+    setMotionPreview(false);
+    setPage('landing');
+  };
+
+  if (motionPreview) {
+    return <Suspense fallback={<main className="motion-lab-loading" role="status">动效预览载入中</main>}><MotionLab onExit={closeMotionLab} /></Suspense>;
+  }
+  if (page === 'landing') {
+    return <LandingPage onEnter={enterApp} onOpenMotionLab={openMotionLab} />;
+  }
 
   return (
     <main className="demo-canvas">
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
-      <header className="demo-header"><span className="wordmark">Memo Garden</span></header>
+      <header className="demo-header"><span className="wordmark">MEMO Garden</span></header>
       <div className="demo-stage">
         {showAudiencePreview && <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} recordingForm={recordingForm} published={published} bubbles={bubbles} roamPhase={roamPhase} />}
         <div className="phone-column" ref={phoneColumnRef}>
