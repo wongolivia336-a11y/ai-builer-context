@@ -1,13 +1,15 @@
-# Memo Garden Asset Pack
+# MEMO Garden Asset Pack
 
 ## Project identity
-- Product: Memo Garden · 声景漫游
-- Device concept/model: Memo Catcher
+- Product: MEMO Garden · 声景漫游
+- Device concept/model: MEMO Catcher
 - Configured demo URL: https://ai-builer-context.vercel.app
 - Web stack: React, Vite, Three.js, MindAR
 
 ## Package contents
 - assets/source-assets: project illustration and material source files, including the user-kit WebP files, roam-street.png, and the two compressed STL source parts.
+- assets/source-assets/landing/memo-garden-bubble-wordmark.png: original, full-size transparent generated bubble-text treatment. The 1120 × 373 optimized display copy is in `assets/source-assets/landing/display/memo-garden-bubble-wordmark-display.png`. Both are web campaign/display assets, not a replacement for the canonical product logo.
+- assets/source-assets/posters/: the three supplied product posters, copied without edits for visual reference. Poster 01 appears on the landing hero and poster 03 appears in the MEMO Catcher concept section; poster 02 is retained as a reference asset. Optimized landing display copies are in `assets/source-assets/landing/display/`; originals remain unmodified in `posters/`.
 - assets/markers: eight standalone, high-contrast SVG image targets. Each SVG maps to one fixed demo bubble.
 - assets/ui-previews: existing home, Echo Board, and device previews, plus current 390 × 844 home/create/roam screenshots and a 1440 × 1000 Memo Catcher model view.
 - references: product context, demo scope, AR image-target setup, visual direction, and asset-use map.
@@ -46,6 +48,12 @@ The source of truth is src/styles-editorial.css in the project repository. These
 | --glass-shadow | 0 18px 46px rgba(57,77,51,.12), inset 0 1px 0 rgba(255,255,255,.92) | soft depth |
 
 The visual direction pairs translucent, fine-film bubbles with a paper-and-forest palette. Use lime sparingly for active controls and navigation. Keep small interaction labels readable and preserve the organic bubble silhouettes.
+
+The web landing page adds restrained blue and periwinkle from the posters: `#91bdf1` sky blue, `#a9b5ef` periwinkle, `#379ada` clear blue, `#b5ead9` mint, `#f1b7d2` mist pink, and `#fff9ee` warm cream. Use these as supporting surfaces and material tints; keep the project paper/forest palette as the product UI base.
+
+## Website story and preview
+
+The Chinese and English product introduction is in the root `README.md` and website landing hero. The root route `/` presents this landing page; `/?screen=home`, `/?screen=roam`, and `/?screen=create` open the existing prototype pages. `/?preview=motion` opens the standalone interactive preview for M01 liquid-glass tabs, M02 liquid-to-bubble bloom, and M03 bubble touch/reveal. A/B/C experiments are preview-only and are not integrated into formal product components.
 
 ## Human and agent handoff
 1. In the project repository, read the root README.md and AGENTS.md, then product-context.md, demo-scope.md, and ar-image-target-setup.md. For a standalone package handoff, start with references/project-readme.md, references/AGENTS.md, and the matching product and AR references.

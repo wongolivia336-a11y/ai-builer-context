@@ -1,0 +1,70 @@
+{
+  "package": "Memo Garden Asset Pack",
+  "version": "2026-11-20",
+  "product": "MEMO Garden · 声景漫游",
+  "device": "MEMO Catcher",
+  "demoUrl": "https://ai-builer-context.vercel.app/",
+  "webStack": [
+    "React",
+    "Vite",
+    "Three.js",
+    "MindAR"
+  ],
+  "landing": {
+    "copyEnglish": "MEMO Garden is a mini-program that creates and preserves soundscape memories, while the MEMO Catcher hardware captures “sound bubbles,” turning everyday sounds into memories you can revisit.",
+    "wordmark": "assets/source-assets/landing/display/memo-garden-bubble-wordmark-display.png",
+    "copyChinese": "MEMO Garden 创建并珍藏声景记忆，MEMO Catcher 硬件则捕捉一个个“声音泡泡”，让声音成为可回味的记忆。",
+    "route": "/",
+    "wordmarkStatus": "Generated web display treatment; not the canonical logo",
+    "wordmarkSource": "assets/source-assets/landing/memo-garden-bubble-wordmark.png"
+  },
+  "posters": [
+    {
+      "file": "assets/source-assets/posters/01_outdoor_film.jpg",
+      "use": "Visual reference; used on landing hero without edits"
+    },
+    {
+      "file": "assets/source-assets/posters/02_blue_dream.png",
+      "use": "Visual reference; retained unmodified"
+    },
+    {
+      "file": "assets/source-assets/posters/03_blue_yellow_editorial.png",
+      "use": "Visual reference; used on landing concept section without edits"
+    }
+  ],
+  "motionPreview": {
+    "modules": [
+      "M01 Liquid Glass Tab",
+      "M02 Liquid to Bloom",
+      "M03 Bubble Memory"
+    ],
+    "status": "Interactive A/B/C preview only; not integrated into formal product components",
+    "route": "/?preview=motion"
+  },
+  "markerDirectory": "assets/markers",
+  "markerCount": 8,
+  "palette": {
+    "lime": "#d9f04d",
+    "ink": "#202b24",
+    "landingPeriwinkle": "#a9b5ef",
+    "blue": "#c8e3f2",
+    "paperLight": "#fcfbf4",
+    "pink": "#efc5d4",
+    "paper": "#f7f4e9",
+    "landingSky": "#91bdf1",
+    "moss": "#a8c98b",
+    "forest": "#203b2e"
+  },
+  "posterDisplay": [
+    {
+      "format": "JPEG quality 90, full poster",
+      "file": "assets/source-assets/landing/display/memo-outdoor-film-display.jpg",
+      "source": "assets/source-assets/posters/01_outdoor_film.jpg"
+    },
+    {
+      "format": "JPEG quality 90, full poster",
+      "file": "assets/source-assets/landing/display/memo-blue-yellow-editorial-display.jpg",
+      "source": "assets/source-assets/posters/03_blue_yellow_editorial.png"
+    }
+  ]
+}
