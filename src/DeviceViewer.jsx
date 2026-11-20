@@ -459,11 +459,17 @@ function DeviceCanvas({ playing }) {
       if (disposed) return;
       frame = window.requestAnimationFrame(render);
       timer.update(timestamp);
+      const frameDelta = timer.getDelta();
       if (device) {
         const elapsed = timer.getElapsed();
         device.group.rotation.z = playingRef.current ? Math.sin(elapsed * 3.6) * 0.025 : device.group.rotation.z * 0.94;
         device.hand.hand.rotation.x = playingRef.current ? Math.sin(elapsed * 2.2) * 0.025 : device.hand.hand.rotation.x * 0.96;
-        const activeHotspot = device.hotspots.find((hotspot) => hotspot.userData.featureId === hoveredFeatureRef.current);
+        const activeFeature = hoveredFeatureRef.current;
+        const activeHotspot = device.hotspots.find((hotspot) => hotspot.userData.featureId === activeFeature);
+        const hoverTurn = activeFeature ? 0.035 : 0;
+        device.group.rotation.y = THREE.MathUtils.damp(device.group.rotation.y, hoverTurn, 6, frameDelta);
+        const handTurn = activeFeature === 'grip' ? -0.17 : -0.08;
+        device.hand.hand.rotation.z = THREE.MathUtils.damp(device.hand.hand.rotation.z, handTurn, 7, frameDelta);
         if (activeHotspot) {
           const projected = activeHotspot.getWorldPosition(new THREE.Vector3()).project(camera);
           const x = THREE.MathUtils.clamp(((projected.x + 1) / 2) * mount.clientWidth, 92, Math.max(92, mount.clientWidth - 92));
@@ -599,7 +605,7 @@ export default function DeviceViewer({ open, onClose, playing }) {
   return (
     <section className="device-viewer glass-surface" ref={panelRef} aria-label="EchoCaster 3D 展示">
       <header className="device-viewer-head">
-        <div className="device-detail"><span className="device-eyebrow">SOUNDSCAPE · FIELD DEVICE</span><h2>EchoCaster</h2><small>竖屏手机仓 · 手持声音泡泡发射器</small></div>
+        <div className="device-detail"><span className="device-eyebrow">MEMO GARDEN · FIELD DEVICE</span><h2>EchoCaster</h2><small>竖屏手机仓 · 手持声音泡泡发射器</small></div>
         <button className="device-close" onClick={closeAnimated} aria-label="收起 EchoCaster">−</button>
       </header>
       <DeviceCanvas playing={playing} />

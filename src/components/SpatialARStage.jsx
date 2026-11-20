@@ -36,7 +36,8 @@ function liquidMaterial(color) {
     depthWrite: false,
     uniforms: { uTint: { value: new THREE.Color(color) } },
     vertexShader: 'varying vec3 vNormal; varying vec3 vView; void main(){ vec4 p=modelViewMatrix*vec4(position,1.0); vNormal=normalize(normalMatrix*normal); vView=normalize(-p.xyz); gl_Position=projectionMatrix*p; }',
-    fragmentShader: 'uniform vec3 uTint; varying vec3 vNormal; varying vec3 vView; void main(){ float f=max(dot(normalize(vNormal),normalize(vView)),0.0); float rim=pow(1.0-f,2.2); vec3 spectral=0.5+0.5*cos(vec3(0.3,2.35,4.5)+rim*7.2); vec3 color=mix(uTint,spectral,0.28+rim*0.52); float alpha=0.12+rim*0.64; gl_FragColor=vec4(color,alpha); }',
+    fragmentShader: 'uniform vec3 uTint; varying vec3 vNormal; varying vec3 vView; void main(){ float f=max(dot(normalize(vNormal),normalize(vView)),0.0); float rim=pow(1.0-f,2.2); vec3 spectral=0.5+0.5*cos(vec3(0.3,2.35,4.5)+rim*7.2); vec3 color=mix(uTint,spectral,0.24+rim*0.5); float alpha=0.22+rim*0.68; gl_FragColor=vec4(color,alpha); }',
+    side: THREE.DoubleSide,
   });
 }
 
@@ -54,7 +55,7 @@ function buildBubbles(sounds) {
     target.userData.sound = sound;
     target.userData.baseScale = scale;
 
-    const sphereGeometry = new THREE.SphereGeometry(0.17, 36, 28);
+    const sphereGeometry = new THREE.SphereGeometry(0.19, 28, 20);
     const sphereMaterial = liquidMaterial(tint);
     geometries.push(sphereGeometry);
     materials.push(sphereMaterial);
@@ -64,18 +65,18 @@ function buildBubbles(sounds) {
 
     const geometry = new THREE.ExtrudeGeometry(bubbleShape(sound.shape), {
       depth: 0.05, bevelEnabled: true, bevelSegments: 3, steps: 1,
-      bevelSize: 0.025, bevelThickness: 0.025, curveSegments: 18,
+      bevelSize: 0.025, bevelThickness: 0.025, curveSegments: 12,
     });
     geometry.computeVertexNormals();
     const material = new THREE.MeshPhysicalMaterial({
-      color: tint, transparent: true, opacity: 0.7, roughness: 0.16, metalness: 0.04,
-      clearcoat: 1, clearcoatRoughness: 0.08, side: THREE.DoubleSide, depthWrite: false,
+      color: tint, emissive: tint, emissiveIntensity: 0.12, transparent: true, opacity: 0.86, roughness: 0.12, metalness: 0.04,
+      clearcoat: 1, clearcoatRoughness: 0.06, side: THREE.DoubleSide, depthWrite: false,
     });
     geometries.push(geometry);
     materials.push(material);
     const sticker = new THREE.Mesh(geometry, material);
     sticker.position.z = 0.17;
-    sticker.scale.setScalar(0.32);
+    sticker.scale.setScalar(0.4);
     sticker.userData.sound = sound;
     target.add(sticker);
 
@@ -115,12 +116,8 @@ function buildBubbles(sounds) {
 function disposeResources(resources) {
   if (!resources || resources.closed) return;
   resources.closed = true;
-  window.clearTimeout(resources.longPressTimer);
-  window.clearTimeout(resources.commentTimer);
   resources.renderer.setAnimationLoop(null);
   resources.hitSource?.cancel?.();
-  resources.controller.removeEventListener('selectstart', resources.onSelectStart);
-  resources.controller.removeEventListener('selectend', resources.onSelectEnd);
   resources.controller.removeEventListener('select', resources.onSelect);
   resources.geometries.forEach((item) => item.dispose());
   resources.materials.forEach((item) => item.dispose());
@@ -128,13 +125,14 @@ function disposeResources(resources) {
   resources.renderer.domElement.remove();
 }
 
-export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCapture, onLongPress, onCloseCamera, capturedBubble, capturePhase, playing, onListen }) {
+export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCapture, onCloseCamera, onModeChange, capturedBubble, capturePhase, playing, onListen }) {
   const [support, setSupport] = useState('checking');
   const [status, setStatus] = useState('idle');
   const [placed, setPlaced] = useState(false);
   const [surfaceSeen, setSurfaceSeen] = useState(false);
   const [errorCopy, setErrorCopy] = useState('');
   const [commentPreview, setCommentPreview] = useState(null);
+  const [selectedSound, setSelectedSound] = useState(null);
   const [captureFlash, setCaptureFlash] = useState(false);
   const overlayRef = useRef(null);
   const canvasHostRef = useRef(null);
@@ -145,10 +143,9 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
   const clusterRef = useRef(null);
   const targetsRef = useRef([]);
   const anchorRef = useRef(null);
-  const pressRef = useRef(null);
   const zoomRef = useRef(zoom);
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
-  latestRef.current = { sounds, onSelect, onCapture, onLongPress, onCloseCamera, onZoom, onListen };
+  latestRef.current = { sounds, onSelect, onCapture, onCloseCamera, onZoom, onListen, onModeChange };
   zoomRef.current = zoom;
 
   useEffect(() => {
@@ -188,9 +185,29 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
     if (clusterRef.current) clusterRef.current.scale.setScalar(zoom);
   }, [zoom]);
 
+  useEffect(() => {
+    latestRef.current.onModeChange?.(status === 'active');
+  }, [status]);
+
+  useEffect(() => () => latestRef.current.onModeChange?.(false), []);
+
+  const captureSelectedSound = (sound) => {
+    if (!sound) return;
+    const target = targetsRef.current.find((item) => item.userData.sound?.id === sound.id);
+    if (target) {
+      target.userData.capturedAt = performance.now();
+      target.userData.isSelected = false;
+    }
+    setCaptureFlash(true);
+    window.setTimeout(() => setCaptureFlash(false), 1250);
+    window.setTimeout(() => latestRef.current.onCapture?.(sound), 260);
+  };
+
   const startAR = async () => {
     if (support !== 'supported' || status === 'starting' || status === 'active') return;
     setStatus('starting');
+    setSelectedSound(null);
+    setCommentPreview(null);
     setErrorCopy('');
     latestRef.current.onCloseCamera?.();
     let session;
@@ -256,7 +273,6 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
         materials: [ringMaterial, dot.material],
         closed: false,
         dispose,
-        longPressTimer: null,
       };
       const findSound = () => {
         if (!targetsRef.current.length) return null;
@@ -269,36 +285,15 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
         }
         return null;
       };
-      const onSelectStart = () => {
-        const sound = placedRef.current ? findSound() : null;
-        pressRef.current = { sound, held: false };
-        if (!sound) return;
-        resources.longPressTimer = window.setTimeout(() => {
-          if (pressRef.current?.sound?.id !== sound.id) return;
-          pressRef.current.held = true;
-          setCommentPreview(sound);
-          window.clearTimeout(resources.commentTimer);
-          resources.commentTimer = window.setTimeout(() => setCommentPreview(null), 4200);
-          latestRef.current.onLongPress?.(sound);
-        }, 540);
-      };
-      const onSelectEnd = () => {
-        window.clearTimeout(resources.longPressTimer);
-        resources.longPressTimer = null;
-      };
       const onSelect = async (event) => {
         const sound = findSound();
-        if (pressRef.current?.held) { pressRef.current = null; return; }
-        pressRef.current = null;
         if (placedRef.current) {
           if (!sound) return;
           const index = latestRef.current.sounds.findIndex((item) => item.id === sound.id);
           if (index >= 0) latestRef.current.onSelect?.(index + 1);
-          const target = targetsRef.current.find((item) => item.userData.sound?.id === sound.id);
-          if (target) target.userData.capturedAt = performance.now();
-          setCaptureFlash(true);
-          window.setTimeout(() => setCaptureFlash(false), 1250);
-          window.setTimeout(() => latestRef.current.onCapture?.(sound), 260);
+          targetsRef.current.forEach((target) => { target.userData.isSelected = target.userData.sound?.id === sound.id; });
+          setSelectedSound(sound);
+          setCommentPreview(null);
           return;
         }
         const referenceSpace = renderer.xr.getReferenceSpace();
@@ -314,22 +309,23 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
         const scale = new THREE.Vector3();
         matrix.decompose(position, rotation, scale);
         const normal = new THREE.Vector3(0, 1, 0).applyQuaternion(rotation).normalize();
-        bubbleSet.root.position.copy(position).addScaledVector(normal, 0.5);
-        bubbleSet.root.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+        cluster.position.copy(position).addScaledVector(normal, 0.42);
+        const xrCamera = renderer.xr.getCamera(camera);
+        xrCamera.updateMatrixWorld(true);
+        xrCamera.getWorldQuaternion(cluster.quaternion);
+        bubbleSet.root.position.set(0, 0, 0);
+        bubbleSet.root.rotation.z = 0;
         bubbleSet.root.scale.setScalar(zoomRef.current);
         cluster.add(bubbleSet.root);
         cluster.visible = true;
         clusterRef.current = bubbleSet.root;
         targetsRef.current = bubbleSet.targets;
         placedRef.current = true;
+        setSelectedSound(null);
         setPlaced(true);
         try { if (typeof hit.createAnchor === 'function') anchorRef.current = await hit.createAnchor(); } catch { anchorRef.current = null; }
       };
-      resources.onSelectStart = onSelectStart;
-      resources.onSelectEnd = onSelectEnd;
       resources.onSelect = onSelect;
-      controller.addEventListener('selectstart', onSelectStart);
-      controller.addEventListener('selectend', onSelectEnd);
       controller.addEventListener('select', onSelect);
       session.addEventListener('end', dispose, { once: true });
 
@@ -347,8 +343,10 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
               const scale = new THREE.Vector3();
               matrix.decompose(position, rotation, scale);
               const normal = normalAxis.clone().applyQuaternion(rotation).normalize();
-              cluster.children[0].position.copy(position).addScaledVector(normal, 0.5);
-              cluster.children[0].quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+              cluster.position.copy(position).addScaledVector(normal, 0.42);
+              const xrCamera = renderer.xr.getCamera(camera);
+              xrCamera.updateMatrixWorld(true);
+              xrCamera.getWorldQuaternion(cluster.quaternion);
             }
           }
           const result = frame.getHitTestResults(hitSource)[0];
@@ -361,14 +359,19 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
             setSurfaceSeen((seen) => seen || true);
           }
           if (cluster.visible) {
-            cluster.rotation.z = Math.sin(time * 0.00055) * 0.025;
-            cluster.scale.setScalar(zoomRef.current);
+            if (cluster.children[0]) {
+              cluster.children[0].rotation.z = Math.sin(time * 0.00055) * 0.025;
+              cluster.children[0].scale.setScalar(zoomRef.current);
+            }
             for (const target of targetsRef.current) {
-              if (!target.userData.capturedAt) continue;
-              const progress = Math.min(1, (time - target.userData.capturedAt) / 620);
-              const eased = progress * progress * (3 - 2 * progress);
-              target.scale.setScalar(target.userData.baseScale * (1 - eased * 0.82));
-              if (progress >= 1) target.visible = false;
+              if (target.userData.capturedAt) {
+                const progress = Math.min(1, (time - target.userData.capturedAt) / 620);
+                const eased = progress * progress * (3 - 2 * progress);
+                target.scale.setScalar(target.userData.baseScale * (1 - eased * 0.82));
+                if (progress >= 1) target.visible = false;
+              } else if (target.userData.isSelected) {
+                target.scale.setScalar(target.userData.baseScale * (1 + Math.sin(time * 0.009) * 0.045));
+              } else target.scale.setScalar(target.userData.baseScale);
             }
           }
         }
@@ -403,11 +406,19 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
             <button type="button" className="spatial-exit" onClick={stopAR}>退出 AR</button>
           </div>
           {!placed && <div className="spatial-reticle-help">{surfaceSeen ? '准星已找到表面 · 轻点放下一组泡泡' : '缓慢移动手机，扫描地面、桌面或墙面'}</div>}
-          {placed && <div className="spatial-reticle-help">轻点一颗泡泡来捕捉 · 长按查看留言</div>}
-          <div className="spatial-zoom-controls"><button type="button" onClick={() => latestRef.current.onZoom?.(1)}>＋</button><span>缩放</span><button type="button" onClick={() => latestRef.current.onZoom?.(-1)}>−</button></div>
+          {placed && <div className="spatial-reticle-help">{selectedSound ? '已选中泡泡 · 可试听、看留言或捕捉' : '轻点一颗泡泡选择它，再决定如何回应'}</div>}
+          <div className="spatial-zoom-controls"><button type="button" aria-label="放大泡泡" onClick={() => latestRef.current.onZoom?.(Math.min(2.2, zoomRef.current + 0.16))}>＋</button><span>{Math.round(zoomRef.current * 100)}%</span><button type="button" aria-label="缩小泡泡" onClick={() => latestRef.current.onZoom?.(Math.max(0.72, zoomRef.current - 0.16))}>−</button></div>
+          {placed && selectedSound && <section className="spatial-bubble-card">
+            <div className="spatial-bubble-copy"><small>{selectedSound.kind} · {selectedSound.author} · {selectedSound.duration}</small><strong>{selectedSound.title}</strong><p>{selectedSound.quote}</p></div>
+            <div className="spatial-bubble-actions">
+              <button type="button" onClick={() => latestRef.current.onListen?.(selectedSound)}>♫ 听一听</button>
+              <button type="button" onClick={() => setCommentPreview(selectedSound)}>♡ 留言 {selectedSound.comments?.length || 0}</button>
+              <button type="button" className="is-primary" disabled={capturePhase === 'travelling' || capturedBubble?.id === selectedSound.id} onClick={() => captureSelectedSound(selectedSound)}>{capturedBubble?.id === selectedSound.id ? '已捕捉' : capturePhase === 'travelling' ? '光流靠近中' : '捕捉泡泡'}</button>
+            </div>
+          </section>}
           {capturePhase === 'travelling' && <svg className="spatial-capture-flow" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="xr-liquid-flow" x1="0" y1="1" x2="1" y2="0"><stop stopColor="#b5ffde" stopOpacity="0" /><stop offset=".42" stopColor="#b5ffde" /><stop offset=".76" stopColor="#e7caff" /><stop offset="1" stopColor="#fff" /></linearGradient><filter id="xr-flow-glow"><feGaussianBlur stdDeviation="1.2" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter></defs><path d="M4 86 C22 28 76 78 50 50" pathLength="100" stroke="url(#xr-liquid-flow)" filter="url(#xr-flow-glow)" /></svg>}
           {(capturePhase === 'arrived' || capturePhase === 'listening') && capturedBubble && <button type="button" className={'spatial-captured-bubble' + (playing ? ' is-playing' : '')} onClick={() => latestRef.current.onListen?.()}><i className={'spatial-captured-orb accent-' + (capturedBubble.accent || 'blue')}><b /></i><strong>{playing ? '正在回响' : '轻点听听'}</strong><small>{capturedBubble.title}</small></button>}
-          {commentPreview && <aside className="spatial-comment-glass"><small>{commentPreview.author} 留下的回声</small><strong>{commentPreview.title}</strong><p>{commentPreview.comments?.[0]?.text || '这颗泡泡还没有留言。'}</p></aside>}
+          {commentPreview && <aside className="spatial-comment-glass"><button type="button" className="spatial-comment-close" aria-label="关闭留言" onClick={() => setCommentPreview(null)}>×</button><small>{commentPreview.author} 留下的回声</small><strong>{commentPreview.title}</strong><p>{commentPreview.comments?.[0]?.text || '这颗泡泡还没有留言。'}</p></aside>}
           {captureFlash && <span className="spatial-capture-flash" aria-hidden="true" />}
         </div>
       )}
@@ -419,14 +430,14 @@ export default function SpatialARStage({ sounds, zoom, onZoom, onSelect, onCaptu
   const message = support === 'insecure'
     ? '空间识别需要 HTTPS 安全页面。'
     : support === 'unsupported'
-      ? '此浏览器未开放 WebXR 空间追踪。相机预览可用；真实平面锚定需支持 WebXR hit-test 的 Android Chrome + ARCore，iPhone 需原生 ARKit。'
+      ? '此浏览器未开放 WebXR 空间追踪。下方泡泡是可点选、可缩放的屏幕预览；真实平面锚定需支持 WebXR hit-test 的 Android Chrome + ARCore。'
       : support === 'error' ? errorCopy : '';
 
   return (
     <>
       {status !== 'active' && <section className={'spatial-ar-entry' + (support === 'unsupported' || support === 'insecure' ? ' is-fallback' : '')} aria-live="polite">
         {support === 'supported'
-          ? <button type="button" className="spatial-ar-launch" onClick={startAR} disabled={checking}><span className="spatial-launch-icon">✳</span><span><strong>{checking ? (status === 'starting' ? '正在启动空间 AR…' : '正在检查设备…') : '进入空间 AR'}</strong><small>平面识别 · 无图像标记 · 泡泡可捕捉</small></span><i>↗</i></button>
+          ? <button type="button" className="spatial-ar-launch" onClick={startAR} disabled={checking}><span className="spatial-launch-icon">✳</span><span><strong>{checking ? (status === 'starting' ? '正在启动空间 AR…' : '正在检查设备…') : '进入空间 AR'}</strong><small>平面识别 · 选泡试听/留言/捕捉</small></span><i>↗</i></button>
           : <div className="spatial-fallback-copy"><span className="spatial-launch-icon">{support === 'checking' ? '◌' : '⌁'}</span><span><strong>{support === 'checking' ? '正在检查空间 AR' : support === 'insecure' ? '需要安全连接' : '空间 AR 设备提示'}</strong><small>{support === 'checking' ? '检查浏览器的平面追踪能力' : message}</small></span></div>}
         {support === 'error' && <small className="spatial-ar-error">{errorCopy}</small>}
       </section>}
