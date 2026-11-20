@@ -1356,3 +1356,263 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
   .app-create .record-shape-wave::after,
   .app-create .create-satellite { animation:none!important; transition:none!important; }
 }
+
+
+/* Memo garden mobile pass: reveal costly orbit lettering only while a bubble is in use. */
+.bubble-orbit-canvas,
+.bubble-orbit-input {
+  opacity:0;
+  transition:opacity .24s ease;
+}
+.bubble-orbit-position.is-visible .bubble-orbit-canvas,
+.bubble-orbit-position.is-visible .bubble-orbit-input { opacity:1; }
+.bubble-body .bubble-label {
+  opacity:0;
+  transform:translate(-50%,4px);
+  transition:opacity .2s ease,transform .2s ease;
+}
+.bubble-body.is-orbit-focus .bubble-label,
+.bubble-body:hover .bubble-label { opacity:1; transform:translate(-50%,0); }
+.bubble-body { will-change:auto; }
+.bubble-body.is-dragging { will-change:transform; }
+
+/* Screen-space bubbles keep the camera preview playful on Android browsers
+   without WebXR; their separate label never implies a world anchor. */
+.ar-preview-bubble-field {
+  position:absolute;
+  z-index:3;
+  inset:58px 0 5px;
+  transform:scale(var(--preview-zoom,1));
+  transform-origin:50% 47%;
+  transition:transform .28s cubic-bezier(.2,.75,.25,1);
+  pointer-events:none;
+  touch-action:none;
+}
+.ar-preview-bubble {
+  position:absolute;
+  display:grid;
+  justify-items:center;
+  gap:5px;
+  transform:translate(-50%,-50%);
+  animation:ar-preview-float 5.6s ease-in-out var(--float-delay,0s) infinite;
+  pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;
+}
+.ar-preview-bubble .soap-bubble {
+  width:var(--bubble-size);
+  height:var(--bubble-size);
+  filter:drop-shadow(0 8px 15px rgba(16,32,40,.2)) drop-shadow(0 0 15px rgba(225,246,255,.35));
+}
+.ar-preview-bubble > span {
+  max-width:108px;
+  padding:4px 7px;
+  border:1px solid rgba(255,255,255,.38);
+  border-radius:999px;
+  color:#fff;
+  background:rgba(19,38,43,.4);
+  box-shadow:0 3px 12px rgba(15,28,34,.12),inset 0 1px 0 rgba(255,255,255,.28);
+  -webkit-backdrop-filter:blur(10px) saturate(140%);
+  backdrop-filter:blur(10px) saturate(140%);
+  font-size:8px;
+  text-shadow:0 1px 4px rgba(10,22,28,.35);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ar-preview-bubble.is-selected { z-index:3; }
+.ar-preview-bubble.is-selected .soap-bubble {
+  filter:drop-shadow(0 0 0 rgba(221,255,171,0)) drop-shadow(0 0 22px rgba(221,255,171,.48));
+  animation:ar-bubble-select .72s cubic-bezier(.2,.8,.25,1);
+}
+.ar-preview-guide {
+  position:absolute;
+  top:3px;
+  left:50%;
+  padding:7px 11px;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:999px;
+  color:rgba(255,255,255,.94);
+  background:rgba(18,34,40,.34);
+  -webkit-backdrop-filter:blur(11px);
+  backdrop-filter:blur(11px);
+  font-size:8px;
+  letter-spacing:.035em;
+  white-space:nowrap;
+  text-shadow:0 1px 5px rgba(10,20,24,.32);
+  transform:translateX(-50%);
+  pointer-events:none;
+}
+@keyframes ar-preview-float {
+  0%,100% { translate:0 0; }
+  50% { translate:0 -8px; }
+}
+@keyframes ar-bubble-select {
+  0% { transform:scale(.88); }
+  44% { transform:scale(1.12,.93); }
+  72% { transform:scale(.98,1.05); }
+  100% { transform:scale(1); }
+}
+
+/* Recast the nearby sound as a small listening card with real actions. */
+.app-roam .roam-card {
+  bottom:calc(86px + env(safe-area-inset-bottom));
+  min-height:0;
+  padding:12px 13px 10px;
+  border-color:rgba(255,255,255,.83);
+  background:rgba(247,249,242,.88);
+  box-shadow:0 13px 30px rgba(32,54,57,.14),inset 0 1px 0 rgba(255,255,255,.92);
+}
+.roam-kind-label {
+  color:rgba(37,71,69,.61);
+  font:700 8px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.08em;
+}
+.roam-sound-card {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:9px;
+}
+.roam-sound-card > .soap-bubble { flex:0 0 42px; filter:drop-shadow(0 5px 8px rgba(76,97,98,.12)); }
+.roam-sound-copy { min-width:0; display:grid; gap:3px; }
+.roam-sound-copy > strong { overflow:hidden; color:#29463f; font-size:12px; font-weight:730; text-overflow:ellipsis; white-space:nowrap; }
+.roam-sound-copy > small { color:rgba(47,70,66,.57); font-size:8px; }
+.roam-sound-copy .roam-quote {
+  display:-webkit-box;
+  overflow:hidden;
+  margin:0;
+  color:rgba(41,66,62,.77);
+  font-size:10px;
+  line-height:1.35;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+}
+.roam-card-actions { display:flex; align-items:center; gap:6px; margin-top:10px; }
+.roam-card-actions button { min-height:30px; }
+.roam-secondary-action {
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:0 9px;
+  border:1px solid rgba(255,255,255,.88);
+  border-radius:999px;
+  color:rgba(40,70,65,.74);
+  background:rgba(255,255,255,.56);
+  box-shadow:inset 0 1px 0 #fff;
+  font-size:8px;
+  white-space:nowrap;
+}
+.roam-secondary-action i { color:#79a88f; font-style:normal; }
+.roam-card-actions .capture-key { margin-left:auto; padding-top:6px; padding-bottom:6px; }
+
+/* The WebXR canvas stays transparent, while its glass controls remain reachable. */
+.spatial-zoom-controls {
+  top:calc(104px + env(safe-area-inset-top));
+  right:14px;
+  bottom:auto;
+}
+.spatial-bubble-card {
+  position:absolute;
+  left:12px;
+  right:12px;
+  bottom:calc(13px + env(safe-area-inset-bottom));
+  display:grid;
+  gap:9px;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.62);
+  border-radius:20px 23px 18px 22px;
+  color:#f7fff4;
+  background:rgba(24,39,38,.56);
+  box-shadow:0 13px 35px rgba(7,18,17,.2),inset 0 1px 0 rgba(255,255,255,.32);
+  -webkit-backdrop-filter:blur(20px) saturate(155%);
+  backdrop-filter:blur(20px) saturate(155%);
+  pointer-events:auto;
+  text-shadow:0 1px 5px rgba(7,18,17,.3);
+}
+.spatial-bubble-copy { display:grid; gap:4px; }
+.spatial-bubble-copy small { opacity:.8; font-size:8px; letter-spacing:.06em; }
+.spatial-bubble-copy strong { font-size:13px; font-weight:720; }
+.spatial-bubble-copy p { max-width:54ch; margin:0; overflow:hidden; font-size:9px; line-height:1.4; opacity:.9; text-overflow:ellipsis; white-space:nowrap; }
+.spatial-bubble-actions { display:flex; gap:6px; }
+.spatial-bubble-actions button {
+  min-height:32px;
+  flex:1;
+  padding:0 8px;
+  border:1px solid rgba(255,255,255,.38);
+  border-radius:999px;
+  color:#fff;
+  background:rgba(255,255,255,.14);
+  font:inherit;
+  font-size:9px;
+  font-weight:650;
+  line-height:1;
+  white-space:nowrap;
+  pointer-events:auto;
+}
+.spatial-bubble-actions button.is-primary {
+  border-color:rgba(247,255,211,.8);
+  color:#26391c;
+  background:linear-gradient(145deg,#f5ffd1,#d6f25e);
+  box-shadow:inset 0 1px 0 #fff,0 3px 10px rgba(8,18,10,.2);
+}
+.spatial-bubble-actions button:disabled { opacity:.6; }
+.spatial-comment-close {
+  position:absolute;
+  top:7px;
+  right:8px;
+  width:24px;
+  height:24px;
+  border:1px solid rgba(255,255,255,.48);
+  border-radius:50%;
+  color:#fff;
+  background:rgba(255,255,255,.14);
+  font-size:16px;
+  pointer-events:auto;
+}
+.spatial-comment-glass { bottom:calc(150px + env(safe-area-inset-bottom)); }
+
+/* Recording deforms the chosen silhouette as if sound were pushing its film. */
+.app-create .record-bubble.recording.has-silhouette .bubble-silhouette {
+  transform:scaleX(calc(1.14 - var(--record-energy,.18)*.24)) scaleY(calc(.86 + var(--record-energy,.18)*.24)) rotate(calc((var(--record-energy,.18) - .46)*8deg)) skewX(calc((var(--record-energy,.18) - .5)*3deg));
+  filter:saturate(calc(1 + var(--record-energy,.18)*.42)) drop-shadow(0 12px 18px rgba(190,133,161,.23)) drop-shadow(0 0 14px rgba(238,197,217,.28));
+  transition:transform .085s cubic-bezier(.22,.72,.25,1),filter .12s ease;
+}
+.app-create .record-bubble.recording .bubble-core {
+  transform:scale(calc(1 + var(--record-energy,.18)*.08));
+  filter:saturate(calc(1 + var(--record-energy,.18)*.5));
+  transition:transform .09s ease-out,filter .12s ease;
+}
+.app-create .create-orbit.is-recording .record-shape-wave {
+  border-radius:47% 53% 61% 39% / 51% 43% 57% 49%;
+}
+@media (max-width:700px) {
+  .audience-window { display:none!important; }
+  .ar-preview-bubble-field { inset:58px -7px 0; }
+  .roam-card-actions { gap:4px; }
+  .roam-secondary-action { padding:0 7px; }
+  .spatial-bubble-card { left:9px; right:9px; }
+  .spatial-bubble-actions button { padding-inline:6px; font-size:8px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .ar-preview-bubble,
+  .ar-preview-bubble.is-selected .soap-bubble,
+  .app-create .record-bubble.recording .bubble-silhouette {
+    animation:none!important;
+    transition:none!important;
+  }
+}
+
+
+/* A held recording bubble compresses as a soft membrane, then springs back. */
+.app-create .record-bubble.is-squeezed {
+  transform:scale(.76,1.17) rotate(-5deg) translateY(2px) !important;
+  filter:saturate(1.3) brightness(1.05) drop-shadow(0 4px 8px rgba(190,133,161,.28));
+}
+.app-create .record-bubble.recording.is-squeezed.has-silhouette .bubble-silhouette {
+  transform:scaleX(.78) scaleY(1.18) rotate(-4deg) !important;
+  filter:drop-shadow(0 4px 8px rgba(190,133,161,.25)) drop-shadow(0 0 16px rgba(238,197,217,.34));
+}
+.app-create .create-orbit.is-recording .create-aura {
+  opacity:calc(.54 + var(--record-energy,.18)*.32);
+  filter:saturate(1.18) blur(.2px);
+}
