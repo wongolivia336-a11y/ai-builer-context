@@ -1479,11 +1479,85 @@ const RECORDING_FORMS = [
 function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, recordingForm, onRecordingForm, emitting, onRecord, recordingAudio, recordError, previewingRecording, onPreviewRecording, onPublish, published, onPageChange }) {
   const form = recordingForm || RECORDING_FORMS[0];
   const formIndex = Math.max(0, RECORDING_FORMS.findIndex(item => item.id === form.id));
+  const previousForm = RECORDING_FORMS[(formIndex + RECORDING_FORMS.length - 1) % RECORDING_FORMS.length];
+  const nextForm = RECORDING_FORMS[(formIndex + 1) % RECORDING_FORMS.length];
   const hasAudio = Boolean(recordingAudio);
   const seconds = Math.max(0, recordingSeconds | 0);
   const timeLabel = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   const [squeezing, setSqueezing] = useState(false);
+  const [leverPull, setLeverPull] = useState(0);
+  const [feedbackEnabled, setFeedbackEnabled] = useState(true);
+  const leverDragRef = useRef(null);
+  const suppressLeverClickRef = useRef(false);
+  const leverAudioRef = useRef(null);
+  useEffect(() => () => {
+    leverAudioRef.current?.close?.().catch?.(() => {});
+    leverAudioRef.current = null;
+  }, []);
   const cycleRecordingForm = () => onRecordingForm(RECORDING_FORMS[(formIndex + 1) % RECORDING_FORMS.length]);
+  const playLeverFeedback = (isStopping = false, isCarousel = false) => {
+    if (!feedbackEnabled) return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        const context = leverAudioRef.current || (leverAudioRef.current = new AudioContextClass());
+        if (context.state === 'suspended') context.resume();
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const now = context.currentTime;
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(isCarousel ? 420 : isStopping ? 142 : 205, now);
+        oscillator.frequency.exponentialRampToValueAtTime(isCarousel ? 310 : 92, now + (isCarousel ? .075 : .13));
+        gain.gain.setValueAtTime(.0001, now);
+        gain.gain.exponentialRampToValueAtTime(isCarousel ? .018 : .045, now + .012);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + (isCarousel ? .085 : .15));
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start(now);
+        oscillator.stop(now + (isCarousel ? .09 : .16));
+      }
+    } catch {}
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(isCarousel ? 8 : isStopping ? [12, 24, 10] : 16);
+    } catch {}
+  };
+  const turnForm = (direction) => {
+    onRecordingForm(RECORDING_FORMS[(formIndex + direction + RECORDING_FORMS.length) % RECORDING_FORMS.length]);
+    playLeverFeedback(false, true);
+  };
+  const startLeverPull = (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    leverDragRef.current = { y: event.clientY, pulled: false };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveLeverPull = (event) => {
+    if (!leverDragRef.current) return;
+    const pull = Math.max(0, Math.min(1, (event.clientY - leverDragRef.current.y) / 42));
+    leverDragRef.current.pulled = pull >= .56;
+    setLeverPull(pull);
+  };
+  const releaseLeverPull = () => {
+    if (!leverDragRef.current) return;
+    const pulled = leverDragRef.current.pulled;
+    leverDragRef.current = null;
+    setLeverPull(0);
+    if (pulled) {
+      suppressLeverClickRef.current = true;
+      window.setTimeout(() => { suppressLeverClickRef.current = false; }, 400);
+      triggerRecordAction();
+    }
+  };
+  const triggerRecordAction = () => {
+    playLeverFeedback(recording);
+    onRecord();
+  };
+  const activateLever = () => {
+    if (suppressLeverClickRef.current) {
+      suppressLeverClickRef.current = false;
+      return;
+    }
+    triggerRecordAction();
+  };
   const pressRecordingBubble = (event) => {
     if (!recording) return;
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -1508,29 +1582,35 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
         <div className={`create-orbit${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}>
           <span className="create-aura" />
           <span className="record-shape-wave" aria-hidden="true" />
+          <span className="record-form-orbit" style={{ '--carousel-turn': `${formIndex * 90}deg` }} aria-hidden="true" />
           <img className="create-sticker sticker-star-mint" src={stickerStarMint} alt="" aria-hidden="true" />
           <img className="create-sticker sticker-star-blue" src={stickerStarBlue} alt="" aria-hidden="true" />
-          <Bubble size={128} className={`record-bubble accent-${form.accent}${recording ? ' recording' : ''}${squeezing ? ' is-squeezed' : ''}`} label={recording ? `正在录音，${form.label}泡泡随声音起伏；按住挤压，松开回弹` : `轻点切换形状与颜色，当前是${form.label}`} onClick={recording ? undefined : cycleRecordingForm} onPointerDown={pressRecordingBubble} onPointerUp={releaseRecordingBubble} onPointerCancel={releaseRecordingBubble} style={{ '--record-energy': recordingEnergy }} bubble={form} />
-          <Bubble size={34} className="create-satellite sat-a" />
-          <Bubble size={24} className="create-satellite sat-b" />
+          <Bubble key={form.id} size={128} className={`record-bubble accent-${form.accent}${recording ? ' recording' : ''}${squeezing ? ' is-squeezed' : ''}`} label={recording ? `正在录音，${form.label}泡泡随声音起伏；按住挤压，松开回弹` : `当前是${form.label}泡泡；轻点切换`} onClick={recording ? undefined : cycleRecordingForm} onPointerDown={pressRecordingBubble} onPointerUp={releaseRecordingBubble} onPointerCancel={releaseRecordingBubble} style={{ '--record-energy': recordingEnergy }} bubble={form} />
+          <Bubble size={38} className={`record-form-side previous accent-${previousForm.accent}`} label={`切换到${previousForm.label}`} onClick={() => turnForm(-1)} bubble={previousForm} />
+          <Bubble size={38} className={`record-form-side next accent-${nextForm.accent}`} label={`切换到${nextForm.label}`} onClick={() => turnForm(1)} bubble={nextForm} />
           <Bubble size={17} className="create-satellite sat-c" />
-          <span className={`create-bubble-caption${recording ? ' is-recording' : ''}`} aria-live="polite">{recording ? (squeezing ? '泡泡正在回弹 · 松开即可' : '声音在呼吸 · 按住挤压泡泡') : `轻点换形 · ${form.label}`}</span>
+          <span className={`create-bubble-caption${recording ? ' is-recording' : ''}`} aria-live="polite">{recording ? (squeezing ? '泡泡正在回弹' : '声音正在让泡泡呼吸') : `轻点两侧换形 · ${form.label}`}</span>
         </div>
         <div className="prompt-switch glass-surface">
           <button className={prompt === 'next' ? 'chosen' : ''} onClick={() => onPrompt('next')}>给下一位</button>
           <button className={prompt === 'here' ? 'chosen' : ''} onClick={() => onPrompt('here')}>留在此刻</button>
         </div>
         <div className={`record-panel glass-surface${recording ? ' is-recording' : ''}`}>
-          <span className="record-prompt">{prompt === 'next' ? '说一句，留给下一个路过的人' : '说一句，此刻的你和这里'}</span>
+          <div className="record-panel-head">
+            <span className="record-prompt">{prompt === 'next' ? '说一句，留给下一个路过的人' : '说一句，此刻的你和这里'}</span>
+            <button className={`feedback-toggle${feedbackEnabled ? ' is-on' : ''}`} type="button" aria-pressed={feedbackEnabled} aria-label={`声音与触感反馈${feedbackEnabled ? '已开启' : '已关闭'}`} onClick={() => setFeedbackEnabled(value => !value)}><span>声 · 触</span><i /></button>
+          </div>
           <span className={`transcript${hasAudio || recording ? '' : ' placeholder'}`} aria-live="polite">{recordError || (recording ? '正在录下你此刻的声音' : hasAudio ? '声音已收下，可以试听' : published ? '声音已留在这里' : '轻轻说下此刻的想法')}</span>
           <div className="record-row">
-            <button className={`record-button${recording ? ' recording' : ''}`} onClick={onRecord}><span className="record-button-inner" /></button>
+            <button className={`lever-control${recording ? ' recording' : ''}${leverPull > .15 ? ' is-pulling' : ''}`} type="button" style={{ '--lever-shift': `${leverPull * 19}px`, '--lever-tilt': `${leverPull * 13}deg` }} aria-label={recording ? '拉下拉杆，结束录音' : '拉下拉杆，开始录音'} onPointerDown={startLeverPull} onPointerMove={moveLeverPull} onPointerUp={releaseLeverPull} onPointerCancel={() => { leverDragRef.current = null; setLeverPull(0); }} onClick={activateLever}>
+              <span className="lever-track" aria-hidden="true" /><span className="lever-rod" aria-hidden="true" /><span className="lever-handle" aria-hidden="true" /><span className="lever-label">{recording ? '下拉收声' : '下拉留声'}</span>
+            </button>
             <Waveform active={recording || previewingRecording} />
             <span className="record-time">{timeLabel}</span>
             {hasAudio && !recording && <button className="record-preview" type="button" onClick={onPreviewRecording}>{previewingRecording ? '暂停' : '试听'}</button>}
           </div>
         </div>
-        <GlassButton className="publish-button" onClick={recording ? onRecord : hasAudio ? onPublish : onRecord}>{recording ? '完成录音' : published ? '已留在这里' : hasAudio ? '留下这段声音' : '开始录音'} <span className="arrow-out">↗</span></GlassButton>
+        <GlassButton className="publish-button" onClick={recording ? triggerRecordAction : hasAudio ? onPublish : triggerRecordAction}>{recording ? '完成录音' : published ? '已留在这里' : hasAudio ? '留下这段声音' : '轻触也能开始留声'} <span className="arrow-out">↗</span></GlassButton>
       </div>
       <TabBar active="create" onChange={onPageChange} />
     </Scene>
