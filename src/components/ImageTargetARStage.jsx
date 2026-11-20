@@ -18,6 +18,7 @@ const TARGET_DB_NAME = 'memo-garden-ar-cache';
 const TARGET_DB_STORE = 'compiled-targets';
 const MOTION_LIMIT = 1;
 const ACCENT_TINTS = { blue: '#87d9eb', rose: '#ff9ec5', lilac: '#c5b4ff', gold: '#ffe3a0' };
+const importFromBrowserImportMap = (specifier) => import(/* @vite-ignore */ specifier);
 
 function markerUrl(file) {
   return new URL((import.meta.env.BASE_URL || './') + 'markers/' + file, document.baseURI).href;
@@ -409,7 +410,7 @@ export default function ImageTargetARStage({
       } else {
         setProgress(0.12);
         setStatusCopy('正在提取 8 张识别图的追踪特征');
-        await import(/* @vite-ignore */ 'mindar-image-compiler');
+        await importFromBrowserImportMap('mindar-image-compiler');
         const Compiler = window.MINDAR?.Compiler || window.MINDAR?.IMAGE?.Compiler;
         if (!Compiler) throw new Error('识别图编译器没有载入，请检查网络后重试。');
         const images = await Promise.all(markerItems.map((item) => loadMarkerImage(item.url)));
@@ -428,8 +429,8 @@ export default function ImageTargetARStage({
       setStatusCopy('正在启动后置相机与图像追踪');
       setStage('starting');
       const [threeModule, mindarModule] = await Promise.all([
-        import(/* @vite-ignore */ 'three'),
-        import(/* @vite-ignore */ 'mindar-image-three'),
+        importFromBrowserImportMap('three'),
+        importFromBrowserImportMap('mindar-image-three'),
       ]);
       const THREE = threeModule;
       const MindARThree = mindarModule.MindARThree || mindarModule.default?.MindARThree;
