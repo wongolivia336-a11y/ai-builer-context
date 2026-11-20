@@ -160,7 +160,7 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .app-create .place-chip i { background:#e46f5b; box-shadow:none; }
 .app-create .prompt-switch button.chosen { color:var(--pop-ink); background:var(--pop-lime); }
 .app-create .record-panel { border:1px solid rgba(255,255,255,.94); background:rgba(251,249,239,.82); box-shadow:0 8px 20px rgba(60,77,49,.08),inset 0 1px 0 white; }
-.app-create .record-panel::before { content:"SIDE B"; position:absolute; top:-5px; right:20px; padding:3px 5px; border:1px solid rgba(48,63,42,.1); color:rgba(43,58,39,.68); background:rgba(217,240,77,.78); font:700 6px/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.11em; transform:rotate(3deg); }
+.app-create .record-panel::before { content:none; }
 .app-create .record-prompt { color:rgba(48,66,48,.58); font:700 8px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.03em; }
 .app-create .transcript { color:#2b3e2c; font-weight:600; }
 .app-create .transcript.placeholder { color:rgba(45,63,46,.42); font-weight:450; }
@@ -1358,7 +1358,7 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 }
 
 
-/* Memo garden mobile pass: reveal costly orbit lettering only while a bubble is in use. */
+/* Memo Garden mobile pass: reveal orbit lettering only while a bubble is in use. */
 .bubble-orbit-canvas,
 .bubble-orbit-input {
   opacity:0;
@@ -1615,4 +1615,51 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
 .app-create .create-orbit.is-recording .create-aura {
   opacity:calc(.54 + var(--record-energy,.18)*.32);
   filter:saturate(1.18) blur(.2px);
+}
+
+/* Give the product model enough room to read clearly on desktop browsers. */
+.device-viewer {
+  width:min(470px,calc(100vw - 40px));
+  padding:20px 20px 16px;
+}
+.device-canvas { height:350px; }
+.device-viewer h2 { font-size:22px; }
+.device-viewer-head .device-detail small { font-size:9px; }
+.device-viewer-foot { font-size:9px; }
+.device-feature-note > span { display:none; }
+
+.record-preview {
+  flex:none;
+  padding:6px 9px;
+  border:1px solid rgba(58,82,57,.12);
+  border-radius:999px;
+  color:#3a5340;
+  background:rgba(230,239,206,.66);
+  font-size:8px;
+  cursor:pointer;
+  transition:transform .22s ease,background .22s ease;
+}
+.record-preview:active { transform:scale(.94); }
+.app-create .record-preview { color:var(--pop-ink); background:rgba(217,240,77,.72); }
+.app-create .transcript[aria-live="polite"] { min-height:15px; }
+.app-create .record-row .waveform { flex:1; min-width:56px; }
+.app-create .record-time { flex:none; }
+
+@media (max-width:700px) {
+  .device-viewer {
+    left:10px;
+    bottom:max(72px,calc(env(safe-area-inset-bottom) + 64px));
+    width:calc(100vw - 20px);
+    padding:15px 15px 12px;
+  }
+  .device-canvas { height:min(32vh,260px); min-height:190px; }
+  .device-viewer h2 { font-size:19px; }
+  .device-viewer-head .device-detail small { font-size:8px; }
+  .device-viewer-foot { font-size:7px; }
+  .record-row { gap:7px; }
+  .record-preview { padding:5px 7px; }
+}
+
+@media (prefers-reduced-motion:reduce) {
+  .record-preview { transition:none; }
 }

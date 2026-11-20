@@ -20,19 +20,16 @@ const CMF = {
 const DEVICE_FEATURES = [
   {
     id: 'phone-bay',
-    index: '01',
     title: '竖屏手机仓',
     description: '手机竖直嵌入装置，取景、选泡与实体操作保持同一方向。',
   },
   {
     id: 'sound-mouth',
-    index: '02',
     title: '声音与出泡口',
     description: '把声音回放和泡泡释放集中在装置上端，形成可见的回应。',
   },
   {
     id: 'grip',
-    index: '03',
     title: '手握柄位',
     description: '掌心贴住柄部，手指回扣，手腕从下方自然延伸。',
   },
@@ -155,7 +152,7 @@ function createSoapBubbles(parent, outlet) {
   emitter.position.copy(outlet);
   parent.add(emitter);
 
-  const radii = [0.32, 0.4, 0.48, 0.36];
+  const radii = [0.38, 0.49, 0.58, 0.43];
   for (let i = 0; i < radii.length; i += 1) {
     const material = new THREE.MeshPhysicalMaterial({
       color: bubbleColors[i],
@@ -175,14 +172,15 @@ function createSoapBubbles(parent, outlet) {
       depthWrite: false,
     });
     const bubble = new THREE.Mesh(new THREE.SphereGeometry(radii[i], 32, 24), material);
-    bubble.position.set((i - 1.5) * 0.14, (i - 1.5) * 0.19, i * 0.09);
+    // Start every bubble clear of the shell and mouth; the stream then drifts up and away.
+    bubble.position.set((i - 1.5) * 0.055, radii[i] + 0.13 + i * 0.16, i * 0.055);
     emitter.add(bubble);
     gsap.to(bubble.position, {
-      x: `+=${-0.72 - i * 0.08}`,
-      y: `+=${0.38 + (i % 3) * 0.13}`,
-      z: `+=${0.18 + (i % 2) * 0.12}`,
-      duration: 4.2 + i * 0.34,
-      delay: i * -0.92,
+      x: `+=${-0.38 - i * 0.04}`,
+      y: `+=${0.48 + (i % 3) * 0.1}`,
+      z: `+=${0.14 + (i % 2) * 0.08}`,
+      duration: 5.2 + i * 0.38,
+      delay: i * -1.14,
       repeat: -1,
       ease: 'sine.inOut',
       yoyo: true,
@@ -204,26 +202,26 @@ function createSoapBubbles(parent, outlet) {
 
 function createGripHand(parent) {
   const hand = new THREE.Group();
-  hand.name = 'Virtual hand holding the EchoCaster grip';
-  // The STL grip sits low on the audience-facing side after the model flip.
-  hand.position.set(-0.88, -0.84, 0.72);
-  hand.rotation.z = -0.08;
+  hand.name = 'Hand holding Memo Catcher';
+  // The body faces the viewer after the turn; fit the hand to the visible lower grip.
+  hand.position.set(-0.46, -0.86, 0.82);
+  hand.rotation.z = -0.025;
 
   const skin = new THREE.MeshPhysicalMaterial({
-    color: 0xd6aa9e,
-    roughness: 0.46,
+    color: 0xb9786e,
+    roughness: 0.56,
     metalness: 0,
     clearcoat: 0.12,
     clearcoatRoughness: 0.42,
   });
   const sleeve = new THREE.MeshPhysicalMaterial({
-    color: 0xe9eee9,
+    color: 0xdde7e1,
     roughness: 0.68,
     metalness: 0,
     clearcoat: 0.06,
   });
   const nail = new THREE.MeshPhysicalMaterial({
-    color: 0xf0c3bb,
+    color: 0xd99b8f,
     roughness: 0.34,
     clearcoat: 0.18,
   });
@@ -264,9 +262,9 @@ function createGripHand(parent) {
 
   addEllipsoid([-0.02, -0.02, 0.02], [0.34, 0.4, 0.19], skin);
 
-  const fingerRows = [0.19, 0.05, -0.09, -0.23];
+  const fingerRows = [0.22, 0.055, -0.11, -0.275];
   fingerRows.forEach((row, index) => {
-    const radius = index === 3 ? 0.074 : 0.078;
+    const radius = index === 3 ? 0.061 : 0.066;
     const joints = [
       [-0.16, row, 0.1],
       [0.07, row + 0.025, 0.16],
@@ -274,8 +272,8 @@ function createGripHand(parent) {
       [0.14, row - 0.055, -0.27],
     ];
     for (let i = 0; i < joints.length - 1; i += 1) addFingerSegment(joints[i], joints[i + 1], radius);
-    joints.slice(1, -1).forEach((joint) => addEllipsoid(joint, [radius, radius, radius], skin));
-    addEllipsoid([0.13, row - 0.07, -0.23], [0.042, 0.052, 0.018], nail);
+    joints.slice(1, -1).forEach((joint) => addEllipsoid(joint, [radius * 1.04, radius * 1.04, radius * 1.04], skin));
+    addEllipsoid([0.13, row - 0.07, -0.23], [0.041, 0.049, 0.018], nail);
   });
 
   const thumbJoints = [
@@ -290,6 +288,75 @@ function createGripHand(parent) {
 
   parent.add(hand);
   return { hand, geometries, materials };
+}
+
+function roundedPanelGeometry(width, height, radius, depth) {
+  const shape = new THREE.Shape();
+  const left = -width / 2;
+  const right = width / 2;
+  const bottom = -height / 2;
+  const top = height / 2;
+  shape.moveTo(left + radius, bottom);
+  shape.lineTo(right - radius, bottom);
+  shape.quadraticCurveTo(right, bottom, right, bottom + radius);
+  shape.lineTo(right, top - radius);
+  shape.quadraticCurveTo(right, top, right - radius, top);
+  shape.lineTo(left + radius, top);
+  shape.quadraticCurveTo(left, top, left, top - radius);
+  shape.lineTo(left, bottom + radius);
+  shape.quadraticCurveTo(left, bottom, left + radius, bottom);
+  return new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    bevelSize: 0.012,
+    bevelThickness: 0.01,
+    curveSegments: 8,
+  });
+}
+
+function createPortraitPhoneBay(parent) {
+  const bay = new THREE.Group();
+  bay.name = 'Integrated portrait phone bay';
+  bay.position.set(0, 0.05, 0.735);
+  const materials = [
+    makePartMaterial(CMF.teal, { roughness: 0.32, clearcoat: 0.3 }),
+    makePartMaterial(CMF.pink, { roughness: 0.3, clearcoat: 0.38 }),
+    new THREE.MeshPhysicalMaterial({ color: 0x263d4b, roughness: 0.17, metalness: 0.08, clearcoat: 1, clearcoatRoughness: 0.08 }),
+    new THREE.MeshPhysicalMaterial({ color: 0x88b4bb, roughness: 0.23, metalness: 0.14, clearcoat: 0.9 }),
+  ];
+  const geometries = [];
+  const addPanel = (width, height, radius, depth, z, material) => {
+    const geometry = roundedPanelGeometry(width, height, radius, depth);
+    geometries.push(geometry);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.z = z;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    bay.add(mesh);
+    return mesh;
+  };
+
+  // A portrait phone sits flush inside the device's molded cradle; it is one assembly,
+  // not a detached screen hovering beside the product.
+  addPanel(0.7, 1.27, 0.09, 0.075, 0, materials[0]);
+  addPanel(0.64, 1.21, 0.085, 0.024, 0.076, materials[1]);
+  addPanel(0.585, 1.145, 0.075, 0.012, 0.101, materials[2]);
+
+  const speakerGeometry = new THREE.BoxGeometry(0.105, 0.012, 0.006);
+  const speaker = new THREE.Mesh(speakerGeometry, materials[3]);
+  speaker.position.set(0, 0.49, 0.117);
+  geometries.push(speakerGeometry);
+  bay.add(speaker);
+
+  const lensGeometry = new THREE.CircleGeometry(0.013, 18);
+  const lens = new THREE.Mesh(lensGeometry, materials[3]);
+  lens.position.set(-0.085, 0.49, 0.118);
+  geometries.push(lensGeometry);
+  bay.add(lens);
+
+  parent.add(bay);
+  return { bay, geometries, materials };
 }
 
 function buildDevice(scene, sourceGeometry) {
@@ -338,8 +405,9 @@ function buildDevice(scene, sourceGeometry) {
   orient.add(body);
   scene.add(group);
 
+  const phoneBay = createPortraitPhoneBay(group);
   const hand = createGripHand(group);
-  const bubbles = createSoapBubbles(group, new THREE.Vector3(0.63, 1.18, -0.08));
+  const bubbles = createSoapBubbles(group, new THREE.Vector3(0.04, 1.28, 0.46));
   const hotspotGeometry = new THREE.SphereGeometry(0.14, 12, 10);
   const hotspotMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
   const hotspots = DEVICE_FEATURES.map((feature) => {
@@ -347,8 +415,8 @@ function buildDevice(scene, sourceGeometry) {
     hotspot.name = `Design point: ${feature.title}`;
     hotspot.userData.featureId = feature.id;
     if (feature.id === 'phone-bay') hotspot.position.set(0, 0.04, 0.78);
-    if (feature.id === 'sound-mouth') hotspot.position.set(0.63, 1.12, 0.08);
-    if (feature.id === 'grip') hotspot.position.set(-0.88, -0.86, 0.96);
+    if (feature.id === 'sound-mouth') hotspot.position.set(0.04, 1.28, 0.56);
+    if (feature.id === 'grip') hotspot.position.set(-0.42, -0.84, 1.02);
     group.add(hotspot);
     return hotspot;
   });
@@ -366,6 +434,8 @@ function buildDevice(scene, sourceGeometry) {
     hotspotMaterial,
     handGeometries: hand.geometries,
     handMaterials: hand.materials,
+    phoneBayGeometries: phoneBay.geometries,
+    phoneBayMaterials: phoneBay.materials,
   };
 }
 
@@ -549,6 +619,8 @@ function DeviceCanvas({ playing }) {
         device.materials.forEach((material) => material.dispose());
         device.hotspotGeometry.dispose();
         device.hotspotMaterial.dispose();
+        device.phoneBayGeometries.forEach((geometry) => geometry.dispose());
+        device.phoneBayMaterials.forEach((material) => material.dispose());
         device.handGeometries.forEach((geometry) => geometry.dispose());
         device.handMaterials.forEach((material) => material.dispose());
         device.bubbles.forEach(({ mesh, material }) => {
@@ -565,14 +637,13 @@ function DeviceCanvas({ playing }) {
   }, []);
 
   return (
-    <div className={`device-canvas${playing ? ' is-playing' : ''}`} ref={mountRef} aria-label="可拖动旋转 EchoCaster。悬停或轻触标记可查看设计说明。">
-      {modelStatus === 'loading' && <span className="device-model-state">载入 EchoCaster 模型…</span>}
+    <div className={`device-canvas${playing ? ' is-playing' : ''}`} ref={mountRef} aria-label="可拖动旋转 Memo Catcher，悬停或轻触标记查看结构。">
+      {modelStatus === 'loading' && <span className="device-model-state">载入 Memo Catcher…</span>}
       {modelStatus === 'error' && <span className="device-model-state is-error">模型载入失败</span>}
       {hoveredFeature && (
         <>
           <span className="device-hotspot-pin" aria-hidden="true" />
           <div className="device-feature-note" role="tooltip" aria-live="polite">
-            <span>DESIGN NOTE · {DEVICE_FEATURES.find((feature) => feature.id === hoveredFeature)?.index}</span>
             <strong>{DEVICE_FEATURES.find((feature) => feature.id === hoveredFeature)?.title}</strong>
             <p>{DEVICE_FEATURES.find((feature) => feature.id === hoveredFeature)?.description}</p>
           </div>
@@ -603,15 +674,15 @@ export default function DeviceViewer({ open, onClose, playing }) {
   };
 
   return (
-    <section className="device-viewer glass-surface" ref={panelRef} aria-label="EchoCaster 3D 展示">
+    <section className="device-viewer glass-surface" ref={panelRef} aria-label="Memo Catcher 3D 展示">
       <header className="device-viewer-head">
-        <div className="device-detail"><span className="device-eyebrow">MEMO GARDEN · FIELD DEVICE</span><h2>EchoCaster</h2><small>竖屏手机仓 · 手持声音泡泡发射器</small></div>
-        <button className="device-close" onClick={closeAnimated} aria-label="收起 EchoCaster">−</button>
+        <div className="device-detail"><span className="device-eyebrow">MEMO GARDEN</span><h2>Memo Catcher</h2><small>竖屏手机仓 · 手持声音泡泡发射器</small></div>
+        <button className="device-close" onClick={closeAnimated} aria-label="收起 Memo Catcher">−</button>
       </header>
       <DeviceCanvas playing={playing} />
       <div className="device-viewer-foot">
-        <div className="device-detail"><span className={`device-live-dot${playing ? ' active' : ''}`} /><span>{playing ? '播放演示中 · 发射口回应声音' : '悬停看设计点 · 拖动查看侧面'}</span></div>
-        <div className="device-detail"><i className="device-key-icon" /> LINK · DEMO</div>
+        <div className="device-detail"><span className={`device-live-dot${playing ? ' active' : ''}`} /><span>{playing ? '声音正在流动' : '拖动查看装置 · 悬停了解结构'}</span></div>
+        <div className="device-detail"><i className="device-key-icon" /> 倾听 · 留声</div>
       </div>
     </section>
   );

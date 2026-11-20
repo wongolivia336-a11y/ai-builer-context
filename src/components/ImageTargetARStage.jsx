@@ -245,7 +245,7 @@ export default function ImageTargetARStage({
   const latestRef = useRef({});
   const portalTarget = typeof document !== 'undefined' ? document.body : null;
   const soundTargets = sounds.slice(0, TARGETS.length);
-  const deviceEndpoint = new URLSearchParams(window.location.search).get('deviceWs') || import.meta.env.VITE_ECHOCASTER_WS || '';
+  const deviceEndpoint = new URLSearchParams(window.location.search).get('deviceWs') || import.meta.env.VITE_MEMO_CATCHER_WS || import.meta.env.VITE_ECHOCASTER_WS || '';
   const markerItems = TARGETS.map((target, index) => ({ ...target, url: markerUrl(target.file), sound: soundTargets[index] }));
   latestRef.current = {
     sounds: soundTargets, onSelect, onCapture, onCloseCamera, onZoom, onListen, onComments,
@@ -277,7 +277,7 @@ export default function ImageTargetARStage({
     if (index >= 0) latestRef.current.onSelect?.(index + 1);
     setFoundSound(sound);
     latestRef.current.onCapture?.(sound);
-    if (source === 'hardware') setStatusCopy('已收到实体装置按键信号 · 正在捕捉');
+    if (source === 'hardware') setStatusCopy('正在收下这颗回声');
   }, []);
 
   const connectDevice = useCallback(() => {
@@ -368,7 +368,7 @@ export default function ImageTargetARStage({
     const motionPermissionRequest = loadMotionPermission();
     setStage('preparing');
     setProgress(0.04);
-    setStatusCopy('正在检查相机与识别图');
+    setStatusCopy('正在准备镜头与声音图卡');
     latestRef.current.onModeChange?.(true);
     await new Promise((resolve) => requestAnimationFrame(resolve));
     if (cancelledRef.current) return;
@@ -409,10 +409,10 @@ export default function ImageTargetARStage({
         setStatusCopy('已找到缓存识别库 · 加载追踪器');
       } else {
         setProgress(0.12);
-        setStatusCopy('正在提取 8 张识别图的追踪特征');
+        setStatusCopy('正在整理声音图卡');
         await importFromBrowserImportMap('mindar-image-compiler');
         const Compiler = window.MINDAR?.Compiler || window.MINDAR?.IMAGE?.Compiler;
-        if (!Compiler) throw new Error('识别图编译器没有载入，请检查网络后重试。');
+          if (!Compiler) throw new Error('识别图编译器没有载入，请检查网络后重试。');
         const images = await Promise.all(markerItems.map((item) => loadMarkerImage(item.url)));
         const compiler = new Compiler();
         await compiler.compileImageTargets(images, (value) => {
@@ -533,21 +533,18 @@ export default function ImageTargetARStage({
       removeMotionListeners();
       stopDeviceSocket();
       setDeviceStatus(deviceEndpoint ? 'error' : 'demo');
-      setErrorCopy(error?.message || '图像识别未能启动，请检查相机权限与网络。');
+      setErrorCopy(error?.name === 'NotAllowedError' || error?.name === 'SecurityError'
+        ? '请允许浏览器使用相机后再试。'
+        : error?.name === 'NotFoundError'
+          ? '没有找到可用的相机。'
+          : '镜头暂时没有打开，请检查相机权限与网络后再试。');
       setStage('error');
       latestRef.current.onModeChange?.(false);
     }
   };
 
   const selectedSound = foundSound || activeSoundRef.current;
-  const statusLabel = deviceStatus === 'connected'
-    ? '装置已连接' + (deviceRssi === null ? '' : ' · ' + deviceRssi + ' dBm')
-    : deviceStatus === 'connecting' ? '正在连接 Wi-Fi 模块'
-      : deviceStatus === 'error' ? '模块连接失败 · 可重试'
-        : deviceStatus === 'disconnected' ? '模块暂离线'
-          : deviceStatus === 'unavailable' ? '浏览器不支持设备连接'
-            : '演示模式 · 等待模拟按键';
-  const canSimulate = !!selectedSound && deviceStatus !== 'connected' && stage === 'active';
+  const canCapture = !!selectedSound && stage === 'active' && ['idle', 'absorbed'].includes(capturePhase);
 
   const stagePortal = portalTarget && stage !== 'idle' ? createPortal(
     <div className="image-ar-overlay" role="dialog" aria-label="识别图 AR 扫描">
@@ -555,17 +552,15 @@ export default function ImageTargetARStage({
       {stage === 'preparing' || stage === 'starting' || stage === 'burst' ? (
         <div className={'image-ar-loader' + (stage === 'burst' ? ' is-complete' : '')} aria-live="polite">
           <div className="image-ar-loader-orbit" aria-hidden="true"><i /><i /><i /><b /></div>
-          <span className="image-ar-loader-kicker">MEMO GARDEN · IMAGE TRACKING</span>
           <strong>{stage === 'burst' ? '花园已经醒来' : statusCopy}</strong>
-          <small>{stage === 'preparing' ? '首次加载会编译 8 张识别图，完成后缓存在本机' : stage === 'starting' ? '正在启动相机，泡泡水马上注满' : '识别图已经就位'}</small>
+          <small>{stage === 'preparing' ? '正在为声音图卡做好准备' : stage === 'starting' ? '镜头即将打开，泡泡水正在注满' : '镜头就绪，开始漫游吧'}</small>
           <CapsuleWaterProgress progress={progress} />
           {stage === 'burst' && <div className="image-ar-burst" aria-hidden="true">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ '--burst-index': index, '--burst-angle': (index * 360 / 22) + 'deg', '--burst-size': ((index % 4) * 2) + 'px', '--burst-drift': ((index % 5) * 12) + 'px' }} />)}</div>}
           <button type="button" className="image-ar-cancel" onClick={stopScan}>返回漫游</button>
         </div>
       ) : stage === 'error' ? (
         <div className="image-ar-loader image-ar-error-panel" role="alert">
-          <span className="image-ar-loader-kicker">IMAGE TRACKING · READY TO RETRY</span>
-          <strong>这次没有找到泡泡花园</strong>
+          <strong>镜头暂时没有打开</strong>
           <p>{errorCopy}</p>
           <button type="button" className="image-ar-primary" onClick={startScan}>重新扫描</button>
           <button type="button" className="image-ar-cancel" onClick={stopScan}>返回漫游</button>
@@ -576,8 +571,7 @@ export default function ImageTargetARStage({
             <span className="image-ar-live"><i />{selectedSound ? '识别到一张图' : '识别图扫描中'}</span>
             <button type="button" className="image-ar-exit" onClick={stopScan}>结束扫描</button>
           </div>
-          <div className="image-ar-scan-hint">{selectedSound ? '把镜头稍微靠近，泡泡会跟着识别图轻轻浮动' : '缓慢移动镜头 · 寻找 Memo garden 黑白识别图'}</div>
-          <div className="image-ar-device-pill"><i className={deviceStatus === 'connected' ? 'is-connected' : ''} />{statusLabel}</div>
+          <div className="image-ar-scan-hint">{selectedSound ? '把镜头稍微靠近，泡泡会跟着图卡轻轻浮动' : '缓慢移动镜头，寻找声音图卡'}</div>
           {stage === 'burst' && <span className="image-ar-entry-burst" aria-hidden="true" />}
           {!selectedSound && <div className="image-ar-reticle" aria-hidden="true"><i /><b /></div>}
           {selectedSound && (
@@ -594,8 +588,8 @@ export default function ImageTargetARStage({
                 <button type="button" onClick={() => latestRef.current.onComments?.(selectedSound)}>♡ 留言 {selectedSound.comments?.length || 0}</button>
               </div>
               <div className="image-ar-capture-line">
-                <span><i />{deviceStatus === 'connected' ? '瞄准后按下 EchoCaster 实体键' : '对准后，接收实体按键信号'}</span>
-                {canSimulate && <button type="button" onClick={() => handleDeviceSignal({}, 'demo')}>模拟实体按键</button>}
+                <span><i />瞄准泡泡，轻点或按下 Memo Catcher 收下回声</span>
+                {canCapture && <button type="button" onClick={() => handleDeviceSignal({ bubbleId: selectedSound.id }, 'manual')}>捕捉泡泡</button>}
               </div>
             </section>
           )}
@@ -616,7 +610,7 @@ export default function ImageTargetARStage({
               <span>{Math.round((latestRef.current.zoom || 1) * 100)}%</span>
               <button type="button" aria-label="缩小泡泡" onClick={() => latestRef.current.onZoom?.(Math.max(0.72, (latestRef.current.zoom || 1) - 0.16))}>−</button>
             </div>
-            <span className="image-ar-motion">{motionEnabled ? '重力已连上' : '轻缓漂浮'}</span>
+            <span className="image-ar-motion">{motionEnabled ? '随手势轻轻漂浮' : '轻轻漂浮'}</span>
           </div>
         </div>
       )}
@@ -628,14 +622,13 @@ export default function ImageTargetARStage({
     <>
       <section className="image-ar-entry">
         <div className="image-ar-entry-copy">
-          <span className="image-ar-entry-eyebrow">MEMO GARDEN · 08 IMAGE TARGETS</span>
-          <strong>把一张识别图，变成一颗声音泡泡</strong>
-          <small>每张图只对应一段声音；多个高反差特征点帮助镜头稳定追踪。</small>
-          <button type="button" className="image-ar-entry-button" onClick={startScan}>扫描识别图 <i>↗</i></button>
-          <span className="image-ar-device-note">相机需 HTTPS 与授权；实体联动需手机和模块在同一网络，未连接时提供演示按键。</span>
+          <span className="image-ar-entry-eyebrow">漫游拾音</span>
+          <strong>扫描声音图卡，让泡泡浮现</strong>
+          <small>每张图卡都藏着一段独一无二的回声。</small>
+          <button type="button" className="image-ar-entry-button" onClick={startScan}>开始扫描 <i>↗</i></button>
         </div>
         <details className="image-ar-marker-list">
-          <summary>查看 / 单独下载 8 张识别图 <i>＋</i></summary>
+          <summary>声音图卡 <i>＋</i></summary>
           <div className="image-ar-marker-grid">
             {markerItems.map((item, index) => (
               <a key={item.id} className="image-ar-marker-link" href={item.url} download={item.file} aria-label={'下载第 ' + (index + 1) + ' 张识别图：' + item.sound?.title}>
@@ -644,7 +637,7 @@ export default function ImageTargetARStage({
               </a>
             ))}
           </div>
-          <p>请以 100% 比例打印，避免裁切黑白方形边缘；每张目标保留独立文件。</p>
+          <p>选一张图卡，用镜头寻找对应的声音泡泡。</p>
         </details>
       </section>
       {stagePortal}
