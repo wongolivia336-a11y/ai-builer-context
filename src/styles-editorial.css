@@ -1216,3 +1216,143 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
   box-shadow:0 0 0 3px rgba(248,255,224,.86);
   z-index:2;
 }
+
+
+/* The creation bubble doubles as a tiny, tactile sound-shape instrument. */
+.app-create .create-orbit { isolation:isolate; }
+.app-create .create-orbit::before {
+  content:"";
+  position:absolute;
+  z-index:0;
+  inset:21px 22px;
+  border:1px solid rgba(255,255,255,.38);
+  border-radius:50%;
+  box-shadow:0 0 22px rgba(178,218,234,.18),inset 0 0 18px rgba(255,255,255,.15);
+  transform:rotate(-18deg) scaleX(.92);
+  pointer-events:none;
+}
+.app-create .create-aura { z-index:0; }
+.app-create .record-shape-wave {
+  z-index:1;
+  border:1px solid rgba(255,255,255,.5);
+  background:radial-gradient(ellipse at 50% 50%,rgba(242,250,247,.05),transparent 68%);
+  box-shadow:0 0 20px rgba(196,225,231,.16),inset 0 0 18px rgba(255,255,255,.12);
+  filter:blur(.25px);
+}
+.app-create .create-orbit.is-recording .record-shape-wave {
+  opacity:.86;
+  animation:record-fluid-wave 1.22s cubic-bezier(.42,0,.58,1) infinite alternate;
+}
+.app-create .record-shape-wave::after {
+  inset:-11px;
+  border-color:rgba(255,255,255,.24);
+  box-shadow:0 0 18px rgba(217,186,219,.15);
+  animation:record-fluid-ripple 1.7s ease-in-out infinite alternate;
+}
+.app-create .create-satellite { z-index:3; }
+.app-create .create-orbit.is-recording .create-satellite {
+  animation:record-satellite-drift 1.35s ease-in-out infinite alternate;
+}
+.app-create .create-orbit.is-recording .sat-a { animation-delay:-.38s; }
+.app-create .create-orbit.is-recording .sat-b { animation-delay:-.82s; }
+.app-create .create-orbit.is-recording .sat-c { animation-delay:-.12s; }
+
+.app-create .record-bubble {
+  left:39px;
+  top:31px;
+  transform-origin:center;
+  transition:transform .16s cubic-bezier(.2,.75,.25,1.18),filter .22s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.app-create .record-bubble.has-silhouette {
+  overflow:visible;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.app-create .record-bubble.has-silhouette::before,
+.app-create .record-bubble.has-silhouette::after { display:none; }
+.app-create .record-bubble.has-silhouette .bubble-silhouette {
+  transform-box:fill-box;
+  transform-origin:center;
+  filter:drop-shadow(0 9px 14px rgba(86,117,132,.17)) drop-shadow(0 0 10px rgba(255,255,255,.28));
+  animation:record-form-arrive .44s cubic-bezier(.18,.9,.24,1.2) both;
+  transition:transform .12s ease-out,filter .2s ease;
+}
+.app-create .record-bubble:active {
+  transform:scale(.88,.96) rotate(-3deg) translateY(2px);
+  filter:drop-shadow(0 3px 5px rgba(86,117,132,.2));
+}
+.app-create .record-bubble:active .bubble-silhouette {
+  transform:scaleX(.91) scaleY(1.08);
+}
+.app-create .record-bubble.recording {
+  animation:none;
+  transform:scale(calc(.9 + var(--record-energy,.18)*.2));
+  filter:saturate(calc(1 + var(--record-energy,.18)*.24)) hue-rotate(calc(var(--record-energy,.18)*14deg)) drop-shadow(0 12px 20px rgba(190,133,161,.25));
+}
+.app-create .record-bubble.recording.has-silhouette .bubble-silhouette {
+  transform:scaleX(calc(1.08 - var(--record-energy,.18)*.16)) scaleY(calc(.92 + var(--record-energy,.18)*.16)) rotate(calc((var(--record-energy,.18) - .5)*4deg));
+  filter:drop-shadow(0 10px 15px rgba(190,133,161,.2)) drop-shadow(0 0 14px rgba(238,197,217,.24));
+}
+.app-create .record-bubble.recording:active {
+  transform:scale(.86,.94) rotate(-4deg) translateY(2px);
+  filter:saturate(1.28) drop-shadow(0 4px 8px rgba(190,133,161,.25));
+}
+.app-create .record-bubble.recording:active .bubble-silhouette { transform:scaleX(.86) scaleY(1.14) rotate(-3deg); }
+.app-create .create-bubble-caption {
+  position:absolute;
+  z-index:5;
+  left:50%;
+  bottom:-13px;
+  width:max-content;
+  max-width:calc(100% - 22px);
+  color:rgba(48,66,48,.55);
+  font:700 7px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.045em;
+  text-align:center;
+  transform:translateX(-50%);
+  transition:color .25s ease;
+  pointer-events:none;
+}
+.app-create .create-bubble-caption.is-recording { color:rgba(104,86,104,.78); }
+.app-create .prompt-switch { margin-top:15px; }
+.app-create .projection-record-bubble.has-silhouette {
+  overflow:visible;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.app-create .projection-record-bubble.has-silhouette::before,
+.app-create .projection-record-bubble.has-silhouette::after { display:none; }
+.app-create .projection-record-bubble.recording .bubble-silhouette {
+  transform-box:fill-box;
+  transform-origin:center;
+  transform:scaleX(calc(1.08 - var(--record-energy,.18)*.16)) scaleY(calc(.92 + var(--record-energy,.18)*.16)) rotate(calc((var(--record-energy,.18) - .5)*4deg));
+  filter:drop-shadow(0 12px 18px rgba(190,133,161,.22));
+  transition:transform .12s ease-out;
+}
+@keyframes record-form-arrive {
+  0% { opacity:.5; transform:scale(.78,.92) rotate(-8deg); }
+  68% { opacity:1; transform:scale(1.08,.96) rotate(3deg); }
+  100% { opacity:1; transform:scale(1) rotate(0); }
+}
+@keyframes record-fluid-wave {
+  0% { transform:scale(calc(.82 + var(--record-energy,.18)*.07)) rotate(-10deg); border-radius:43% 57% 54% 46% / 56% 42% 58% 44%; }
+  100% { transform:scale(calc(.91 + var(--record-energy,.18)*.07)) rotate(8deg); border-radius:57% 43% 42% 58% / 47% 61% 39% 53%; }
+}
+@keyframes record-fluid-ripple {
+  from { transform:scale(.96) rotate(-4deg); opacity:.35; }
+  to { transform:scale(1.06) rotate(5deg); opacity:.72; }
+}
+@keyframes record-satellite-drift {
+  from { translate:0 1px; scale:.88; }
+  to { translate:0 -5px; scale:1.12; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .app-create .record-bubble,
+  .app-create .record-bubble .bubble-silhouette,
+  .app-create .record-shape-wave,
+  .app-create .record-shape-wave::after,
+  .app-create .create-satellite { animation:none!important; transition:none!important; }
+}
