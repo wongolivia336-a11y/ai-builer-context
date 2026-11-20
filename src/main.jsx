@@ -65,6 +65,7 @@ function TabBar({ active, onChange }) {
   const [dragPhysics, setDragPhysics] = useState({ stretch: 1, tailLeft: 0, tailRight: 0 });
   const gestureRef = useRef(null);
   const suppressClickRef = useRef(false);
+  const suppressClickTimerRef = useRef(null);
 
   useEffect(() => {
     if (!isDragging) setDragProgress(activeIndex);
@@ -78,6 +79,9 @@ function TabBar({ active, onChange }) {
   };
   const handlePointerDown = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    suppressClickRef.current = false;
+    window.clearTimeout(suppressClickTimerRef.current);
+    suppressClickTimerRef.current = null;
     const progress = progressAtPointer(event);
     gestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setDragProgress(progress);
@@ -110,7 +114,11 @@ function TabBar({ active, onChange }) {
     if (!didSwipe) return;
     suppressClickRef.current = true;
     if (targetIndex !== activeIndex) onChange(tabs[targetIndex][0]);
-    window.setTimeout(() => { suppressClickRef.current = false; }, 420);
+    window.clearTimeout(suppressClickTimerRef.current);
+    suppressClickTimerRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false;
+      suppressClickTimerRef.current = null;
+    }, 220);
   };
 
   return (
@@ -134,7 +142,15 @@ function TabBar({ active, onChange }) {
           key={id}
           className={`tab-item${active === id ? ' active' : ''}`}
           aria-current={active === id ? 'page' : undefined}
-          onClick={() => { if (!suppressClickRef.current) onChange(id); }}
+          onClick={(event) => {
+            if (suppressClickRef.current && event.detail !== 0) {
+              suppressClickRef.current = false;
+              window.clearTimeout(suppressClickTimerRef.current);
+              suppressClickTimerRef.current = null;
+              return;
+            }
+            onChange(id);
+          }}
         >
           <span className={`tab-mark mark-${id}`} aria-hidden="true">{id === 'home' ? <span className="mini-orbs"><i /><i /><i /></span> : id === 'roam' ? <span className="aim-mark" /> : <span className="plus-mark">+</span>}</span>
           <span>{label}</span>
@@ -364,10 +380,11 @@ function OrbitTagTrack({ bubble, size = bubble.size, children, focused = false, 
   const showOrbit = visible || focused || hovered;
   const note = bubble.comments[0]?.text || bubble.quote;
   const outlinePath = bubble.shape && bubble.shape !== 'orb' ? BUBBLE_SHAPE_PATHS[bubble.shape] : null;
-  const compactText = `${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
+  const compactText = `${bubble.title} · ${bubble.kind}`;
+  const compactNote = focused ? `${note.slice(0, 10)} · ` : '';
   const orbitText = outlinePath
-    ? `${compactText}   ✦   ${focused ? `${note.slice(0, 10)}   ✦   ` : ''}${compactText}   ✦   ${compactText}`
-    : `${bubble.title}   ✦   ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}   ✦   ${note}   ✦   ${bubble.title} · ${bubble.kind} · ${bubble.duration} · ♡ ${bubble.saves}`;
+    ? `${compactText}   ✦   ${compactNote}${compactText}   ✦   ${compactText}`
+    : `${compactText}   ✦   ${compactNote}${compactText}   ✦`;
   const orbitFontSize = outlinePath
     ? Math.max(9.3, Math.min(12.1, size * 0.067))
     : Math.max(7, Math.min(9.6, size * 0.048));
@@ -535,8 +552,9 @@ function BubbleBurstLayer({ bursts }) {
     const createParticles = (burst, now) => {
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const colors = palette[burst.accent] || palette.blue;
-      const filmCount = 14;
-      const count = 44;
+      const isMobile = window.matchMedia('(pointer: coarse)').matches;
+      const filmCount = isMobile ? 5 : 8;
+      const count = isMobile ? 16 : 22;
       const particles = Array.from({ length: reducedMotion ? 0 : count }, (_, index) => {
         const angle = (index / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.32;
         const shell = index < filmCount;
@@ -552,7 +570,7 @@ function BubbleBurstLayer({ bursts }) {
           length: shell ? 17 + Math.random() * 26 : 6 + Math.random() * 12,
           spin: (Math.random() - 0.5) * 12,
           rotation: angle + Math.PI / 2,
-          life: shell ? 1.05 + Math.random() * 0.5 : 0.92 + Math.random() * 0.74,
+          life: shell ? 0.58 + Math.random() * 0.22 : 0.66 + Math.random() * 0.28,
           age: 0,
           colors,
         };
@@ -771,7 +789,7 @@ function BubbleBurstLayer({ bursts }) {
       const dt = lastFrame ? Math.min(0.032, (now - lastFrame) / 1000) : 0.016;
       lastFrame = now;
       context.clearRect(0, 0, width, height);
-      burstsRef.current = burstsRef.current.filter((burst) => now - burst.startedAt < (burst.reducedMotion ? 240 : 1900));
+      burstsRef.current = burstsRef.current.filter((burst) => now - burst.startedAt < (burst.reducedMotion ? 240 : 1250));
       burstsRef.current.forEach((burst) => {
         const elapsed = (now - burst.startedAt) / 1000;
         if (elapsed < (burst.reducedMotion ? 0.24 : 0.94)) drawRupture(burst, elapsed);
@@ -894,7 +912,7 @@ function ARCommentsSheet({ bubble, onClose, global = false }) {
           <input aria-label="写一条留言" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="留一句回声…" maxLength={80} />
           <button type="submit" disabled={!draft.trim()}>发送</button>
         </form>
-        <div className="ar-comment-footnote"><i /> 留下你的回应</div>
+        <div className="ar-comment-footnote"><i /> 本次演示可见 · 后端尚未接入</div>
       </section>
     </div>
   );
@@ -962,25 +980,34 @@ function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onD
   const showOrbit = focused || hovered;
   const gestureRef = useRef(null);
   const suppressClickRef = useRef(false);
+  const suppressClickTimerRef = useRef(null);
   const isResonant = bubble.saves >= 50 || bubble.comments.length >= 2;
+
+  useEffect(() => () => window.clearTimeout(suppressClickTimerRef.current), []);
 
   const pop = (event) => {
     const button = buttonRef.current;
-    if (!button || popped || suppressClickRef.current) {
+    if (!button || popped) {
       suppressClickRef.current = false;
       return;
     }
     gsap.killTweensOf(button);
     gsap.timeline()
-      .to(button, { scaleX: 0.82, scaleY: 1.12, filter: 'brightness(1.32)', duration: 0.075, ease: 'power2.out' })
-      .to(button, { scaleX: 1.14, scaleY: 0.78, filter: 'brightness(1.8)', duration: 0.1, ease: 'power3.in' })
-      .to(button, { scale: 0.015, opacity: 0, filter: 'brightness(2.5) blur(4px)', duration: 0.2, ease: 'power2.in' });
+      .to(button, { scaleX: 1.1, scaleY: 0.88, filter: 'brightness(1.35)', duration: 0.075, ease: 'power2.out' })
+      .to(button, { scaleX: 0.82, scaleY: 1.18, filter: 'brightness(1.85)', duration: 0.11, ease: 'power3.inOut' })
+      .to(button, { scaleX: 1.04, scaleY: 0.76, duration: 0.07, ease: 'power2.out' })
+      .to(button, { scale: 0.015, opacity: 0, filter: 'brightness(2.4) blur(4px)', duration: 0.19, ease: 'power2.in' });
+    const ripple = button.querySelector('.pop-ripple');
+    if (ripple) gsap.fromTo(ripple, { scale: 0.24, opacity: 0.9 }, { scale: 1.55, opacity: 0, duration: 0.34, ease: 'power1.out' });
     onPop(bubble, event);
   };
 
   const pointerDown = (event) => {
     if (popped || (event.pointerType === 'mouse' && event.button !== 0)) return;
-    gestureRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false };
+    suppressClickRef.current = false;
+    window.clearTimeout(suppressClickTimerRef.current);
+    suppressClickTimerRef.current = null;
+    gestureRef.current = { id: event.pointerId, pointerType: event.pointerType, x: event.clientX, y: event.clientY, dragged: false };
     event.currentTarget.setPointerCapture?.(event.pointerId);
     gsap.to(event.currentTarget, { scaleX: 0.94, scaleY: 1.05, duration: 0.12, ease: 'power2.out' });
   };
@@ -988,10 +1015,8 @@ function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onD
   const pointerMove = (event) => {
     const gesture = gestureRef.current;
     if (!gesture || gesture.id !== event.pointerId) return;
-    if (!gesture.dragged && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 7) {
+    if (!gesture.dragged && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > (gesture.pointerType === 'touch' ? 12 : 7)) {
       gesture.dragged = true;
-      suppressClickRef.current = true;
-      window.setTimeout(() => { suppressClickRef.current = false; }, 600);
       gsap.killTweensOf(event.currentTarget);
       gsap.set(event.currentTarget, { clearProps: 'transform' });
       onDragStart?.(bubble, event);
@@ -1005,6 +1030,12 @@ function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onD
     if (!gesture || gesture.id !== event.pointerId) return;
     gestureRef.current = null;
     if (gesture.dragged) {
+      suppressClickRef.current = true;
+      window.clearTimeout(suppressClickTimerRef.current);
+      suppressClickTimerRef.current = window.setTimeout(() => {
+        suppressClickRef.current = false;
+        suppressClickTimerRef.current = null;
+      }, 220);
       gsap.set(button, { clearProps: 'transform' });
       onDragEnd?.(bubble, event);
     }
@@ -1029,7 +1060,16 @@ function HomeBubble({ bubble, index, popped, onPop, onDragStart, onDragMove, onD
       onPointerUp={pointerEnd}
       onPointerCancel={pointerEnd}
       onFocus={onFocus}
-      onClick={(event) => { if (suppressClickRef.current) { suppressClickRef.current = false; return; } onFocus?.(); pop(event); }}
+      onClick={(event) => {
+        if (suppressClickRef.current && event.detail !== 0) {
+          suppressClickRef.current = false;
+          window.clearTimeout(suppressClickTimerRef.current);
+          suppressClickTimerRef.current = null;
+          return;
+        }
+        onFocus?.();
+        pop(event);
+      }}
     >
       <span className="bubble-contact-film" aria-hidden="true" />
       <span className="bubble-core" />
@@ -1069,6 +1109,7 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   const fieldRef = useRef(null);
   const filterGestureRef = useRef(null);
   const suppressFilterClickRef = useRef(false);
+  const suppressFilterClickTimerRef = useRef(null);
   const physicsRef = useRef({ bodies: [] });
   const kinds = [
     ['all', '全部', '◌'],
@@ -1103,6 +1144,9 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
   };
   const beginFilterGesture = (event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    suppressFilterClickRef.current = false;
+    window.clearTimeout(suppressFilterClickTimerRef.current);
+    suppressFilterClickTimerRef.current = null;
     const progress = filterProgressAtPointer(event);
     filterGestureRef.current = { pointerId: event.pointerId, startX: event.clientX, previousX: event.clientX };
     setFilterDragProgress(progress);
@@ -1122,7 +1166,11 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
     if (didSwipe) {
       setKindFilter(kinds[targetIndex][0]);
       suppressFilterClickRef.current = true;
-      window.setTimeout(() => { suppressFilterClickRef.current = false; }, 420);
+      window.clearTimeout(suppressFilterClickTimerRef.current);
+      suppressFilterClickTimerRef.current = window.setTimeout(() => {
+        suppressFilterClickRef.current = false;
+        suppressFilterClickTimerRef.current = null;
+      }, 220);
     }
   };
   useEffect(() => {
@@ -1183,14 +1231,10 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
         body.squish *= Math.exp(-dt * 7.5);
         const edgeX = Math.max(0, width - body.diameter);
         const edgeY = Math.max(0, height - body.diameter);
-        const isOrbitFocus = body.element.classList.contains('is-orbit-focus');
-        const hasOrbit = body.element.classList.contains('has-orbit');
-        const orbitPaddingX = isOrbitFocus ? 102 : hasOrbit ? 40 : 0;
-        const orbitPaddingY = isOrbitFocus ? 60 : hasOrbit ? 40 : 0;
-        const minX = Math.min(orbitPaddingX, edgeX / 2);
-        const maxX = Math.max(minX, edgeX - minX);
-        const minY = Math.min(orbitPaddingY, edgeY / 2);
-        const maxY = Math.max(minY, edgeY - minY);
+        const minX = 0;
+        const maxX = edgeX;
+        const minY = 0;
+        const maxY = edgeY;
         if (body.x < minX) { body.x = minX; body.vx = body.dragging ? 0 : Math.abs(body.vx) * 0.88; }
         if (body.x > maxX) { body.x = maxX; body.vx = body.dragging ? 0 : -Math.abs(body.vx) * 0.88; }
         if (body.y < minY) { body.y = minY; body.vy = body.dragging ? 0 : Math.abs(body.vy) * 0.88; }
@@ -1355,7 +1399,15 @@ function HomeScreen({ bubbles, playing, emitting, onPageChange, poppedId, onBubb
         >
           <span className="filter-liquid-indicator" aria-hidden="true"><i className="filter-liquid-tail tail-left" /><i className="filter-liquid-tail tail-right" /></span>
           {kinds.map(([key, label, symbol]) => (
-            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => { if (!suppressFilterClickRef.current) setKindFilter(key); }}><i>{symbol}</i><span>{label}</span></button>
+            <button key={key} data-kind={key} className={kindFilter === key ? 'selected' : ''} role="tab" aria-selected={kindFilter === key} onClick={() => {
+              if (suppressFilterClickRef.current) {
+                suppressFilterClickRef.current = false;
+                window.clearTimeout(suppressFilterClickTimerRef.current);
+                suppressFilterClickTimerRef.current = null;
+                return;
+              }
+              setKindFilter(key);
+            }}><i>{symbol}</i><span>{label}</span></button>
           ))}
         </div>
         <div className={`bubble-field${kindFilter === 'all' ? '' : ` filter-${kindFilter}`}`} ref={fieldRef} aria-label="可拖动、相撞并戳开的个人声音泡泡">
@@ -1426,9 +1478,6 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
           <div className="distant-architecture" />
           <ARIllustrations />
         </div>
-        <div className="image-ar-scene-caption">
-          <strong>让一张图，浮起一段回声</strong>
-        </div>
         <ImageTargetARStage
           sounds={SOUND_BUBBLES}
           zoom={zoom}
@@ -1489,6 +1538,7 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
   const [feedbackEnabled, setFeedbackEnabled] = useState(true);
   const leverDragRef = useRef(null);
   const suppressLeverClickRef = useRef(false);
+  const suppressLeverClickTimerRef = useRef(null);
   const leverAudioRef = useRef(null);
   useEffect(() => () => {
     leverAudioRef.current?.close?.().catch?.(() => {});
@@ -1527,12 +1577,15 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
   };
   const startLeverPull = (event) => {
     if (event.button !== undefined && event.button !== 0) return;
+    suppressLeverClickRef.current = false;
+    window.clearTimeout(suppressLeverClickTimerRef.current);
+    suppressLeverClickTimerRef.current = null;
     leverDragRef.current = { y: event.clientY, pulled: false };
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
   const moveLeverPull = (event) => {
     if (!leverDragRef.current) return;
-    const pull = Math.max(0, Math.min(1, (event.clientY - leverDragRef.current.y) / 42));
+    const pull = Math.max(0, Math.min(1, (event.clientY - leverDragRef.current.y) / 62));
     leverDragRef.current.pulled = pull >= .56;
     setLeverPull(pull);
   };
@@ -1543,7 +1596,11 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
     setLeverPull(0);
     if (pulled) {
       suppressLeverClickRef.current = true;
-      window.setTimeout(() => { suppressLeverClickRef.current = false; }, 400);
+      window.clearTimeout(suppressLeverClickTimerRef.current);
+      suppressLeverClickTimerRef.current = window.setTimeout(() => {
+        suppressLeverClickRef.current = false;
+        suppressLeverClickTimerRef.current = null;
+      }, 220);
       triggerRecordAction();
     }
   };
@@ -1551,9 +1608,11 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
     playLeverFeedback(recording);
     onRecord();
   };
-  const activateLever = () => {
-    if (suppressLeverClickRef.current) {
+  const activateLever = (event) => {
+    if (suppressLeverClickRef.current && event.detail !== 0) {
       suppressLeverClickRef.current = false;
+      window.clearTimeout(suppressLeverClickTimerRef.current);
+      suppressLeverClickTimerRef.current = null;
       return;
     }
     triggerRecordAction();
@@ -1591,24 +1650,29 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
           <Bubble size={17} className="create-satellite sat-c" />
           <span className={`create-bubble-caption${recording ? ' is-recording' : ''}`} aria-live="polite">{recording ? (squeezing ? '泡泡正在回弹' : '声音正在让泡泡呼吸') : `轻点两侧换形 · ${form.label}`}</span>
         </div>
-        <div className="prompt-switch glass-surface">
-          <button className={prompt === 'next' ? 'chosen' : ''} onClick={() => onPrompt('next')}>给下一位</button>
-          <button className={prompt === 'here' ? 'chosen' : ''} onClick={() => onPrompt('here')}>留在此刻</button>
-        </div>
+
+        <span className="create-record-link" aria-hidden="true"><i /></span>
         <div className={`record-panel glass-surface${recording ? ' is-recording' : ''}`}>
           <div className="record-panel-head">
             <span className="record-prompt">{prompt === 'next' ? '说一句，留给下一个路过的人' : '说一句，此刻的你和这里'}</span>
             <button className={`feedback-toggle${feedbackEnabled ? ' is-on' : ''}`} type="button" aria-pressed={feedbackEnabled} aria-label={`声音与触感反馈${feedbackEnabled ? '已开启' : '已关闭'}`} onClick={() => setFeedbackEnabled(value => !value)}><span>声 · 触</span><i /></button>
           </div>
+          <div className="prompt-switch glass-surface">
+            <button className={prompt === 'next' ? 'chosen' : ''} onClick={() => onPrompt('next')}>给下一位</button>
+            <button className={prompt === 'here' ? 'chosen' : ''} onClick={() => onPrompt('here')}>留在此刻</button>
+          </div>
           <span className={`transcript${hasAudio || recording ? '' : ' placeholder'}`} aria-live="polite">{recordError || (recording ? '正在录下你此刻的声音' : hasAudio ? '声音已收下，可以试听' : published ? '声音已留在这里' : '轻轻说下此刻的想法')}</span>
           <div className="record-row">
-            <button className={`lever-control${recording ? ' recording' : ''}${leverPull > .15 ? ' is-pulling' : ''}`} type="button" style={{ '--lever-shift': `${leverPull * 19}px`, '--lever-tilt': `${leverPull * 13}deg` }} aria-label={recording ? '拉下拉杆，结束录音' : '拉下拉杆，开始录音'} onPointerDown={startLeverPull} onPointerMove={moveLeverPull} onPointerUp={releaseLeverPull} onPointerCancel={() => { leverDragRef.current = null; setLeverPull(0); }} onClick={activateLever}>
-              <span className="lever-track" aria-hidden="true" /><span className="lever-rod" aria-hidden="true" /><span className="lever-handle" aria-hidden="true" /><span className="lever-label">{recording ? '下拉收声' : '下拉留声'}</span>
+            <button className={`lever-control${recording ? ' recording' : ''}${leverPull > .15 ? ' is-pulling' : ''}`} type="button" style={{ '--lever-shift': `${leverPull * 30}px`, '--lever-tilt': `${leverPull * 18}deg` }} aria-label={recording ? '下拉拉杆停止录音' : '下拉拉杆开始录音'} onPointerDown={startLeverPull} onPointerMove={moveLeverPull} onPointerUp={releaseLeverPull} onPointerCancel={() => { leverDragRef.current = null; setLeverPull(0); }} onClick={activateLever}>
+              <span className="lever-track" aria-hidden="true" /><span className="lever-rod" aria-hidden="true" /><span className="lever-handle" aria-hidden="true" /><span className="lever-label">{recording ? '下拉停止' : '下拉开始'}</span>
             </button>
             <Waveform active={recording || previewingRecording} />
-            <span className="record-time">{timeLabel}</span>
-            {hasAudio && !recording && <button className="record-preview" type="button" onClick={onPreviewRecording}>{previewingRecording ? '暂停' : '试听'}</button>}
+            <div className="record-time-group">
+              <span className="record-time">{timeLabel}</span>
+              {hasAudio && !recording && <button className="record-preview" type="button" onClick={onPreviewRecording}>{previewingRecording ? '暂停' : '试听'}</button>}
+            </div>
           </div>
+          <small className="record-storage-note">录音仅保留在本次演示中</small>
         </div>
         <GlassButton className="publish-button" onClick={recording ? triggerRecordAction : hasAudio ? onPublish : triggerRecordAction}>{recording ? '完成录音' : published ? '已留在这里' : hasAudio ? '留下这段声音' : '轻触也能开始留声'} <span className="arrow-out">↗</span></GlassButton>
       </div>
