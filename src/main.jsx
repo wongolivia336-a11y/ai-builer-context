@@ -30,7 +30,7 @@ function Bubble({ size, className = '', label, onClick, onPointerDown, onPointer
       onPointerCancel={onPointerCancel}
       onContextMenu={onContextMenu}
     >
-      {bubble?.shape ? <BubbleSilhouette bubble={bubble} /> : <><span className="bubble-core" /><span className="bubble-glint" /></>}
+      {bubble?.shape ? <BubbleSilhouette key={bubble.shape} bubble={bubble} /> : <><span className="bubble-core" /><span className="bubble-glint" /></>}
     </button>
   );
 }
@@ -1438,7 +1438,17 @@ function RoamScreen({ selected, onSelect, captured, capturedBubble, capturePhase
   );
 }
 
-function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, emitting, onRecord, transcript, onPublish, published, onPageChange }) {
+const RECORDING_FORMS = [
+  { id: 'echo-orb', shape: 'orb', accent: 'blue', label: '露珠' },
+  { id: 'echo-heart', shape: 'heart', accent: 'rose', label: '心泡' },
+  { id: 'echo-star', shape: 'star', accent: 'gold', label: '星沫' },
+  { id: 'echo-flower', shape: 'flower', accent: 'lilac', label: '花音' },
+];
+
+function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recordingEnergy, recordingForm, onRecordingForm, emitting, onRecord, transcript, onPublish, published, onPageChange }) {
+  const form = recordingForm || RECORDING_FORMS[0];
+  const formIndex = Math.max(0, RECORDING_FORMS.findIndex(item => item.id === form.id));
+  const cycleRecordingForm = () => onRecordingForm(RECORDING_FORMS[(formIndex + 1) % RECORDING_FORMS.length]);
   return (
     <Scene className="app-create" style={{ '--create-image': `url("${createBackground}")` }}>
       <div className="screen-topline">
@@ -1458,10 +1468,11 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
           <span className="record-shape-wave" aria-hidden="true" />
           <img className="create-sticker sticker-star-mint" src={stickerStarMint} alt="" aria-hidden="true" />
           <img className="create-sticker sticker-star-blue" src={stickerStarBlue} alt="" aria-hidden="true" />
-          <Bubble size={114} className={`record-bubble${recording ? ' recording' : ''}`} label={recording ? '正在录制自己的声音，泡泡会随着声音呼吸' : '录音泡泡'} style={{ '--record-energy': recordingEnergy }} />
+          <Bubble size={128} className={`record-bubble accent-${form.accent}${recording ? ' recording' : ''}`} label={recording ? `录音中，${form.label}泡泡随声音起伏；按住可挤压` : `轻点切换形状与颜色，当前是${form.label}`} onClick={recording ? undefined : cycleRecordingForm} style={{ '--record-energy': recordingEnergy }} bubble={form} />
           <Bubble size={34} className="create-satellite sat-a" />
           <Bubble size={24} className="create-satellite sat-b" />
           <Bubble size={17} className="create-satellite sat-c" />
+          <span className={`create-bubble-caption${recording ? ' is-recording' : ''}`} aria-live="polite">{recording ? '声音在呼吸 · 按住泡泡感受回弹' : `轻点换形 · ${form.label}`}</span>
         </div>
         <div className="prompt-switch glass-surface">
           <button className={prompt === 'next' ? 'chosen' : ''} onClick={() => onPrompt('next')}>给下一位</button>
@@ -1483,7 +1494,7 @@ function CreateScreen({ prompt, onPrompt, recording, recordingSeconds, recording
   );
 }
 
-function AudiencePreview({ page, selected, captured, capturedBubble, playing, emitting, recording, recordingEnergy, published, bubbles, roamPhase }) {
+function AudiencePreview({ page, selected, captured, capturedBubble, playing, emitting, recording, recordingEnergy, recordingForm, published, bubbles, roamPhase }) {
   return (
     <section className="audience-window">
       <div className="audience-chrome">
@@ -1508,7 +1519,7 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
           </>
         ) : page === 'create' ? (
           <>
-            <div className={`projection-create-cluster${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}><span className="projection-record-wave" /><Bubble size={135} className={`projection-record-bubble${recording ? ' recording' : ''}${published ? ' published-bubble' : ''}`} style={{ '--record-energy': recordingEnergy }} /><Bubble size={53} /><Bubble size={31} /></div>
+            <div className={`projection-create-cluster${recording ? ' is-recording' : ''}`} style={{ '--record-energy': recordingEnergy }}><span className="projection-record-wave" /><Bubble size={135} className={`projection-record-bubble accent-${recordingForm.accent}${recording ? ' recording' : ''}${published ? ' published-bubble' : ''}`} style={{ '--record-energy': recordingEnergy }} bubble={recordingForm} /><Bubble size={53} /><Bubble size={31} /></div>
             <div className="projection-caption"><span>{recording ? '声音正在呼吸 · REC SIM' : published ? '声音已经留下' : '一段新声音，正在诞生'}</span><strong>{published ? 'EchoCaster 泡泡发射演示' : '一句话 · 一个位置'}</strong></div>
           </>
         ) : (
@@ -1577,6 +1588,7 @@ function App() {
   const [selected, setSelected] = useState(1);
   const [zoom, setZoom] = useState(1);
   const [prompt, setPrompt] = useState('next');
+  const [recordingForm, setRecordingForm] = useState(RECORDING_FORMS[0]);
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordingEnergy, setRecordingEnergy] = useState(0.18);
@@ -1853,8 +1865,8 @@ function App() {
       listens: 1,
       distance: 0,
       size: 118,
-      accent: 'rose',
-      shape: 'heart',
+      accent: recordingForm.accent,
+      shape: recordingForm.shape,
       kind: '人声',
       kindKey: 'voice',
       age: 0,
@@ -1873,12 +1885,12 @@ function App() {
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
       <header className="demo-header"><span className="wordmark">声景漫游</span><span className="demo-mode"><i /> DEMO 01</span></header>
       <div className="demo-stage">
-        <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} published={published} bubbles={bubbles} roamPhase={roamPhase} />
+        <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} recordingForm={recordingForm} published={published} bubbles={bubbles} roamPhase={roamPhase} />
         <div className="phone-column" ref={phoneColumnRef}>
           <Phone width={398} frame="pro" time="9:41" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
           {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
           {page === 'roam' && <RoamScreen selected={selected} onSelect={(index) => { setSelected(index); setZoom((value) => Math.max(1.16, Math.min(1.58, value))); }} captured={captured} capturedBubble={capturedBubble} capturePhase={capturePhase} onCapture={beginCapture} onListen={listenCapturedBubble} onResetCapture={resetCapture} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} zoom={zoom} onZoom={step => setZoom(v => Math.min(1.72, Math.max(.82, v + step * .14)))} roamPhase={roamPhase} roamProgress={roamProgress} onRoamSkip={() => { setRoamProgress(1); setRoamPhase('ready'); }} cameraStream={cameraStream} cameraStatus={cameraStatus} locationStatus={locationStatus} locationAccuracy={locationAccuracy} onRequestLocation={requestLocation} onOpenCamera={openCamera} onCloseCamera={closeCamera} />}
-            {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={requestPageChange} />}
+            {page === 'create' && <CreateScreen prompt={prompt} onPrompt={setPrompt} recording={recording} recordingSeconds={recordingSeconds} recordingEnergy={recordingEnergy} recordingForm={recordingForm} onRecordingForm={setRecordingForm} emitting={deviceEmitting} onRecord={toggleRecording} transcript={transcript} onPublish={publishBubble} published={published} onPageChange={requestPageChange} />}
           </Phone>
           <div className={`device-status${playing || deviceEmitting ? ' is-playing' : ''}`}><span className="device-dot" /><span>{deviceEmitting ? 'EchoCaster 发泡演示中' : playing ? 'EchoCaster 播放演示中' : 'EchoCaster 演示装置'}</span><b>SIM</b></div>
         </div>
