@@ -5,6 +5,7 @@ import { gsap } from 'gsap';
 import ImageTargetARStage from './components/ImageTargetARStage';
 import CapsuleWaterProgress from './components/CapsuleWaterProgress';
 import { Phone } from './kit/phone';
+import ZineLanding from './components/ZineLanding';
 import streetBackground from './assets/user-kit/roam-night-portrait.webp';
 import landscapeStreetBackground from './assets/user-kit/roam-night-landscape.webp';
 import createBackground from './assets/user-kit/create-open-sky.webp';
@@ -1676,8 +1677,18 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
 
 function App() {
   const [page, setPage] = useState(['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
+  const [showZineLanding, setShowZineLanding] = useState(() => !['home', 'roam', 'create'].includes(initialScreen));
   const phoneColumnRef = useRef(null);
   const previousPageRef = useRef(page);
+
+  useEffect(() => {
+    const syncLandingRoute = () => {
+      const route = new URLSearchParams(window.location.search).get('screen');
+      setShowZineLanding(!['home', 'roam', 'create'].includes(route));
+    };
+    window.addEventListener('popstate', syncLandingRoute);
+    return () => window.removeEventListener('popstate', syncLandingRoute);
+  }, []);
 
   useEffect(() => {
     const query = window.matchMedia('(min-width: 701px)');
@@ -2153,6 +2164,16 @@ function App() {
     triggerDeviceEmission(24000);
     startBubblePlayback(bubble);
   };
+
+  const enterProductExperience = () => {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('screen', 'home');
+    window.history.pushState({ screen: 'home' }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+    setShowZineLanding(false);
+    setPage('home');
+  };
+
+  if (showZineLanding) return <ZineLanding onEnterExperience={enterProductExperience} />;
 
   return (
     <main className="demo-canvas">
