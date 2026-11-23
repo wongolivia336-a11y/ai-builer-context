@@ -27,7 +27,7 @@ export class BubbleWorld {
       const base = Math.min(this.width, this.height);
       const r = clamp(base * (0.049 + rand(i + 3) * 0.042), 26, this.width < 680 ? 53 : 78);
       this.bubbles.push({
-        id: i, type: 0, r,
+        id: i, type: i % 5, r,
         x: this.width * (.13 + .73 * rand(i + 17)),
         y: this.height * (.24 + .60 * rand(i + 41)),
         vx: (rand(i + 21) - .5) * 54, vy: (rand(i + 12) - .5) * 42,

@@ -193,9 +193,16 @@ export default function ZineLanding({ onEnterExperience }) {
       />
       <div className="zine-reader-shell">
         <header className="zine-reader-topbar">
-          <button className="zine-brand" type="button" onClick={() => magazineRef.current?.goTo(0)} aria-label="回到小志封面">
-            <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
-          </button>
+          <div className="zine-brand-block">
+            <button className="zine-brand" type="button" onClick={() => magazineRef.current?.goTo(0)} aria-label="回到小志封面">
+              <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
+            </button>
+            <section className="zine-product-intro" aria-label="MEMO Garden 产品概念">
+              <p className="zine-product-kicker">MEMO · AI 声景漫游 <span>产品概念</span></p>
+              <p className="zine-product-copy zine-product-copy-full">一款 Dreamcore 手机外设，陪你重新听见日常：沿街拾起带着地点的声音泡泡，AI 为它们整理成听觉手账；也把一句话留给后来的人。</p>
+              <p className="zine-product-copy zine-product-copy-compact">沿街发现地点声音泡泡，听见他人留下的片刻，也留一句给后来的人。</p>
+            </section>
+          </div>
           <ZineSceneCarousel
             sceneIndex={sceneIndex}
             autoPlay={sceneAutoPlay && !motionReduced}

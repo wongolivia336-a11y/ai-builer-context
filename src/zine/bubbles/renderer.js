@@ -110,7 +110,7 @@ export class BubbleRenderer {
     gl.uniform2f(l.uResolution, this.renderWidth, this.renderHeight);
     gl.uniform1f(l.uBlend, this.mix);
     gl.uniform1f(l.uTime, this.time);
-    const bubbles = world.motion && !reducedMotion ? world.bubbles : world.bubbles.slice(0, reducedMotion ? 3 : 0);
+    const bubbles = reducedMotion || world.motion ? world.bubbles : [];
     for (let i = 0; i < bubbles.length; i++) {
       const x = bubbles[i], idx = i * 4;
       this.bubbleData[idx] = x.x * this.dpr;

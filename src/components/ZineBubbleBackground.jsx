@@ -157,15 +157,21 @@ export default function ZineBubbleBackground({ hostRef, sceneIndex, autoPlay, on
         setFallback(true)
       }
       if (!renderer || canvas.dataset.contextLost === 'true') {
-        world.bubbles.forEach((bubble, index) => {
-          const node = bubbleNodes.current[index]
+        bubbleNodes.current.forEach((node, index) => {
           if (!node) return
+          const bubble = world.bubbles[index]
+          if (!bubble) {
+            node.style.width = '0px'
+            node.style.height = '0px'
+            node.style.opacity = '0'
+            return
+          }
           const squashX = 1 + bubble.squash * .55 + bubble.bendX / 450
           const squashY = 1 - bubble.squash * .38 - bubble.bendY / 600
           node.style.width = (bubble.r * 2) + 'px'
           node.style.height = (bubble.r * 2) + 'px'
           node.style.transform = 'translate3d(' + (bubble.x - bubble.r) + 'px, ' + (bubble.y - bubble.r) + 'px, 0) scale(' + squashX + ', ' + squashY + ')'
-          node.style.opacity = reducedMotion && index > 2 ? '0' : '1'
+          node.style.opacity = '1'
         })
       }
     }
@@ -204,7 +210,7 @@ export default function ZineBubbleBackground({ hostRef, sceneIndex, autoPlay, on
           <span
             key={index}
             ref={(node) => { bubbleNodes.current[index] = node }}
-            className={'zine-fallback-bubble zine-fallback-bubble-' + (index % 4)}
+            className={'zine-fallback-bubble zine-fallback-bubble-' + (index % 5)}
           />
         ))}
       </div>
