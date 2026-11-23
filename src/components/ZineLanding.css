@@ -1,0 +1,316 @@
+.zine-landing {
+  color-scheme: dark;
+  font-family: 'Nunito', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #f8f7ee;
+  --quiet: rgba(243, 245, 238, .78);
+  --glass: rgba(244, 250, 247, .14);
+  --glass-edge: rgba(248, 252, 249, .38);
+  --glass-shadow: rgba(1, 14, 12, .24);
+  --accent: #caf08b;
+}
+
+.zine-landing * { box-sizing: border-box; }
+
+.zine-landing button,
+.zine-landing a { font: inherit; }
+
+ .zine-landing button { color: inherit; }
+
+.zine-photo-atmosphere {
+  position: fixed;
+  inset: -18px;
+  z-index: -2;
+  background-image: linear-gradient(180deg, rgba(9, 23, 19, .27), rgba(7, 17, 15, .52)), url('/zine/assets/bubble-garden-background.png');
+  background-size: cover;
+  background-position: center 48%;
+  filter: saturate(.92) blur(2px);
+  transform: scale(1.02);
+}
+
+.zine-photo-atmosphere::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: radial-gradient(ellipse at 50% 46%, transparent 28%, rgba(3, 12, 10, .32) 100%);
+}
+
+.zine-reader-shell {
+  width: 100%;
+  height: 100dvh;
+  min-height: 420px;
+  display: grid;
+  grid-template-rows: 68px minmax(0, 1fr) 76px 24px;
+  padding: max(12px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+  overflow: hidden;
+}
+
+.zine-reader-topbar {
+  width: min(100%, 1320px);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  position: relative;
+  z-index: 2;
+}
+
+.zine-brand {
+  display: flex;
+  align-items: center;
+  width: 192px;
+  height: 48px;
+  text-decoration: none;
+}
+
+.zine-brand img { width: 100%; height: auto; object-fit: contain; }
+
+.zine-issue-mark {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: rgba(246, 248, 239, .82);
+  font-size: 11px;
+  letter-spacing: .095em;
+  line-height: 1;
+}
+
+.zine-issue-mark span + span::before {
+  content: '·';
+  margin-right: 11px;
+  color: var(--accent);
+}
+
+.zine-glass-button {
+  min-height: 42px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 22px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #fffdf3;
+  background: var(--glass);
+  box-shadow: 0 5px 18px var(--glass-shadow), inset 0 1px rgba(255, 255, 255, .26);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.zine-glass-button:hover {
+  border-color: rgba(250, 255, 251, .66);
+  background: rgba(245, 250, 247, .23);
+}
+
+.zine-glass-button:active { transform: translateY(1px); }
+.zine-glass-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.zine-reader-main {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+
+.zine-book-stage {
+  width: min(100%, 1360px);
+  height: min(74dvh, 800px);
+  min-height: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  perspective: 1500px;
+}
+
+.zine-magazine {
+  width: min(100%, 1170px);
+  height: min(100%, 735px);
+  min-height: 0;
+  position: relative;
+  outline: none;
+  touch-action: none;
+  transition: transform 280ms cubic-bezier(.2, .7, .2, 1);
+  filter: drop-shadow(0 24px 27px rgba(2, 13, 11, .32));
+}
+
+.zine-magazine.zine-cover-view { transform: translateX(-22.4%); }
+
+.zine-magazine:focus-visible { outline: 1px solid rgba(220, 245, 195, .8); outline-offset: 5px; }
+
+.zine-magazine canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.zine-book-loading {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  padding: 13px 20px;
+  border-radius: 24px;
+  color: #fffdf4;
+  background: rgba(12, 31, 25, .52);
+  backdrop-filter: blur(12px);
+  font-size: 13px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.zine-book-loading[hidden] { display: none; }
+
+.zine-reader-controls {
+  width: min(100%, 500px);
+  min-height: 48px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr minmax(96px, 136px) 1fr;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.zine-nav-button { min-width: 116px; }
+.zine-nav-button:first-child { justify-self: start; }
+.zine-next-button { justify-self: end; }
+.zine-nav-button > span:first-child:not(.zine-button-text) { font-size: 18px; line-height: 1; }
+
+.zine-page-readout {
+  align-self: center;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  color: #fffef4;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+}
+
+.zine-page-rule {
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgba(240, 247, 239, .34);
+}
+
+.zine-page-rule i {
+  width: 0;
+  height: 100%;
+  display: block;
+  background: var(--accent);
+  transition: width 240ms ease;
+}
+
+.zine-reader-hint {
+  margin: 0;
+  justify-self: center;
+  align-self: center;
+  color: rgba(246, 247, 237, .7);
+  font-size: 11px;
+  letter-spacing: .04em;
+}
+
+.zine-print-edition { display: none; }
+.zine-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 760px) {
+  .zine-reader-shell {
+    grid-template-rows: 56px minmax(0, 1fr) 68px 20px;
+    padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+  }
+
+  .zine-brand { width: 142px; height: 42px; }
+  .zine-issue-mark { flex-direction: column; align-items: flex-end; gap: 4px; font-size: 9px; }
+  .zine-issue-mark span + span::before { display: none; }
+  .zine-print-button { min-height: 36px; padding: 0 12px; font-size: 11px; }
+  .zine-book-stage { width: 100%; height: min(69dvh, 132vw); }
+  .zine-magazine { width: min(142vw, 620px); height: 100%; transform: translateX(-18%); }
+  .zine-magazine.zine-cover-view { transform: translateX(-23.5%); }
+  .zine-reader-controls { width: min(calc(100vw - 24px), 360px); justify-self: center; grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); gap: 8px; }
+  .zine-glass-button { min-height: 38px; padding-inline: 12px; }
+  .zine-nav-button { min-width: 0; width: 100%; gap: 7px; padding-inline: 8px; font-size: 11px; }
+  .zine-page-readout { font-size: 11px; }
+  .zine-reader-hint { font-size: 10px; }
+  .zine-photo-atmosphere { background-position: 53% center; }
+}
+
+@media (max-width: 390px) {
+  .zine-issue-mark { display: none; }
+  .zine-reader-controls { grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); }
+  .zine-button-text { font-size: 10px; }
+}
+
+@media (max-height: 600px) and (orientation: landscape) {
+  .zine-reader-shell { grid-template-rows: 48px minmax(0, 1fr) 54px 16px; padding-block: 6px; }
+  .zine-book-stage { height: calc(100dvh - 132px); }
+  .zine-magazine { height: 100%; }
+  .zine-brand { width: 150px; }
+  .zine-reader-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zine-landing, .zine-landing *, .zine-landing *::before, .zine-landing *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}
+
+
+.zine-landing {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 420px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #122d24;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.zine-landing * { box-sizing: border-box; }
+.zine-brand { appearance: none; border: 0; padding: 0; border-radius: 0; background: transparent; cursor: pointer; }
+.zine-top-actions { position: absolute; top: 50%; right: 0; transform: translateY(-50%); display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.zine-experience-button { border-color: rgba(224, 242, 196, .62); background: rgba(220, 241, 208, .18); }
+.zine-experience-button:hover { background: rgba(220, 241, 208, .28); }
+.zine-book-error { position: absolute; z-index: 5; left: 50%; bottom: 14px; width: max-content; max-width: min(92%, 520px); transform: translateX(-50%); padding: 10px 14px; border-radius: 18px; color: #fffdf4; background: rgba(12, 31, 25, .72); backdrop-filter: blur(12px); font-size: 12px; text-align: center; }
+
+@media (max-width: 760px) {
+  .zine-top-actions { position: fixed; top: max(10px, env(safe-area-inset-top)); left: max(112px, calc(env(safe-area-inset-left) + 100px)); right: max(10px, env(safe-area-inset-right)); z-index: 12; transform: none; gap: 6px; }
+  .zine-brand { width: 112px; }
+  .zine-issue-mark { display: none; }
+  .zine-glass-button { min-width: 0; padding-inline: 10px; font-size: 11px; white-space: nowrap; }
+  .zine-reader-shell { padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
+}
+
+@media (max-width: 390px) {
+  .zine-brand { width: 100px; }
+  .zine-top-actions { gap: 5px; }
+  .zine-glass-button { padding-inline: 7px; }
+  .zine-reader-controls { width: min(calc(100vw - 20px), 360px); grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); gap: 6px; }
+}
+
+@media print {
+  @page { size: A5 portrait; margin: 0; }
+  html, body { width: 148mm; height: auto; overflow: visible; position: static; background: #fff; }
+  body * { visibility: hidden !important; }
+  .zine-landing, .zine-landing .zine-print-edition, .zine-landing .zine-print-edition * { visibility: visible !important; }
+  .zine-landing { position: absolute !important; inset: auto !important; z-index: auto !important; width: 148mm; height: auto; min-height: 0; overflow: visible; background: white; }
+  .zine-landing .zine-reader-shell { display: none !important; }
+  .zine-landing .zine-print-edition { display: block !important; position: static; }
+  .zine-print-sheet { width: 148mm; height: 210mm; break-after: page; page-break-after: always; overflow: hidden; }
+  .zine-print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .zine-print-sheet img { display: block; width: 148mm; height: 210mm; object-fit: cover; }
+}

@@ -6,6 +6,7 @@ import ImageTargetARStage from './components/ImageTargetARStage';
 import LandingPage from './components/LandingPage';
 import CapsuleWaterProgress from './components/CapsuleWaterProgress';
 import { Phone } from './kit/phone';
+import ZineLanding from './components/ZineLanding';
 import streetBackground from './assets/user-kit/roam-night-portrait.webp';
 import landscapeStreetBackground from './assets/user-kit/roam-night-landscape.webp';
 import createBackground from './assets/user-kit/create-open-sky.webp';
@@ -1742,10 +1743,24 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
 }
 
 function App() {
-  const [page, setPage] = useState(() => ['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'landing');
+  const [page, setPage] = useState(() => ['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
+  const [showZineLanding, setShowZineLanding] = useState(() => !['home', 'roam', 'create'].includes(initialScreen));
   const [motionPreview, setMotionPreview] = useState(initialPreview === 'motion');
   const phoneColumnRef = useRef(null);
   const previousPageRef = useRef(page);
+
+  useEffect(() => {
+    const syncLandingRoute = () => {
+      const params = new URLSearchParams(window.location.search);
+      const route = params.get('screen');
+      const nextPage = ['home', 'roam', 'create'].includes(route) ? route : null;
+      setShowZineLanding(nextPage === null);
+      setMotionPreview(params.get('preview') === 'motion');
+      if (nextPage) setPage(nextPage);
+    };
+    window.addEventListener('popstate', syncLandingRoute);
+    return () => window.removeEventListener('popstate', syncLandingRoute);
+  }, []);
 
   useEffect(() => {
     const query = window.matchMedia('(min-width: 701px)');
@@ -2234,12 +2249,22 @@ function App() {
   const closeMotionLab = () => {
     window.history.replaceState({}, '', window.location.pathname);
     setMotionPreview(false);
-    setPage('landing');
+    setShowZineLanding(true);
+    setPage('home');
+  };
+
+  const enterProductExperience = () => {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set('screen', 'home');
+    window.history.pushState({ screen: 'home' }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+    setShowZineLanding(false);
+    setPage('home');
   };
 
   if (motionPreview) {
     return <Suspense fallback={<main className="motion-lab-loading" role="status">动效预览载入中</main>}><MotionLab onExit={closeMotionLab} /></Suspense>;
   }
+  if (showZineLanding) return <ZineLanding onEnterExperience={enterProductExperience} />;
   if (page === 'landing') {
     return <LandingPage onEnter={enterApp} onOpenMotionLab={openMotionLab} />;
   }
