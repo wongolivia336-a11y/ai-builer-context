@@ -93,6 +93,18 @@ function loadMotionPermission() {
   });
 }
 
+function scanStartErrorCopy(error) {
+  const name = error?.name;
+  if (name === 'InsecureContextError') return '相机需要 HTTPS 安全页面；本机预览可使用 localhost。请用安全链接重新打开。';
+  if (name === 'CameraUnavailableError') return '当前浏览器没有可用的摄像头接口，请使用支持相机的最新版浏览器。';
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return '相机权限未开启。请在地址栏的站点设置中允许相机，再重新扫描。';
+  if (name === 'SecurityError') return '浏览器阻止了相机访问。请确认页面使用 HTTPS，并在站点设置中允许相机。';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') return '没有检测到可用摄像头，请检查设备后再重试。';
+  if (name === 'NotReadableError' || name === 'AbortError') return '摄像头可能正被其他应用占用。关闭其他相机应用后再试。';
+  if (name === 'OverconstrainedError' || name === 'ConstraintNotSatisfiedError') return '当前摄像头不支持所需设置，请重试或切换设备。';
+  if (name === 'NotSupportedError') return '当前浏览器不支持图像扫描，请更新浏览器后重试。';
+  return '声音图卡或 AR 引擎载入失败。请检查网络连接后重新扫描。';
+}
 function shapeForThree(THREE, kind) {
   const shape = new THREE.Shape();
   if (kind === 'orb') {
@@ -370,13 +382,27 @@ export default function ImageTargetARStage({
     setProgress(0.04);
     setStatusCopy('正在准备镜头与声音图卡');
     latestRef.current.onModeChange?.(true);
-    await new Promise((resolve) => requestAnimationFrame(resolve));
-    if (cancelledRef.current) return;
     let pendingTargetUrl = null;
+    let permissionStream = null;
+    let environmentDeviceId;
     try {
-      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-        throw new Error('相机识别需要 HTTPS 安全页面，并允许浏览器使用后置相机。');
+      if (!window.isSecureContext) {
+        const error = new Error('相机识别需要 HTTPS 安全页面。');
+        error.name = 'InsecureContextError';
+        throw error;
       }
+      if (!navigator.mediaDevices?.getUserMedia) {
+        const error = new Error('当前浏览器没有摄像头接口。');
+        error.name = 'CameraUnavailableError';
+        throw error;
+      }
+      setStatusCopy('请允许浏览器使用后置相机');
+      permissionStream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+      environmentDeviceId = permissionStream.getVideoTracks()[0]?.getSettings?.().deviceId;
+      permissionStream.getTracks().forEach((track) => track.stop());
+      permissionStream = null;
+      if (cancelledRef.current) return;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
       const motionAllowed = await motionPermissionRequest;
       setMotionEnabled(motionAllowed);
       removeMotionListeners();
@@ -440,6 +466,7 @@ export default function ImageTargetARStage({
       const mindar = new MindARThree({
         container: stageHostRef.current,
         imageTargetSrc: targetUrl,
+        environmentDeviceId,
         maxTrack: 1,
         uiLoading: 'no',
         uiScanning: 'no',
@@ -481,7 +508,7 @@ export default function ImageTargetARStage({
             if (activeSoundRef.current?.id === sound.id) {
               activeSoundRef.current = null;
               setFoundSound(null);
-              setStatusCopy('继续将一张识别图对准镜头');
+              setStatusCopy('扫描中');
             }
           }, 520);
         };
@@ -515,9 +542,11 @@ export default function ImageTargetARStage({
       latestRef.current.onModeChange?.(true);
       runtimeRef.current.burstTimer = window.setTimeout(() => {
         setStage('active');
-        setStatusCopy('对准一张识别图 · 发现泡泡后可听声音与留言');
+        setStatusCopy('扫描中');
       }, 1050);
     } catch (error) {
+      permissionStream?.getTracks().forEach((track) => track.stop());
+      permissionStream = null;
       if (cancelledRef.current) return;
       if (pendingTargetUrl) URL.revokeObjectURL(pendingTargetUrl);
       const failedRuntime = runtimeRef.current;
@@ -533,11 +562,7 @@ export default function ImageTargetARStage({
       removeMotionListeners();
       stopDeviceSocket();
       setDeviceStatus(deviceEndpoint ? 'error' : 'demo');
-      setErrorCopy(error?.name === 'NotAllowedError' || error?.name === 'SecurityError'
-        ? '请允许浏览器使用相机后再试。'
-        : error?.name === 'NotFoundError'
-          ? '没有找到可用的相机。'
-          : '镜头暂时没有打开，请检查相机权限与网络后再试。');
+      setErrorCopy(scanStartErrorCopy(error));
       setStage('error');
       latestRef.current.onModeChange?.(false);
     }
@@ -552,8 +577,7 @@ export default function ImageTargetARStage({
       {stage === 'preparing' || stage === 'starting' || stage === 'burst' ? (
         <div className={'image-ar-loader' + (stage === 'burst' ? ' is-complete' : '')} aria-live="polite">
           <div className="image-ar-loader-orbit" aria-hidden="true"><i /><i /><i /><b /></div>
-          <strong>{stage === 'burst' ? '花园已经醒来' : statusCopy}</strong>
-          <small>{stage === 'preparing' ? '正在为声音图卡做好准备' : stage === 'starting' ? '镜头即将打开，泡泡水正在注满' : '镜头就绪，开始漫游吧'}</small>
+          <strong>{stage === 'burst' ? '镜头已就绪' : statusCopy}</strong>
           <CapsuleWaterProgress progress={progress} />
           {stage === 'burst' && <div className="image-ar-burst" aria-hidden="true">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ '--burst-index': index, '--burst-angle': (index * 360 / 22) + 'deg', '--burst-size': ((index % 4) * 2) + 'px', '--burst-drift': ((index % 5) * 12) + 'px' }} />)}</div>}
           <button type="button" className="image-ar-cancel" onClick={stopScan}>返回漫游</button>
@@ -571,7 +595,6 @@ export default function ImageTargetARStage({
             <span className="image-ar-live"><i />{selectedSound ? '识别到一张图' : '识别图扫描中'}</span>
             <button type="button" className="image-ar-exit" onClick={stopScan}>结束扫描</button>
           </div>
-          <div className="image-ar-scan-hint">{selectedSound ? '把镜头稍微靠近，泡泡会跟着图卡轻轻浮动' : '缓慢移动镜头，寻找声音图卡'}</div>
           {stage === 'burst' && <span className="image-ar-entry-burst" aria-hidden="true" />}
           {!selectedSound && <div className="image-ar-reticle" aria-hidden="true"><i /><b /></div>}
           {selectedSound && (
@@ -588,7 +611,6 @@ export default function ImageTargetARStage({
                 <button type="button" onClick={() => latestRef.current.onComments?.(selectedSound)}>♡ 留言 {selectedSound.comments?.length || 0}</button>
               </div>
               <div className="image-ar-capture-line">
-                <span><i />瞄准泡泡，轻点或按下 Memo Catcher 收下回声</span>
                 {canCapture && <button type="button" onClick={() => handleDeviceSignal({ bubbleId: selectedSound.id }, 'manual')}>捕捉泡泡</button>}
               </div>
             </section>
@@ -610,7 +632,6 @@ export default function ImageTargetARStage({
               <span>{Math.round((latestRef.current.zoom || 1) * 100)}%</span>
               <button type="button" aria-label="缩小泡泡" onClick={() => latestRef.current.onZoom?.(Math.max(0.72, (latestRef.current.zoom || 1) - 0.16))}>−</button>
             </div>
-            <span className="image-ar-motion">{motionEnabled ? '随手势轻轻漂浮' : '轻轻漂浮'}</span>
           </div>
         </div>
       )}
@@ -622,9 +643,6 @@ export default function ImageTargetARStage({
     <>
       <section className="image-ar-entry">
         <div className="image-ar-entry-copy">
-          <span className="image-ar-entry-eyebrow">漫游拾音</span>
-          <strong>扫描声音图卡，让泡泡浮现</strong>
-          <small>每张图卡都藏着一段独一无二的回声。</small>
           <button type="button" className="image-ar-entry-button" onClick={startScan}>开始扫描 <i>↗</i></button>
         </div>
         <details className="image-ar-marker-list">
@@ -637,7 +655,6 @@ export default function ImageTargetARStage({
               </a>
             ))}
           </div>
-          <p>选一张图卡，用镜头寻找对应的声音泡泡。</p>
         </details>
       </section>
       {stagePortal}

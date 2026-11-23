@@ -203,7 +203,7 @@ function createSoapBubbles(parent, outlet) {
 function createGripHand(parent) {
   const hand = new THREE.Group();
   hand.name = 'Hand holding Memo Catcher';
-  // The body faces the viewer after the turn; fit the hand to the visible lower grip.
+  // One palm wraps the handle; the four fingers stay parallel and read as a single grip.
   hand.position.set(-0.46, -0.86, 0.82);
   hand.rotation.z = -0.025;
 
@@ -266,10 +266,10 @@ function createGripHand(parent) {
   fingerRows.forEach((row, index) => {
     const radius = index === 3 ? 0.061 : 0.066;
     const joints = [
-      [-0.16, row, 0.1],
-      [0.07, row + 0.025, 0.16],
-      [0.25, row - 0.015, -0.015],
-      [0.14, row - 0.055, -0.27],
+      [-0.17, row, 0.08],
+      [-0.01, row + 0.01, 0.18],
+      [0.19, row, 0.1],
+      [0.21, row - 0.01, -0.15],
     ];
     for (let i = 0; i < joints.length - 1; i += 1) addFingerSegment(joints[i], joints[i + 1], radius);
     joints.slice(1, -1).forEach((joint) => addEllipsoid(joint, [radius * 1.04, radius * 1.04, radius * 1.04], skin));
@@ -396,8 +396,8 @@ function buildDevice(scene, sourceGeometry) {
 
   const group = new THREE.Group();
   const orient = new THREE.Group();
-  // Turn the assembled device around so its molded phone bay and grip face the viewer.
-  orient.rotation.y = Math.PI / 2;
+  // Face the device body toward the front-facing phone screen and viewer.
+  orient.rotation.y = -Math.PI / 2;
   group.add(orient);
   const body = new THREE.Mesh(geometry, materials);
   body.castShadow = true;
