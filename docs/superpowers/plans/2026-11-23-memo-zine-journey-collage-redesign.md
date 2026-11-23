@@ -106,5 +106,5 @@
 - Git commit on: `codex/memo-garden-design-fixes-20261120`
 - PR #11 is already merged; create a new PR against `main` and leave it open.
 
-- [ ] **Step 1: Create one focused implementation commit after the regression passes.** Preserve the existing HEAD and its design commit; do not reset or rewrite history.
-- [ ] **Step 2: Push the branch and publish a follow-up PR.** Include the story/visual changes, scope boundaries, build and manual checks, and the desktop/phone screenshots. Keep the new PR open.
+- [x] **Step 1: Create one focused implementation commit after the regression passes.** Preserve the existing HEAD and its design commit; do not reset or rewrite history. Commit `1e70e47` is a child of the preserved `24a2d63` HEAD.
+- [x] **Step 2: Push the branch and publish a follow-up PR.** Include the story/visual changes, scope boundaries, build and manual checks, and the desktop/phone screenshots. PR #11 was already merged; follow-up PR #12 is open for review.

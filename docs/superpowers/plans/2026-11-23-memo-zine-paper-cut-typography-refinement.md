@@ -66,4 +66,4 @@
 - [x] Run `npm run build` and `git diff --check`.
 - [x] Manually verify all ten pages, cover/next/previous, arrow keys, scene selection/autoplay, 360/390/412px layout, reduced motion, WebGL fallback, and ten A5 print pages.
 - [x] Capture final cover, spread, and phone screenshots for PR evidence.
-- [ ] Create a focused commit preserving the existing design HEAD; push the branch and open a follow-up PR without merging. PR #11 is already merged and closed.
+- [x] Create a focused commit preserving the existing design HEAD; push the branch and open a follow-up PR without merging. Commit `1e70e47` preserves `24a2d63`; PR #11 is already merged and follow-up PR #12 is open.
