@@ -1,9 +1,60 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { LeafThrough } from 'leafthrough';
 import { createPages } from '../zine/page-art.js';
+import { BUBBLE_SCENES } from '../zine/bubble-scenes.js';
+import ZineBubbleBackground from './ZineBubbleBackground.jsx';
+import ZineSceneCarousel from './ZineSceneCarousel.jsx';
 import './ZineLanding.css';
 
 const INITIAL_READOUT = { page: 0, visiblePages: [], pageCount: 10 };
+
+function playPaperTurnSound(audioContextRef) {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  try {
+    const audio = audioContextRef.current || new AudioContext();
+    audioContextRef.current = audio;
+    if (audio.state === 'suspended') void audio.resume();
+
+    const now = audio.currentTime + 0.006;
+    const duration = 0.22;
+    const buffer = audio.createBuffer(1, Math.ceil(audio.sampleRate * duration), audio.sampleRate);
+    const samples = buffer.getChannelData(0);
+    for (let i = 0; i < samples.length; i += 1) {
+      const fade = 1 - i / samples.length;
+      samples[i] = (Math.random() * 2 - 1) * fade * fade;
+    }
+    const source = audio.createBufferSource();
+    const filter = audio.createBiquadFilter();
+    const gain = audio.createGain();
+    source.buffer = buffer;
+    filter.type = 'bandpass';
+    filter.Q.value = 0.65;
+    filter.frequency.setValueAtTime(1850, now);
+    filter.frequency.exponentialRampToValueAtTime(480, now + duration);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.032, now + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    source.connect(filter).connect(gain).connect(audio.destination);
+    source.start(now);
+    source.stop(now + duration);
+
+    const thump = audio.createOscillator();
+    const thumpGain = audio.createGain();
+    thump.type = 'sine';
+    thump.frequency.setValueAtTime(175, now);
+    thump.frequency.exponentialRampToValueAtTime(92, now + 0.12);
+    thumpGain.gain.setValueAtTime(0.0001, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.009, now + 0.012);
+    thumpGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    thump.connect(thumpGain).connect(audio.destination);
+    thump.start(now);
+    thump.stop(now + 0.15);
+  } catch (reason) {
+    console.info('Paper turn audio is unavailable in this browser.', reason);
+  }
+}
 
 const getPageLabel = ({ page, visiblePages = [], pageCount }) => {
   if (!visiblePages.length) return '封面';
@@ -14,16 +65,30 @@ const getPageLabel = ({ page, visiblePages = [], pageCount }) => {
 };
 
 export default function ZineLanding({ onEnterExperience }) {
+  const landingElement = useRef(null);
   const magazineElement = useRef(null);
   const magazineRef = useRef(null);
+  const audioContextRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [readout, setReadout] = useState(INITIAL_READOUT);
   const [printPages, setPrintPages] = useState([]);
+  const [sceneIndex, setSceneIndex] = useState(0);
+  const [sceneAutoPlay, setSceneAutoPlay] = useState(true);
+  const [motionReduced, setMotionReduced] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotionPreference = () => setMotionReduced(query.matches);
+    updateMotionPreference();
+    query.addEventListener?.('change', updateMotionPreference);
+    return () => query.removeEventListener?.('change', updateMotionPreference);
+  }, []);
 
   useEffect(() => {
     let active = true;
     let instance;
+    const isNarrowReader = window.matchMedia('(max-width: 760px)').matches;
 
     createPages().then((pages) => {
       if (!active) return;
@@ -49,31 +114,31 @@ export default function ZineLanding({ onEnterExperience }) {
           maxPixelRatio: 2,
           preload: 2,
           paper: {
-            grain: true,
-            grainScale: 1.36,
-            grainStrength: 0.18,
-            showThrough: 0.075,
-            inkGloss: 0.1,
-            roughness: 0.86,
-            metalness: 0.025,
-            backColor: '#f5f4eb',
-            wrinkles: 0.72,
-            bulge: 0.82,
+            grain: false,
+            grainScale: 1,
+            grainStrength: 0,
+            showThrough: 0.025,
+            inkGloss: 0,
+            roughness: 0.96,
+            metalness: 0,
+            backColor: '#ffffff',
+            wrinkles: 0.12,
+            bulge: 0.42,
             sheetGap: 0.00035,
           },
           lighting: {
-            ambient: { sky: '#fff9ee', ground: '#64766e', intensity: 1.35 },
-            sun: { color: '#fff2d8', intensity: 1.7, position: [-2.4, 1.3, 4.2] },
+            ambient: { sky: '#ffffff', ground: '#66736a', intensity: 1.2 },
+            sun: { color: '#fffefa', intensity: 1.35, position: [-2.4, 1.3, 4.2] },
             shadows: true,
             shadowMapSize: 1024,
-            floorShadow: 0.26,
+            floorShadow: 0.18,
           },
           motion: {
-            speed: 0.92,
-            dragDistance: 0.74,
-            commitThreshold: 0.18,
-            curl: 1.08,
-            maxTilt: 42,
+            speed: 0.72,
+            dragDistance: isNarrowReader ? 1.12 : 0.96,
+            commitThreshold: isNarrowReader ? 0.27 : 0.24,
+            curl: 1.2,
+            maxTilt: 38,
             jitter: true,
             hoverLift: 0.035,
             reducedMotion: 'auto',
@@ -85,7 +150,10 @@ export default function ZineLanding({ onEnterExperience }) {
             setReadout({ page: instance.page, visiblePages: [], pageCount: pages.length });
           },
           onPageChange: (detail) => {
-            if (active) setReadout(detail);
+            if (active) {
+              setReadout(detail);
+              playPaperTurnSound(audioContextRef);
+            }
           },
           onError: (reason, page) => console.warn('Zine page could not be drawn', page, reason),
         });
@@ -106,27 +174,41 @@ export default function ZineLanding({ onEnterExperience }) {
     return () => {
       active = false;
       instance?.dispose();
+      audioContextRef.current?.close().catch(() => {});
+      audioContextRef.current = null;
       if (magazineRef.current === instance) magazineRef.current = null;
     };
   }, []);
 
   const progress = Math.max(0, Math.min(100, ((readout.page + 1) / readout.pageCount) * 100));
+  const selectScene = (index) => setSceneIndex((index + BUBBLE_SCENES.length) % BUBBLE_SCENES.length);
 
   return (
-    <div className="zine-landing">
-      <div className="zine-photo-atmosphere" aria-hidden="true" />
+    <div className="zine-landing" ref={landingElement}>
+      <ZineBubbleBackground
+        hostRef={landingElement}
+        sceneIndex={sceneIndex}
+        autoPlay={sceneAutoPlay && !motionReduced}
+        onSceneChange={setSceneIndex}
+      />
       <div className="zine-reader-shell">
         <header className="zine-reader-topbar">
           <button className="zine-brand" type="button" onClick={() => magazineRef.current?.goTo(0)} aria-label="回到小志封面">
             <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
           </button>
+          <ZineSceneCarousel
+            sceneIndex={sceneIndex}
+            autoPlay={sceneAutoPlay && !motionReduced}
+            motionReduced={motionReduced}
+            onSelect={selectScene}
+            onAutoPlayChange={setSceneAutoPlay}
+          />
           <div className="zine-top-actions">
-            <div className="zine-issue-mark"><span>FIELD NOTES</span><span>NO. 01 / 2026</span></div>
-            <button className="zine-glass-button zine-print-button" type="button" onClick={() => window.print()}>
-              <span>打印小志</span>
+            <button className="zine-glass-button zine-print-button" type="button" aria-label="打印小志" onClick={() => window.print()}>
+              <span className="zine-print-label">打印小志</span>
             </button>
-            <button className="zine-glass-button zine-experience-button" type="button" onClick={onEnterExperience}>
-              <span>进入产品体验</span><span aria-hidden="true">↗</span>
+            <button className="zine-glass-button zine-experience-button" type="button" aria-label="进入产品体验" onClick={onEnterExperience}>
+              <span className="zine-experience-label">进入产品体验</span><span aria-hidden="true">↗</span>
             </button>
           </div>
         </header>
@@ -157,7 +239,6 @@ export default function ZineLanding({ onEnterExperience }) {
             <span className="zine-button-text">下一页</span><span aria-hidden="true">→</span>
           </button>
         </nav>
-        <p className="zine-reader-hint">{error ? '也可以直接进入产品体验' : readout.page === 0 ? '拖住右侧纸角，慢慢翻开' : '拖住页角翻阅 · 方向键也可以'}</p>
       </div>
 
       <section className="zine-print-edition" aria-hidden="true">
