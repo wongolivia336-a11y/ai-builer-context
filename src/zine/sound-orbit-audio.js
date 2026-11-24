@@ -43,7 +43,24 @@ export class SoundOrbitAudioController {
 
   async unlockFromGesture() {
     const context = this.getContext();
-    if (context.state === 'suspended') await context.resume();
+    if (context.state !== 'running') {
+      // Safari on iOS can keep an existing context suspended or interrupted.
+      // Start a silent buffer in the same user gesture as resume() so Web Audio
+      // is unlocked before the recording finishes loading.
+      const resumePromise = context.resume();
+      try {
+        if (context.createBuffer && context.createBufferSource) {
+          const source = context.createBufferSource();
+          source.buffer = context.createBuffer(1, 1, context.sampleRate);
+          source.connect(context.destination);
+          source.start(0);
+          source.stop(context.currentTime + 0.02);
+        }
+      } catch {
+        // The browser can still unlock the context through resume().
+      }
+      await resumePromise;
+    }
     if (context.state !== 'running') throw new Error('The browser did not allow audio playback.');
 
     this.stopAllVoices();

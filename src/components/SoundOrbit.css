@@ -118,6 +118,7 @@
 .sound-orbit-control > span:first-child { font-size: 13px; }
 .sound-orbit-sound-control.is-on { border-color: rgba(221,235,190,.68); background: rgba(78,103,74,.72); }
 .sound-orbit-demo-note { overflow: hidden; color: rgba(255,255,255,.8); font-size: 9px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 5px rgba(0,0,0,.46); }
+.sound-orbit-demo-note-touch { display: none; }
 
 @media (max-width: 760px) {
   .sound-orbit {
@@ -150,4 +151,10 @@
   .sound-orbit-wedge { transition-duration: .01ms; }
   .sound-orbit-photo-card,
   .sound-orbit-photo-card img { transition: none; animation: none; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .sound-orbit-demo-note { max-width: none; flex: 1 1 100px; white-space: normal; }
+  .sound-orbit-demo-note-desktop { display: none; }
+  .sound-orbit-demo-note-touch { display: inline; }
 }

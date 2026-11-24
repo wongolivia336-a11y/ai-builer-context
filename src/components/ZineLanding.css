@@ -69,8 +69,8 @@
 .zine-brand img { width: 100%; height: auto; object-fit: contain; }
 
 .zine-brand-block {
-  flex: 0 0 318px;
-  width: 318px;
+  flex: 0 0 340px;
+  width: 340px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -87,7 +87,7 @@
 .zine-product-kicker {
   margin: 0 0 2px;
   color: #e7efd9;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: .08em;
 }
@@ -95,15 +95,15 @@
 .zine-product-kicker span {
   margin-left: 5px;
   color: rgba(245, 247, 238, .66);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 400;
   letter-spacing: .04em;
 }
 
 .zine-product-copy {
   margin: 0;
-  max-width: 318px;
-  font-size: 11px;
+  max-width: 340px;
+  font-size: 13px;
   line-height: 1.5;
   letter-spacing: .015em;
 }
@@ -149,14 +149,13 @@
 .zine-experience-button:hover { background: #f2f5e9; }
 
 .zine-portal-trigger {
-  position: fixed;
-  z-index: 6;
-  top: 108px;
-  right: 28px;
+  position: relative;
+  z-index: 1;
+  flex: none;
   display: grid;
   justify-items: center;
-  gap: 5px;
   width: 66px;
+  height: 62px;
   border: 0;
   padding: 0;
   color: rgba(238, 244, 230, .72);
@@ -236,18 +235,22 @@
 }
 
 .zine-portal-trigger-label {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
   opacity: 0;
   font-size: 7px;
   letter-spacing: .2em;
   text-shadow: 0 1px 8px rgba(0,0,0,.6);
-  transform: translateY(-3px);
+  white-space: nowrap;
+  transform: translate(-50%, -3px);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .zine-portal-trigger:hover .zine-portal-trigger-label,
 .zine-portal-trigger:focus-visible .zine-portal-trigger-label {
   opacity: .82;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 @keyframes zine-portal-float {
@@ -378,12 +381,12 @@
 }
 
 @media (max-width: 760px) {
-  .zine-portal-trigger { top: 54px; right: 14px; width: 60px; }
+  .zine-portal-trigger { position: fixed; top: 54px; right: 14px; left: auto; z-index: 12; width: 60px; height: 56px; }
   .zine-portal-bubble { width: 56px; height: 56px; }
 }
 
 @media (max-width: 360px) {
-  .zine-portal-trigger { top: 54px; right: 12px; width: 54px; }
+  .zine-portal-trigger { top: 54px; right: 12px; width: 54px; height: 50px; }
   .zine-portal-bubble { width: 50px; height: 50px; }
 }
 

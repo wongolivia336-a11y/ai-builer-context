@@ -217,6 +217,22 @@ export default function ZineLanding({ onEnterExperience, onOpenMakingOf, onPrelo
             </section>
           </div>
           <div className="zine-top-actions">
+            <button
+              className="zine-portal-trigger"
+              data-physical-portal-trigger
+              type="button"
+              aria-label="进入制作过程球形空间"
+              title="制作过程"
+              onPointerEnter={onPreloadMakingOf}
+              onFocus={onPreloadMakingOf}
+              onClick={(event) => {
+                const bounds = event.currentTarget.querySelector('.zine-portal-bubble').getBoundingClientRect();
+                onOpenMakingOf?.({ x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2, radius: bounds.width / 2 });
+              }}
+            >
+              <span className="zine-portal-bubble" aria-hidden="true"><i /><b /></span>
+              <span className="zine-portal-trigger-label" aria-hidden="true">MAKING OF</span>
+            </button>
             <button className="zine-glass-button zine-print-button" type="button" aria-label="打印小志" onClick={() => window.print()}>
               <span className="zine-print-label">打印小志</span>
             </button>
@@ -225,23 +241,6 @@ export default function ZineLanding({ onEnterExperience, onOpenMakingOf, onPrelo
             </button>
           </div>
         </header>
-
-        <button
-          className="zine-portal-trigger"
-          data-physical-portal-trigger
-          type="button"
-          aria-label="进入制作过程球形空间"
-          title="制作过程"
-          onPointerEnter={onPreloadMakingOf}
-          onFocus={onPreloadMakingOf}
-          onClick={(event) => {
-            const bounds = event.currentTarget.querySelector('.zine-portal-bubble').getBoundingClientRect();
-            onOpenMakingOf?.({ x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2, radius: bounds.width / 2 });
-          }}
-        >
-          <span className="zine-portal-bubble" aria-hidden="true"><i /><b /></span>
-          <span className="zine-portal-trigger-label" aria-hidden="true">MAKING OF</span>
-        </button>
 
         <SoundOrbit
           sceneIndex={activeSceneIndex}

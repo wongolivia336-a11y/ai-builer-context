@@ -65,7 +65,6 @@ export default function SoundOrbit({
   const [wheelPreviewIndex, setWheelPreviewIndex] = useState(null)
   const [wheelRotation, setWheelRotation] = useState(0)
   const [wheelEngaged, setWheelEngaged] = useState(false)
-  const [lockedSceneIndex, setLockedSceneIndex] = useState(null)
   const [armState, setArmState] = useState('parked')
   const [soundState, setSoundState] = useState('off')
   const [audioLoading, setAudioLoading] = useState(false)
@@ -74,9 +73,6 @@ export default function SoundOrbit({
   const intentIndex = wheelPreviewIndex ?? hoverIndex ?? focusIndex
   const selectedIndex = intentIndex ?? sceneIndex
   const photoCardVisible = intentIndex !== null
-    || pendingCommitRef.current === selectedIndex
-    || lockedSceneIndex === selectedIndex
-    || committedSceneIndex === selectedIndex
 
   if (!audioRef.current) audioRef.current = new SoundOrbitAudioController(audioContextRef)
 
@@ -250,9 +246,6 @@ export default function SoundOrbit({
     cancelAudioPreview()
     commitTimersRef.current.forEach(window.clearTimeout)
     commitTimersRef.current = []
-    setHoverIndex(null)
-    setFocusIndex(null)
-    setLockedSceneIndex(index)
     currentSceneIndexRef.current = index
     onPreview?.(index)
     if (soundState !== 'on') {
@@ -294,7 +287,6 @@ export default function SoundOrbit({
       const selectedIndex = currentSceneIndexRef.current
       setSoundState('on')
       setArmState('lowered')
-      setLockedSceneIndex(selectedIndex)
       playAudioAction('commit', selectedIndex)
       onCommit?.(selectedIndex)
     } catch (error) {
@@ -464,8 +456,14 @@ export default function SoundOrbit({
           {audioError || (audioLoading || soundState === 'unlocking'
             ? '正在载入这段声景…'
             : soundState === 'on'
-              ? `正在试听：${SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}`
-              : '十段录音 · 悬停试听')}
+              ? <>
+                <span className="sound-orbit-demo-note-desktop">正在试听：{SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}</span>
+                <span className="sound-orbit-demo-note-touch">轻点唱片切换声景</span>
+              </>
+              : <>
+                <span className="sound-orbit-demo-note-desktop">十段录音 · 悬停试听</span>
+                <span className="sound-orbit-demo-note-touch">先开启声音，再轻点唱片</span>
+              </>)}
         </span>
       </div>
     </section>

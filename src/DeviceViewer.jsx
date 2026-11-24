@@ -30,8 +30,8 @@ const DEVICE_FEATURES = [
   },
   {
     id: 'grip',
-    title: '手握柄位',
-    description: '掌心贴住柄部，手指回扣，手腕从下方自然延伸。',
+    title: '弧形握柄',
+    description: '弧形握柄让装置在单手拍摄和捕捉时更容易稳定握持。',
   },
 ];
 
@@ -200,165 +200,6 @@ function createSoapBubbles(parent, outlet) {
   return bubbles;
 }
 
-function createGripHand(parent) {
-  const hand = new THREE.Group();
-  hand.name = 'Hand holding Memo Catcher';
-  // One palm wraps the handle; the four fingers stay parallel and read as a single grip.
-  hand.position.set(-0.46, -0.86, 0.82);
-  hand.rotation.z = -0.025;
-
-  const skin = new THREE.MeshPhysicalMaterial({
-    color: 0xb9786e,
-    roughness: 0.56,
-    metalness: 0,
-    clearcoat: 0.12,
-    clearcoatRoughness: 0.42,
-  });
-  const sleeve = new THREE.MeshPhysicalMaterial({
-    color: 0xdde7e1,
-    roughness: 0.68,
-    metalness: 0,
-    clearcoat: 0.06,
-  });
-  const nail = new THREE.MeshPhysicalMaterial({
-    color: 0xd99b8f,
-    roughness: 0.34,
-    clearcoat: 0.18,
-  });
-  const geometries = [];
-  const materials = [skin, sleeve, nail];
-  const addEllipsoid = (position, scale, material) => {
-    const geometry = new THREE.SphereGeometry(1, 24, 18);
-    geometries.push(geometry);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(...position);
-    mesh.scale.set(...scale);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    hand.add(mesh);
-    return mesh;
-  };
-  const addFingerSegment = (start, end, radius) => {
-    const from = new THREE.Vector3(...start);
-    const to = new THREE.Vector3(...end);
-    const direction = to.clone().sub(from);
-    const geometry = new THREE.CapsuleGeometry(radius, Math.max(0.015, direction.length() - radius * 2), 5, 12);
-    geometries.push(geometry);
-    const mesh = new THREE.Mesh(geometry, skin);
-    mesh.position.copy(from).add(to).multiplyScalar(0.5);
-    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    hand.add(mesh);
-  };
-
-  const forearmGeometry = new THREE.CapsuleGeometry(0.15, 0.47, 8, 18);
-  geometries.push(forearmGeometry);
-  const forearm = new THREE.Mesh(forearmGeometry, sleeve);
-  forearm.position.set(-0.08, -0.55, -0.02);
-  forearm.rotation.z = -0.12;
-  forearm.castShadow = true;
-  hand.add(forearm);
-
-  addEllipsoid([-0.02, -0.02, 0.02], [0.34, 0.4, 0.19], skin);
-
-  const fingerRows = [0.22, 0.055, -0.11, -0.275];
-  fingerRows.forEach((row, index) => {
-    const radius = index === 3 ? 0.061 : 0.066;
-    const joints = [
-      [-0.17, row, 0.08],
-      [-0.01, row + 0.01, 0.18],
-      [0.19, row, 0.1],
-      [0.21, row - 0.01, -0.15],
-    ];
-    for (let i = 0; i < joints.length - 1; i += 1) addFingerSegment(joints[i], joints[i + 1], radius);
-    joints.slice(1, -1).forEach((joint) => addEllipsoid(joint, [radius * 1.04, radius * 1.04, radius * 1.04], skin));
-    addEllipsoid([0.13, row - 0.07, -0.23], [0.041, 0.049, 0.018], nail);
-  });
-
-  const thumbJoints = [
-    [-0.23, 0.16, 0.02],
-    [-0.38, 0.05, 0.08],
-    [-0.34, -0.08, -0.08],
-    [-0.13, -0.06, -0.23],
-  ];
-  for (let i = 0; i < thumbJoints.length - 1; i += 1) addFingerSegment(thumbJoints[i], thumbJoints[i + 1], 0.095 - i * 0.008);
-  addEllipsoid([-0.34, -0.08, -0.08], [0.095, 0.095, 0.095], skin);
-  addEllipsoid([-0.12, -0.06, -0.18], [0.049, 0.062, 0.018], nail);
-
-  parent.add(hand);
-  return { hand, geometries, materials };
-}
-
-function roundedPanelGeometry(width, height, radius, depth) {
-  const shape = new THREE.Shape();
-  const left = -width / 2;
-  const right = width / 2;
-  const bottom = -height / 2;
-  const top = height / 2;
-  shape.moveTo(left + radius, bottom);
-  shape.lineTo(right - radius, bottom);
-  shape.quadraticCurveTo(right, bottom, right, bottom + radius);
-  shape.lineTo(right, top - radius);
-  shape.quadraticCurveTo(right, top, right - radius, top);
-  shape.lineTo(left + radius, top);
-  shape.quadraticCurveTo(left, top, left, top - radius);
-  shape.lineTo(left, bottom + radius);
-  shape.quadraticCurveTo(left, bottom, left + radius, bottom);
-  return new THREE.ExtrudeGeometry(shape, {
-    depth,
-    bevelEnabled: true,
-    bevelSegments: 3,
-    bevelSize: 0.012,
-    bevelThickness: 0.01,
-    curveSegments: 8,
-  });
-}
-
-function createPortraitPhoneBay(parent) {
-  const bay = new THREE.Group();
-  bay.name = 'Integrated portrait phone bay';
-  bay.position.set(0, 0.05, 0.735);
-  const materials = [
-    makePartMaterial(CMF.teal, { roughness: 0.32, clearcoat: 0.3 }),
-    makePartMaterial(CMF.pink, { roughness: 0.3, clearcoat: 0.38 }),
-    new THREE.MeshPhysicalMaterial({ color: 0x263d4b, roughness: 0.17, metalness: 0.08, clearcoat: 1, clearcoatRoughness: 0.08 }),
-    new THREE.MeshPhysicalMaterial({ color: 0x88b4bb, roughness: 0.23, metalness: 0.14, clearcoat: 0.9 }),
-  ];
-  const geometries = [];
-  const addPanel = (width, height, radius, depth, z, material) => {
-    const geometry = roundedPanelGeometry(width, height, radius, depth);
-    geometries.push(geometry);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.z = z;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    bay.add(mesh);
-    return mesh;
-  };
-
-  // A portrait phone sits flush inside the device's molded cradle; it is one assembly,
-  // not a detached screen hovering beside the product.
-  addPanel(0.7, 1.27, 0.09, 0.075, 0, materials[0]);
-  addPanel(0.64, 1.21, 0.085, 0.024, 0.076, materials[1]);
-  addPanel(0.585, 1.145, 0.075, 0.012, 0.101, materials[2]);
-
-  const speakerGeometry = new THREE.BoxGeometry(0.105, 0.012, 0.006);
-  const speaker = new THREE.Mesh(speakerGeometry, materials[3]);
-  speaker.position.set(0, 0.49, 0.117);
-  geometries.push(speakerGeometry);
-  bay.add(speaker);
-
-  const lensGeometry = new THREE.CircleGeometry(0.013, 18);
-  const lens = new THREE.Mesh(lensGeometry, materials[3]);
-  lens.position.set(-0.085, 0.49, 0.118);
-  geometries.push(lensGeometry);
-  bay.add(lens);
-
-  parent.add(bay);
-  return { bay, geometries, materials };
-}
-
 function buildDevice(scene, sourceGeometry) {
   sourceGeometry.computeBoundingBox();
   const rawBox = sourceGeometry.boundingBox.clone();
@@ -405,8 +246,6 @@ function buildDevice(scene, sourceGeometry) {
   orient.add(body);
   scene.add(group);
 
-  const phoneBay = createPortraitPhoneBay(group);
-  const hand = createGripHand(group);
   const bubbles = createSoapBubbles(group, new THREE.Vector3(0.04, 1.28, 0.46));
   const hotspotGeometry = new THREE.SphereGeometry(0.14, 12, 10);
   const hotspotMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
@@ -428,14 +267,9 @@ function buildDevice(scene, sourceGeometry) {
     materials,
     bubbles,
     float,
-    hand,
     hotspots,
     hotspotGeometry,
     hotspotMaterial,
-    handGeometries: hand.geometries,
-    handMaterials: hand.materials,
-    phoneBayGeometries: phoneBay.geometries,
-    phoneBayMaterials: phoneBay.materials,
   };
 }
 
@@ -533,13 +367,10 @@ function DeviceCanvas({ playing }) {
       if (device) {
         const elapsed = timer.getElapsed();
         device.group.rotation.z = playingRef.current ? Math.sin(elapsed * 3.6) * 0.025 : device.group.rotation.z * 0.94;
-        device.hand.hand.rotation.x = playingRef.current ? Math.sin(elapsed * 2.2) * 0.025 : device.hand.hand.rotation.x * 0.96;
         const activeFeature = hoveredFeatureRef.current;
         const activeHotspot = device.hotspots.find((hotspot) => hotspot.userData.featureId === activeFeature);
         const hoverTurn = activeFeature ? 0.035 : 0;
         device.group.rotation.y = THREE.MathUtils.damp(device.group.rotation.y, hoverTurn, 6, frameDelta);
-        const handTurn = activeFeature === 'grip' ? -0.17 : -0.08;
-        device.hand.hand.rotation.z = THREE.MathUtils.damp(device.hand.hand.rotation.z, handTurn, 7, frameDelta);
         if (activeHotspot) {
           const projected = activeHotspot.getWorldPosition(new THREE.Vector3()).project(camera);
           const x = THREE.MathUtils.clamp(((projected.x + 1) / 2) * mount.clientWidth, 92, Math.max(92, mount.clientWidth - 92));
@@ -619,10 +450,6 @@ function DeviceCanvas({ playing }) {
         device.materials.forEach((material) => material.dispose());
         device.hotspotGeometry.dispose();
         device.hotspotMaterial.dispose();
-        device.phoneBayGeometries.forEach((geometry) => geometry.dispose());
-        device.phoneBayMaterials.forEach((material) => material.dispose());
-        device.handGeometries.forEach((geometry) => geometry.dispose());
-        device.handMaterials.forEach((material) => material.dispose());
         device.bubbles.forEach(({ mesh, material }) => {
           mesh.geometry.dispose();
           material.dispose();
@@ -676,7 +503,7 @@ export default function DeviceViewer({ open, onClose, playing }) {
   return (
     <section className="device-viewer glass-surface" ref={panelRef} aria-label="Memo Catcher 3D 展示">
       <header className="device-viewer-head">
-        <div className="device-detail"><span className="device-eyebrow">MEMO GARDEN</span><h2>Memo Catcher</h2><small>竖屏手机仓 · 手持声音泡泡发射器</small></div>
+        <div className="device-detail"><span className="device-eyebrow">MEMO GARDEN</span><h2>Memo Catcher</h2><small>手机吸附模块 · 声音泡泡捕捉器</small></div>
         <button className="device-close" onClick={closeAnimated} aria-label="收起 Memo Catcher">−</button>
       </header>
       <DeviceCanvas playing={playing} />
