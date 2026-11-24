@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAKING_OF_MEDIA, MAKING_OF_ROLE_LABELS, MAKING_OF_STAGES } from './media';
 import { getMakingOfGeometry } from './galleryGeometry.js';
 import { MAKING_OF_STAGE_NOTES } from './narrative.js';
+import PaperCornerCurl from './PaperCornerCurl.jsx';
 import './MakingOfPage.css';
 
 const STAGE_LABELS = MAKING_OF_STAGES.map((stage) => stage.label);
@@ -202,6 +203,7 @@ function describeVideoError(video) {
 
 export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive = false, portalPhase = 'idle' }) {
   const canvasRef = useRef(null);
+  const journalRef = useRef(null);
   const videoRef = useRef(null);
   const imageCacheRef = useRef(new Map());
   const polygonsRef = useRef([]);
@@ -764,7 +766,8 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         >手账</button>
       </div>
 
-      <aside className="making-of-journal" aria-label="MEMO Garden 制作手账">
+      <aside ref={journalRef} className="making-of-journal" aria-label="MEMO Garden 制作手账">
+        <PaperCornerCurl targetRef={journalRef} />
         <div
           className="making-of-story"
           aria-label="当前阶段手账内容"
@@ -873,8 +876,17 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         <span className="making-of-footer-hint">滚轮切换分层 · 拖动转球 · 静静自转</span>
         <div className="making-of-pagination" aria-label={`${activeStage.label}，第 ${activePage + 1} / ${activePageCount} 页`}>
           <button type="button" className="zine-glass-button" onClick={() => changePage(-1)} disabled={activePage === 0} aria-label="查看本阶段上一组素材">←</button>
-          <span>{String(activePage + 1).padStart(2, '0')} <i>/</i> {String(activePageCount).padStart(2, '0')}</span>
-          <span className="making-of-page-rule"><i style={{ width: `${((activePage + 1) / activePageCount) * 100}%` }} /></span>
+          <div className="making-of-pagination-center">
+            <span className="making-of-page-count">{String(activePage + 1).padStart(2, '0')} / {String(activePageCount).padStart(2, '0')}</span>
+            <span
+              className="making-of-page-rule"
+              role="progressbar"
+              aria-label={`${activeStage.label}素材组进度`}
+              aria-valuemin={1}
+              aria-valuemax={activePageCount}
+              aria-valuenow={activePage + 1}
+            ><i style={{ width: `${((activePage + 1) / activePageCount) * 100}%` }} /></span>
+          </div>
           <button type="button" className="zine-glass-button" onClick={() => changePage(1)} disabled={activePage >= activePageCount - 1} aria-label="查看本阶段下一组素材">→</button>
         </div>
         <span className="making-of-footer-note">灵感与参考 / 概念探索 / 项目过程记录</span>
