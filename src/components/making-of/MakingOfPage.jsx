@@ -26,6 +26,89 @@ function tracePolygon(ctx, points) {
   ctx.closePath();
 }
 
+function drawSphereGlass(ctx, centerX, centerY, radius) {
+  if (radius <= 0) return;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  ctx.clip();
+
+  const filmWash = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+  filmWash.addColorStop(0, 'rgba(255,255,255,.16)');
+  filmWash.addColorStop(.36, 'rgba(243,255,255,.025)');
+  filmWash.addColorStop(.72, 'rgba(223,207,255,.045)');
+  filmWash.addColorStop(1, 'rgba(255,255,255,.12)');
+  ctx.fillStyle = filmWash;
+  ctx.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
+
+  const softReflection = ctx.createRadialGradient(
+    centerX - radius * .42,
+    centerY - radius * .56,
+    radius * .015,
+    centerX - radius * .22,
+    centerY - radius * .45,
+    radius * .68,
+  );
+  softReflection.addColorStop(0, 'rgba(255,255,255,.34)');
+  softReflection.addColorStop(.18, 'rgba(255,255,255,.13)');
+  softReflection.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = softReflection;
+  ctx.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
+
+  ctx.beginPath();
+  ctx.ellipse(centerX - radius * .42, centerY - radius * .69, radius * .2, radius * .035, -.52, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,.48)';
+  ctx.shadowColor = 'rgba(255,255,255,.56)';
+  ctx.shadowBlur = Math.max(4, radius * .055);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(centerX - radius * .77, centerY - radius * .2);
+  ctx.bezierCurveTo(
+    centerX - radius * .7,
+    centerY - radius * .68,
+    centerX - radius * .36,
+    centerY - radius * .88,
+    centerX + radius * .02,
+    centerY - radius * .84,
+  );
+  ctx.strokeStyle = 'rgba(255,255,255,.32)';
+  ctx.lineWidth = Math.max(1, radius * .012);
+  ctx.lineCap = 'round';
+  ctx.shadowColor = 'rgba(255,255,255,.42)';
+  ctx.shadowBlur = Math.max(2, radius * .025);
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  const rim = ctx.createConicGradient?.(-Math.PI / 2, centerX, centerY);
+  if (rim) {
+    rim.addColorStop(0, 'rgba(255,255,255,.74)');
+    rim.addColorStop(.16, 'rgba(150,224,226,.24)');
+    rim.addColorStop(.34, 'rgba(255,255,255,.62)');
+    rim.addColorStop(.52, 'rgba(226,185,236,.42)');
+    rim.addColorStop(.72, 'rgba(255,255,255,.54)');
+    rim.addColorStop(.88, 'rgba(183,218,224,.32)');
+    rim.addColorStop(1, 'rgba(255,255,255,.74)');
+  }
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius * .991, 0, Math.PI * 2);
+  ctx.strokeStyle = rim || 'rgba(255,255,255,.66)';
+  ctx.lineWidth = Math.max(1.2, radius * .013);
+  ctx.shadowColor = 'rgba(185,219,229,.36)';
+  ctx.shadowBlur = Math.max(3, radius * .035);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius * .973, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,.26)';
+  ctx.lineWidth = Math.max(.7, radius * .004);
+  ctx.shadowBlur = 0;
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawTexturedTriangle(ctx, image, a, b, d, u, v, w) {
   const determinant = (v.x - u.x) * (w.y - u.y) - (w.x - u.x) * (v.y - u.y);
   if (Math.abs(determinant) < 0.00001) return;
@@ -79,6 +162,25 @@ function shuffleItems(items) {
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
   }
   return shuffled;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function renderJournalParagraph(paragraph, collageWords = [], usedWords = new Set()) {
+  const availableWords = collageWords.filter((word) => !usedWords.has(word));
+  if (!availableWords.length) return paragraph;
+
+  const words = [...availableWords].sort((a, b) => b.length - a.length);
+  const wordPattern = new RegExp(`(${words.map(escapeRegExp).join('|')})`, 'g');
+  const wordSet = new Set(words);
+  return paragraph.split(wordPattern).map((part, index) => {
+    if (!wordSet.has(part) || usedWords.has(part)) return part;
+    usedWords.add(part);
+    const tone = collageWords.indexOf(part) % 4;
+    return <span className="making-of-keyword-scrap" data-tone={tone} key={`${part}-${index}`}>{part}</span>;
+  });
 }
 
 function describeVideoError(video) {
@@ -402,6 +504,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         ctx.restore();
         polygonsRef.current.push({ item, polygon });
       }
+      drawSphereGlass(ctx, centerX, centerY, radius);
       animationFrame = window.requestAnimationFrame(draw);
     };
 
@@ -598,7 +701,12 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
               <h2>{activeStory.title}</h2>
             </header>
             <div className="making-of-story-paragraphs">
-              {activeStory.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              {(() => {
+                const usedWords = new Set();
+                return activeStory.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{renderJournalParagraph(paragraph, activeStory.collageWords, usedWords)}</p>
+                ));
+              })()}
             </div>
           </article>
         </div>
