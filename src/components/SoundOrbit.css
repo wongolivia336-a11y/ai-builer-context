@@ -147,4 +147,6 @@
   .sound-orbit-record.is-rotating { animation: none; }
   .sound-orbit-tonearm,
   .sound-orbit-wedge { transition-duration: .01ms; }
+  .sound-orbit-photo-card,
+  .sound-orbit-photo-card img { transition: none; animation: none; }
 }

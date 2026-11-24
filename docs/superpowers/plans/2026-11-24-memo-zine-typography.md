@@ -98,7 +98,7 @@
 
 **Interfaces:**
 - Consumes: the font-ready Canvas output from Task 1.
-- Produces: a local preview of the updated Zine and orbit, a successful production build, and an update to PR #12.
+- Produces: a local preview of the updated Zine and orbit, a successful production build, and an open review PR.
 
 - [x] **Step 1: Run `npm run build`.**
 
@@ -108,10 +108,10 @@
 
   Local preview is running at `http://127.0.0.1:4175/`. HTTP checks returned 200 for the app shell, all three font files, and a Zine scene photo. A direct `BubbleWorld` check confirmed 14 desktop bubbles, five mobile bubbles, and 14 after resizing back to desktop. Browser-based page visuals, keyboard interaction, and wheel/audio interaction could not be exercised in this environment because no browser automation runtime is available; the local preview is ready for inspection.
 
-- [x] **Step 3: Tune the hover card for the desktop and mobile orbit surfaces and rerun the build.**
+- [x] **Step 3: Tune hover-card sizing and reduced-motion behavior, and rerun the build.**
 
-  Adjusted the hover card position and thumbnail height for the 180 px desktop and 160 px mobile orbit surfaces so it stays clear of the control row. The final build passed after this change.
+  Adjusted the hover card position and thumbnail height for the 180 px desktop and 160 px mobile orbit surfaces so it stays clear of the control row. A fresh review also prompted keeping the card visible after a committed selection while sound is off and disabling its animations under reduced motion. The final build passed after these changes.
 
-- [ ] **Step 4: Commit the polished iteration and open PR #13 without merging.**
+- [x] **Step 4: Commit the polished iteration and open PR #13 without merging.**
 
-  PR #12 was already merged at `b0d7f12`; publish this descendant for review. Include all upstream license files. Keep the local preview helper and QWERTYpe out of the commit.
+  Commit `26a90c8` was pushed to the existing branch. PR #12 was already merged at `b0d7f12`, so PR #13 is open for review. Keep the local preview helper and QWERTYpe out of the commit.
