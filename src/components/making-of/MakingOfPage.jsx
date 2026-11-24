@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAKING_OF_MEDIA, MAKING_OF_ROLE_LABELS, MAKING_OF_STAGES } from './media';
 import { getMakingOfGeometry } from './galleryGeometry.js';
-import { MAKING_OF_EPILOGUE, MAKING_OF_MARGIN_NOTE, MAKING_OF_PROLOGUE, MAKING_OF_STAGE_NOTES } from './narrative.js';
+import { MAKING_OF_STAGE_NOTES } from './narrative.js';
 import './MakingOfPage.css';
 
 const STAGE_LABELS = MAKING_OF_STAGES.map((stage) => stage.label);
 const SPHERE_BANDS = MAKING_OF_STAGES.map((stage) => stage.band);
 const STAGE_DIFFUSE_COLORS = ['#f6b7d2', '#a4dce1', '#b8dfbb', '#c9b8e7', '#f1d891'];
-const MAKING_OF_STORY = [MAKING_OF_PROLOGUE, ...MAKING_OF_STAGE_NOTES, MAKING_OF_EPILOGUE];
 
 function projectPoint(longitude, latitude, radius, centerX, centerY, tilt, distance) {
   const x = radius * Math.cos(latitude) * Math.sin(longitude);
@@ -92,8 +91,6 @@ function describeVideoError(video) {
 
 export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive = false, portalPhase = 'idle' }) {
   const canvasRef = useRef(null);
-  const storyRef = useRef(null);
-  const storySectionsRef = useRef({});
   const videoRef = useRef(null);
   const imageCacheRef = useRef(new Map());
   const polygonsRef = useRef([]);
@@ -116,6 +113,8 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
   const [mediaError, setMediaError] = useState('');
   const [reducedMotion, setReducedMotion] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [mobileView, setMobileView] = useState('sphere');
+  const [mobileLayout, setMobileLayout] = useState(() => window.matchMedia('(max-width: 760px), (max-height: 600px) and (orientation: landscape) and (max-width: 1000px)').matches);
   const setPortalSurfaceRef = useCallback((node) => {
     if (surfaceRef) surfaceRef.current = node;
     if (node && portalActive) {
@@ -133,6 +132,14 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       setReducedMotion(query.matches);
       if (query.matches) setPaused(true);
     };
+    update();
+    query.addEventListener?.('change', update);
+    return () => query.removeEventListener?.('change', update);
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 760px), (max-height: 600px) and (orientation: landscape) and (max-width: 1000px)');
+    const update = () => setMobileLayout(query.matches);
     update();
     query.addEventListener?.('change', update);
     return () => query.removeEventListener?.('change', update);
@@ -169,6 +176,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
 
   const activeItem = selectedId ? MAKING_OF_MEDIA.find((item) => item.id === selectedId) : null;
   const activeStage = MAKING_OF_STAGES[activeStageIndex];
+  const activeStory = MAKING_OF_STAGE_NOTES.find((entry) => entry.id === activeStage.id);
   const activeStageItems = randomizedStageItems[activeStageIndex];
   const activePageCount = Math.max(1, Math.ceil(activeStageItems.length / activeStage.slots));
   const activePage = stagePages[activeStageIndex];
@@ -182,21 +190,6 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     setMediaError('');
   }, []);
 
-  const scrollToStory = useCallback((storyId) => {
-    const container = storyRef.current;
-    const section = storySectionsRef.current[storyId];
-    if (!container || !section) return;
-    const top = container.scrollTop + section.getBoundingClientRect().top - container.getBoundingClientRect().top;
-    container.scrollTo({
-      top: Math.max(0, top),
-      behavior: reducedMotion ? 'auto' : 'smooth',
-    });
-  }, [reducedMotion]);
-
-  useEffect(() => {
-    scrollToStory(MAKING_OF_STAGES[0].id);
-  }, [scrollToStory]);
-
   const selectItem = useCallback((item, { hovered = false } = {}) => {
     if (!item) {
       clearSelection();
@@ -205,22 +198,20 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     const stageIndex = item.stageIndex ?? MAKING_OF_STAGES.findIndex((stage) => stage.id === item.stage);
     setActiveStageIndex(stageIndex);
     activeStageIndexRef.current = stageIndex;
-    scrollToStory(item.stage);
     setSelectedId(item.id);
     selectedIdRef.current = item.id;
     setPointerOverMedia(hovered && item.kind === 'video');
     setPlaybackRequested(false);
     setMediaError('');
-  }, [clearSelection, scrollToStory]);
+  }, [clearSelection]);
 
   const selectStage = useCallback((index) => {
     const stage = MAKING_OF_STAGES[index];
     if (!stage) return;
     setActiveStageIndex(index);
     activeStageIndexRef.current = index;
-    scrollToStory(stage.id);
     clearSelection();
-  }, [clearSelection, scrollToStory]);
+  }, [clearSelection]);
 
   const advanceStage = useCallback((direction) => {
     const nextIndex = (activeStageIndexRef.current + direction + MAKING_OF_STAGES.length) % MAKING_OF_STAGES.length;
@@ -233,7 +224,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     const canvas = canvasRef.current;
     if (!canvas || event.deltaY === 0) return;
     const bounds = canvas.getBoundingClientRect();
-    const geometry = getMakingOfGeometry(bounds.width, bounds.height);
+    const geometry = getMakingOfGeometry(bounds.width, bounds.height, mobileView);
     const x = event.clientX - bounds.left - geometry.centerX;
     const y = event.clientY - bounds.top - geometry.centerY;
     if ((x * x) + (y * y) > (geometry.radius * geometry.radius * 1.08)) return;
@@ -248,7 +239,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     wheelAccumulatorRef.current -= step * 72;
     const limitedSteps = Math.max(-2, Math.min(2, step));
     for (let index = 0; index < Math.abs(limitedSteps); index += 1) advanceStage(Math.sign(limitedSteps));
-  }, [advanceStage]);
+  }, [advanceStage, mobileView]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -281,7 +272,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       canvas.width = Math.round(width * pixelRatio);
       canvas.height = Math.round(height * pixelRatio);
       ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      const geometry = getMakingOfGeometry(width, height);
+      const geometry = getMakingOfGeometry(width, height, mobileView);
       radius = geometry.radius;
       centerX = geometry.centerX;
       centerY = geometry.centerY;
@@ -422,7 +413,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       window.removeEventListener('resize', resize);
       polygonsRef.current = [];
     };
-  }, [textureItems]);
+  }, [mobileView, textureItems]);
 
   useEffect(() => {
     if (!shouldPlayVideo || !videoRef.current) return undefined;
@@ -521,13 +512,24 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     clearSelection();
   };
 
+  const handleStageTabKeyDown = (event, index) => {
+    let nextIndex = index;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (index + 1) % MAKING_OF_STAGES.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (index - 1 + MAKING_OF_STAGES.length) % MAKING_OF_STAGES.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = MAKING_OF_STAGES.length - 1;
+    else return;
+    event.preventDefault();
+    event.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[nextIndex]?.focus();
+  };
+
   return (
-    <main className="making-of-page" ref={setPortalSurfaceRef}>
+    <main className="making-of-page" data-mobile-view={mobileView} ref={setPortalSurfaceRef}>
       <canvas
         ref={canvasRef}
         className="making-of-canvas"
         role="application"
-        aria-label="MEMO Garden 项目过程球体。球内滚轮或方向键切换五个阶段，拖动旋转，悬停或点按球面照片查看。"
+        aria-label="MEMO Garden 项目过程球体。球内滚轮、方向键或阶段页签切换五个阶段，拖动旋转，悬停或点按球面照片查看。"
         tabIndex={0}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
@@ -538,17 +540,20 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       />
 
       <header className="making-of-header">
-        <button type="button" className="making-of-brand" onClick={onReturnToZine} aria-label="返回 MEMO Garden 小志">
-          <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
-        </button>
-        <div className="making-of-brand-intro">
-          <p className="making-of-brand-kicker">MEMO · AI 声景漫游 <span>产品概念</span></p>
-          <p>一款 Dreamcore 手机外设，陪你重新听见日常：沿街拾起带着地点的声音泡泡，AI 为它们整理成听觉手账；也把一句话留给后来的人。</p>
+        <div className="making-of-brand-block zine-brand-block">
+          <button type="button" className="zine-brand" onClick={onReturnToZine} aria-label="返回 MEMO Garden 小志">
+            <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
+          </button>
+          <section className="zine-product-intro" aria-label="MEMO Garden 产品概念">
+            <p className="zine-product-kicker">MEMO · AI 声景漫游 <span>产品概念</span></p>
+            <p className="zine-product-copy zine-product-copy-full">一款 Dreamcore 手机外设，陪你重新听见日常：沿街拾起带着地点的声音泡泡，AI 为它们整理成听觉手账；也把一句话留给后来的人。</p>
+            <p className="zine-product-copy zine-product-copy-compact">沿街发现地点声音泡泡，听见他人留下的片刻，也留一句给后来的人。</p>
+          </section>
         </div>
-        <div className="making-of-header-actions">
+        <div className="making-of-header-actions zine-top-actions">
           <button
             type="button"
-            className="making-of-header-button zine-glass-button"
+            className="zine-glass-button making-of-header-button"
             onClick={() => setPaused((value) => !value)}
             aria-pressed={paused || reducedMotion}
             aria-label={paused || reducedMotion ? '继续自动旋转' : '暂停自动旋转'}
@@ -556,7 +561,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
             <span className="making-of-button-label-full">{paused || reducedMotion ? '▷ 继续旋转' : 'Ⅱ 暂停'}</span>
             <span className="making-of-button-label-short" aria-hidden="true">{paused || reducedMotion ? '▷' : 'Ⅱ'}</span>
           </button>
-          <button type="button" className="making-of-header-button making-of-return zine-glass-button" onClick={onReturnToZine}>
+          <button type="button" className="zine-glass-button zine-experience-button making-of-header-button making-of-return" onClick={onReturnToZine}>
             <span className="making-of-button-label-full">返回小志</span>
             <span className="making-of-button-label-short">小志</span>
             <span aria-hidden="true">↗</span>
@@ -564,49 +569,58 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         </div>
       </header>
 
+      <div className="making-of-mobile-view-switch" role="group" aria-label="选择制作过程查看方式">
+        <button
+          type="button"
+          className={`zine-glass-button${mobileView === 'sphere' ? ' zine-experience-button' : ''}`}
+          aria-pressed={mobileView === 'sphere'}
+          onClick={() => setMobileView('sphere')}
+        >球体</button>
+        <button
+          type="button"
+          className={`zine-glass-button${mobileView === 'journal' ? ' zine-experience-button' : ''}`}
+          aria-pressed={mobileView === 'journal'}
+          onClick={() => setMobileView('journal')}
+        >手账</button>
+      </div>
+
       <aside className="making-of-journal" aria-label="MEMO Garden 制作手账">
-        <div className="making-of-journal-cover">
-          <p className="making-of-eyebrow">FIELD NOTES <span>· NO. 01 / 2026</span></p>
-          <p className="making-of-margin-note">{MAKING_OF_MARGIN_NOTE}</p>
-        </div>
-        <div className="making-of-story" ref={storyRef} aria-label="制作过程叙事">
-          {MAKING_OF_STORY.map((entry) => {
-            const isStage = MAKING_OF_STAGE_NOTES.some((note) => note.id === entry.id);
-            const isActive = entry.id === activeStage.id;
-            return (
-              <article
-                className={`making-of-story-entry${isActive ? ' is-active' : ''}${isStage ? '' : ' is-bookend'}`}
-                key={entry.id || entry.title}
-                ref={(node) => {
-                  if (entry.id) storySectionsRef.current[entry.id] = node;
-                }}
-                aria-current={isActive ? 'location' : undefined}
-              >
-                <header className="making-of-story-entry-head">
-                  <span>{entry.number ? `${entry.number} / ${entry.label}` : entry.kicker}</span>
-                  <h2>{entry.title}</h2>
-                </header>
-                <div className="making-of-story-paragraphs">
-                  {entry.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                </div>
-              </article>
-            );
-          })}
+        <div
+          className="making-of-story"
+          aria-label="当前阶段手账内容"
+          role="tabpanel"
+          id="making-of-stage-story"
+          aria-labelledby={`making-of-tab-${activeStageIndex}`}
+          tabIndex={0}
+        >
+          <article className="making-of-story-entry" key={activeStory.id}>
+            <header className="making-of-story-entry-head">
+              <h2>{activeStory.title}</h2>
+            </header>
+            <div className="making-of-story-paragraphs">
+              {activeStory.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+            </div>
+          </article>
         </div>
       </aside>
 
-      <nav className="making-of-rail" aria-label="项目过程阶段">
+      <nav className="making-of-rail" aria-label="项目过程阶段" role="tablist" aria-orientation={mobileLayout ? 'horizontal' : 'vertical'}>
         {MAKING_OF_STAGES.map((stage, index) => (
           <button
             type="button"
             key={stage.id}
-            className={activeStageIndex === index ? 'is-active' : ''}
-            aria-current={activeStageIndex === index ? 'step' : undefined}
-            onPointerEnter={() => selectStage(index)}
-            onPointerLeave={clearWhenLeaving}
+            id={`making-of-tab-${index}`}
+            role="tab"
+            className={`zine-glass-button${activeStageIndex === index ? ' is-active' : ''}`}
+            aria-selected={activeStageIndex === index}
+            aria-controls="making-of-stage-story"
+            tabIndex={activeStageIndex === index ? 0 : -1}
+            onPointerEnter={(event) => {
+              if (event.pointerType === 'mouse') selectStage(index);
+            }}
             onFocus={() => selectStage(index)}
-            onBlur={clearWhenLeaving}
             onClick={() => selectStage(index)}
+            onKeyDown={(event) => handleStageTabKeyDown(event, index)}
           >
             <span className="making-of-stage-number">0{index + 1}</span>
             <span className="making-of-stage-label">{stage.label}</span>
