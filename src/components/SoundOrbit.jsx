@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BUBBLE_SCENES } from '../zine/bubble-scenes.js'
+import { SOUND_ORBIT_TRACKS } from '../zine/sound-orbit-tracks.js'
 import { SoundOrbitAudioController } from '../zine/sound-orbit-audio.js'
 import './SoundOrbit.css'
 
@@ -46,23 +47,56 @@ export default function SoundOrbit({
   onRotationChange,
 }) {
   const audioRef = useRef(null)
+  const orbitSurfaceRef = useRef(null)
   const wedgeRefs = useRef([])
   const previewTimerRef = useRef(null)
+  const wheelPreviewRef = useRef(null)
+  const wheelRotationRef = useRef(0)
+  const wheelHandlerRef = useRef(null)
   const commitTimersRef = useRef([])
   const intentRef = useRef(0)
   const unlockTokenRef = useRef(0)
+  const audioRequestRef = useRef(0)
   const currentSceneIndexRef = useRef(sceneIndex)
   const pendingCommitRef = useRef(null)
   currentSceneIndexRef.current = sceneIndex
   const [hoverIndex, setHoverIndex] = useState(null)
   const [focusIndex, setFocusIndex] = useState(null)
+  const [wheelPreviewIndex, setWheelPreviewIndex] = useState(null)
+  const [wheelRotation, setWheelRotation] = useState(0)
+  const [wheelEngaged, setWheelEngaged] = useState(false)
+  const [lockedSceneIndex, setLockedSceneIndex] = useState(null)
   const [armState, setArmState] = useState('parked')
   const [soundState, setSoundState] = useState('off')
+  const [audioLoading, setAudioLoading] = useState(false)
+  const [audioError, setAudioError] = useState('')
   const [rotationEnabled, setRotationEnabled] = useState(!motionReduced)
-  const intentIndex = hoverIndex ?? focusIndex
+  const intentIndex = wheelPreviewIndex ?? hoverIndex ?? focusIndex
   const selectedIndex = intentIndex ?? sceneIndex
+  const photoCardVisible = intentIndex !== null
+    || pendingCommitRef.current === selectedIndex
+    || lockedSceneIndex === selectedIndex
+    || committedSceneIndex === selectedIndex
 
   if (!audioRef.current) audioRef.current = new SoundOrbitAudioController(audioContextRef)
+
+  const playAudioAction = (action, index, fadeMs) => {
+    const request = ++audioRequestRef.current
+    setAudioLoading(true)
+    setAudioError('')
+    Promise.resolve(audioRef.current?.[action](BUBBLE_SCENES[index].id, fadeMs))
+      .then((started) => {
+        if (audioRequestRef.current !== request) return
+        setAudioLoading(false)
+        if (started === false) setAudioError('这段录音未能开始播放，请重新开启声音后再试。')
+      })
+      .catch((error) => {
+        if (audioRequestRef.current !== request) return
+        console.info('Sound Orbit could not load this scene recording.', error)
+        setAudioLoading(false)
+        setAudioError('声景载入失败，可继续选图。')
+      })
+  }
 
   const clearCommitSequence = () => {
     commitTimersRef.current.forEach(window.clearTimeout)
@@ -72,11 +106,21 @@ export default function SoundOrbit({
     return pendingIndex
   }
 
+  const clearWheelState = () => {
+    wheelPreviewRef.current = null
+    setWheelPreviewIndex(null)
+    setWheelEngaged(false)
+  }
+
   const muteSound = (fadeMs = 220) => {
     unlockTokenRef.current += 1
+    audioRequestRef.current += 1
+    setAudioLoading(false)
+    setAudioError('')
     intentRef.current += 1
     window.clearTimeout(previewTimerRef.current)
     previewTimerRef.current = null
+    clearWheelState()
     const pendingIndex = clearCommitSequence()
     setHoverIndex(null)
     setFocusIndex(null)
@@ -109,9 +153,61 @@ export default function SoundOrbit({
     const intent = ++intentRef.current
     previewTimerRef.current = window.setTimeout(() => {
       previewTimerRef.current = null
-      if (intentRef.current === intent && soundState === 'on') audioRef.current?.preview(BUBBLE_SCENES[index].id)
+      if (intentRef.current === intent && soundState === 'on') playAudioAction('preview', index)
     }, 300)
   }
+
+  const finishWheelPreview = () => {
+    setWheelEngaged(false)
+    if (wheelPreviewRef.current === null) return
+    clearWheelState()
+    cancelAudioPreview()
+    setHoverIndex(null)
+    setFocusIndex(null)
+    currentSceneIndexRef.current = restoreSceneIndex
+    onRestore?.()
+    if (soundState === 'on') playAudioAction('restoreCommitted', restoreSceneIndex)
+  }
+
+  const handleWheel = (event) => {
+    if (motionReduced) return
+    const rawDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX
+    if (!rawDelta) return
+    event.preventDefault()
+    setWheelEngaged(true)
+    const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1
+    const delta = rawDelta * scale
+    const previousRotation = wheelRotationRef.current
+    const nextRotation = previousRotation + delta * .36
+    const crossedSectors = Math.trunc(nextRotation / 36) - Math.trunc(previousRotation / 36)
+    let nextIndex = wheelPreviewRef.current ?? hoverIndex ?? focusIndex ?? sceneIndex
+    if (crossedSectors) nextIndex = wrapIndex(nextIndex + crossedSectors)
+
+    wheelRotationRef.current = nextRotation
+    setWheelRotation(nextRotation)
+    if (wheelPreviewRef.current === null) {
+      cancelAudioPreview()
+      setHoverIndex(null)
+      setFocusIndex(null)
+    }
+    if (wheelPreviewRef.current !== nextIndex) {
+      wheelPreviewRef.current = nextIndex
+      setWheelPreviewIndex(nextIndex)
+      currentSceneIndexRef.current = nextIndex
+      onPreview?.(nextIndex)
+      scheduleAudioPreview(nextIndex)
+    }
+  }
+
+  wheelHandlerRef.current = handleWheel
+
+  useEffect(() => {
+    const surface = orbitSurfaceRef.current
+    if (!surface) return undefined
+    const onWheel = (event) => wheelHandlerRef.current?.(event)
+    surface.addEventListener('wheel', onWheel, { passive: false })
+    return () => surface.removeEventListener('wheel', onWheel)
+  }, [])
 
   useEffect(() => {
     const onVisibilityChange = () => {
@@ -131,16 +227,18 @@ export default function SoundOrbit({
   }, [])
 
   const restorePreview = () => {
+    if (wheelPreviewRef.current !== null) return
     cancelAudioPreview()
     setHoverIndex(null)
     setFocusIndex(null)
     currentSceneIndexRef.current = restoreSceneIndex
     onRestore?.()
-    if (soundState === 'on') audioRef.current?.restoreCommitted(BUBBLE_SCENES[restoreSceneIndex].id)
+    if (soundState === 'on') playAudioAction('restoreCommitted', restoreSceneIndex)
   }
 
   const startPreview = (index, pointerType) => {
     if (pointerType === 'touch') return
+    if (wheelPreviewRef.current !== null) clearWheelState()
     setHoverIndex(index)
     currentSceneIndexRef.current = index
     onPreview?.(index)
@@ -148,11 +246,13 @@ export default function SoundOrbit({
   }
 
   const commitScene = (index) => {
+    clearWheelState()
     cancelAudioPreview()
     commitTimersRef.current.forEach(window.clearTimeout)
     commitTimersRef.current = []
     setHoverIndex(null)
     setFocusIndex(null)
+    setLockedSceneIndex(index)
     currentSceneIndexRef.current = index
     onPreview?.(index)
     if (soundState !== 'on') {
@@ -172,7 +272,7 @@ export default function SoundOrbit({
       pendingCommitRef.current = null
       setArmState('lowered')
       onCommit?.(index)
-      audioRef.current?.commit(BUBBLE_SCENES[index].id)
+      playAudioAction('commit', index)
     }, COMMIT_LIFT_MS + COMMIT_SEEK_MS + COMMIT_DROP_MS)
     commitTimersRef.current = [seekTimer, lowerTimer, finishTimer]
   }
@@ -194,7 +294,8 @@ export default function SoundOrbit({
       const selectedIndex = currentSceneIndexRef.current
       setSoundState('on')
       setArmState('lowered')
-      audioRef.current?.commit(BUBBLE_SCENES[selectedIndex].id)
+      setLockedSceneIndex(selectedIndex)
+      playAudioAction('commit', selectedIndex)
       onCommit?.(selectedIndex)
     } catch (error) {
       console.info('Sound Orbit audio is unavailable in this browser.', error)
@@ -202,6 +303,8 @@ export default function SoundOrbit({
         audioRef.current?.disable(0)
         setSoundState('off')
         setArmState('parked')
+        setAudioLoading(false)
+        setAudioError('浏览器未能开启声音，请重试。')
       }
     }
   }
@@ -237,12 +340,16 @@ export default function SoundOrbit({
 
   return (
     <section className="sound-orbit" aria-label="声音唱片与照片选择">
-      <div className="sound-orbit-visual">
+      <div
+        className="sound-orbit-visual"
+        ref={orbitSurfaceRef}
+        onPointerLeave={finishWheelPreview}
+      >
         <svg
           className="sound-orbit-disc"
           viewBox="0 0 310 180"
           role="group"
-          aria-label="十张照片构成的唱片环；使用方向键预览，回车或空格确定"
+          aria-label="十张照片构成的唱片环；滚动或使用方向键预览，回车或空格确定"
         >
           <defs>
             <linearGradient id="sound-orbit-metal" x1="0" y1="0" x2="1" y2="1">
@@ -257,7 +364,8 @@ export default function SoundOrbit({
               </clipPath>
             ))}
           </defs>
-          <g className={'sound-orbit-record' + (rotationEnabled && !motionReduced ? ' is-rotating' : '') + (intentIndex !== null ? ' is-paused' : '')}>
+          <g className={'sound-orbit-record' + (rotationEnabled && !motionReduced ? ' is-rotating' : '') + (intentIndex !== null || wheelEngaged ? ' is-paused' : '')}>
+          <g transform={`rotate(${wheelRotation} ${CX} ${CY})`}>
           <circle cx={CX} cy={CY} r="85" fill="rgba(7, 14, 12, .56)" stroke="rgba(240, 245, 231, .58)" strokeWidth="1.2" />
           {[78, 73, 68].map((radius) => <circle key={radius} cx={CX} cy={CY} r={radius} fill="none" stroke="rgba(245, 244, 225, .12)" strokeWidth=".7" />)}
           {BUBBLE_SCENES.map((item, index) => {
@@ -309,6 +417,7 @@ export default function SoundOrbit({
           <text x={CX} y="88" textAnchor="middle" className="sound-orbit-label-main">MEMO</text>
           <text x={CX} y="101" textAnchor="middle" className="sound-orbit-label-small">GARDEN · 33⅓</text>
           </g>
+          </g>
           <g className={'sound-orbit-tonearm is-' + armState} aria-hidden="true">
             <circle cx="242" cy="19" r="10" fill="rgba(12,18,17,.8)" stroke="rgba(232,238,224,.66)" strokeWidth="1.3" />
             <circle cx="242" cy="19" r="3.2" fill="#cbd2c8" />
@@ -318,9 +427,15 @@ export default function SoundOrbit({
             <path d="M158 92 L155 97" fill="none" stroke="#f3e8c9" strokeWidth="1.1" strokeLinecap="round" />
           </g>
         </svg>
-        <div className="sound-orbit-photo-card" aria-live="polite">
+        <div
+          className={'sound-orbit-photo-card' + (photoCardVisible ? ' is-visible' : '')}
+          aria-live="polite"
+          aria-hidden={!photoCardVisible}
+        >
+          <img key={selectedIndex} src={BUBBLE_SCENES[selectedIndex].image} alt="" />
           <span>{String(selectedIndex + 1).padStart(2, '0')} / {String(BUBBLE_SCENES.length).padStart(2, '0')}</span>
           <strong>{BUBBLE_SCENES[selectedIndex].name}</strong>
+          <small>声音 · {SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}</small>
         </div>
       </div>
       <div className="sound-orbit-controls">
@@ -339,13 +454,19 @@ export default function SoundOrbit({
           className={'sound-orbit-control sound-orbit-sound-control' + (soundState === 'on' ? ' is-on' : '')}
           type="button"
           onClick={toggleSound}
-          aria-label={soundState === 'on' ? '关闭十种场景声景' : soundState === 'unlocking' ? '正在开启声音，点击取消' : '开启十种合成场景声景'}
+          aria-label={soundState === 'on' ? '关闭十种场景录音' : soundState === 'unlocking' ? '正在开启声音，点击取消' : '开启十种场景录音'}
           aria-pressed={soundState === 'on'}
         >
           <span aria-hidden="true">{soundState === 'on' ? '♫' : '♪'}</span>
           <span>{soundState === 'unlocking' ? '开启中' : soundState === 'on' ? '声音开' : '声音关'}</span>
         </button>
-        <span className="sound-orbit-demo-note">十种声景 · 轻声试听</span>
+        <span className="sound-orbit-demo-note" role="status" aria-live="polite">
+          {audioError || (audioLoading || soundState === 'unlocking'
+            ? '正在载入这段声景…'
+            : soundState === 'on'
+              ? `正在试听：${SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}`
+              : '十段录音 · 悬停试听')}
+        </span>
       </div>
     </section>
   )

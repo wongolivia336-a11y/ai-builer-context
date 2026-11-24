@@ -1,10 +1,20 @@
 # Build in Public — Sound Orbit
 
+## Latest iteration — audio repair and denser Zine collage
+
+2026-11-24 · MEMO Garden Zine
+
+The Sound Orbit keeps its ten existing photo slices and maps each scene to a distinct local field recording. Tracks 05, 06, 08, 09, and 10 had measured near-silent levels in the local audition files; they have been rebuilt from their recorded sources and normalized. The meadow and hillside bird tracks were also level-matched. All ten files measure between −22.3 and −18.4 LUFS integrated. The translucent photo card keeps its fade and labels the selected scene and sound.
+
+The ten Zine pages use a scrapbook-led rhythm with 11 supplied collage photos and three transparent hand-drawn PNGs. Clock masks now meet edge-to-edge with slight overlap, closing the paper-white gaps; the contact sheet has varied crop sizes, and several pages layer details over the softened landscape underlay. Story text, Sound Orbit photos, background bubbles, stars, forest, mist, and Liquid Glass controls are retained.
+
+Automated checks pass: 10/10 audio tests, 4/4 collage tests, all ten scene mappings and processed hashes verified, and 14 collage assets resolved. `npm run build` succeeds; Vite reports the existing 1.24 MB main chunk. The local preview is at http://127.0.0.1:4177/. Desktop spreads were reviewed at 1440×900. The ten audio files remain marked `local-preview` until the full listening pass is confirmed.
+
 2026-11-24 · MEMO Garden Zine
 
 The upper-left scene picker is now a slow-turning photo record with ten original photo slices and a fine SVG tonearm. Hover pauses the record, enlarges the selected image, and crossfades the existing background. Click locks the scene with a lift, seek, and drop motion.
 
-Tap to enable sound. Ten synthesized, scene-keyed textures preview after a 300 ms hover. Scene changes crossfade over 800 ms; mute fades out and releases the audio nodes.
+Tap to enable sound. Ten local, scene-keyed field recordings preview after a 300 ms hover. Scene changes crossfade over 800 ms; mute fades out and releases the audio nodes.
 
 The wordmark, product copy, ten photo files, full-screen bubbles, stars, forest, mist, center Zine, and existing top and bottom Liquid Glass buttons remain in place. The Zine background canvas stays mounted through scene changes.
 
@@ -17,7 +27,7 @@ The wordmark, product copy, ten photo files, full-screen bubbles, stars, forest,
 
 ## Preview
 
-Local preview: http://127.0.0.1:4175/
+Local preview: http://127.0.0.1:4177/
 
 The local preview and evidence were reviewed. [PR #12](https://github.com/wongolivia336-a11y/ai-builer-context/pull/12) is open for review.
 

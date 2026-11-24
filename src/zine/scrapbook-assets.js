@@ -1,0 +1,16 @@
+export const ZINE_COLLAGE_ASSETS = Object.freeze([
+  Object.freeze({ id: 'city-night', src: '/zine/assets/scrapbook/city-night.webp', alt: '夜色中的城市街口' }),
+  Object.freeze({ id: 'city-dusk', src: '/zine/assets/scrapbook/city-dusk.webp', alt: '暮色落在城市天际线' }),
+  Object.freeze({ id: 'city-crossing', src: '/zine/assets/scrapbook/city-crossing.webp', alt: '树影覆盖的城市路口' }),
+  Object.freeze({ id: 'tree-plaza', src: '/zine/assets/scrapbook/tree-plaza.webp', alt: '树荫下的街边小广场' }),
+  Object.freeze({ id: 'riverside-park', src: '/zine/assets/scrapbook/riverside-park.webp', alt: '河岸公园与水面' }),
+  Object.freeze({ id: 'lamb-field', src: '/zine/assets/scrapbook/lamb-field.webp', alt: '草地上的两只小羊' }),
+  Object.freeze({ id: 'cow-meadow', src: '/zine/assets/scrapbook/cow-meadow.webp', alt: '山坡草地上的牛' }),
+  Object.freeze({ id: 'geese-field', src: '/zine/assets/scrapbook/geese-field.webp', alt: '草地上结伴的鹅' }),
+  Object.freeze({ id: 'orchard-apples', src: '/zine/assets/scrapbook/orchard-apples.webp', alt: '纸袋里装着几颗苹果' }),
+  Object.freeze({ id: 'flower-pond', src: '/zine/assets/scrapbook/flower-pond.webp', alt: '花草与池塘相映' }),
+  Object.freeze({ id: 'market-produce', src: '/zine/assets/scrapbook/market-produce.webp', alt: '摊位上新鲜的蔬果' }),
+  Object.freeze({ id: 'handdrawn-ginkgo', src: '/zine/assets/scrapbook/handdrawn-ginkgo.png', alt: '透明底的彩铅银杏叶手绘贴纸' }),
+  Object.freeze({ id: 'handdrawn-sparrow', src: '/zine/assets/scrapbook/handdrawn-sparrow.png', alt: '透明底的彩铅小鸟与风线手绘贴纸' }),
+  Object.freeze({ id: 'handdrawn-rain', src: '/zine/assets/scrapbook/handdrawn-rain.png', alt: '透明底的彩铅雨云手绘贴纸' }),
+]);

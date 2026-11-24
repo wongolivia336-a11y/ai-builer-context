@@ -1,68 +1,37 @@
-const PRESETS = Object.freeze({
-  'canopy-rest': { highpass: 95, lowpass: 620, level: 0.105, rate: 0.88 },
-  'cloud-meadow': { highpass: 120, lowpass: 920, level: 0.095, rate: 1.08 },
-  'rolling-flowers': { highpass: 110, lowpass: 760, level: 0.1, rate: 0.94 },
-  'wildflower-hill': { highpass: 130, lowpass: 1040, level: 0.09, rate: 1.14 },
-  'lambs-in-the-field': { highpass: 100, lowpass: 720, level: 0.095, rate: 0.83 },
-  'clover-light': { highpass: 150, lowpass: 860, level: 0.085, rate: 1.2 },
-  'star-tree': { highpass: 80, lowpass: 430, level: 0.11, rate: 0.76 },
-  'misty-forest': { highpass: 85, lowpass: 500, level: 0.105, rate: 0.91 },
-  'flower-pond': { highpass: 70, lowpass: 1180, level: 0.095, rate: 1.16 },
-  'apple-tree': { highpass: 100, lowpass: 680, level: 0.1, rate: 1.03 },
-});
+import { SOUND_ORBIT_TRACKS } from './sound-orbit-tracks.js';
 
-const FADE_IN_MS = 800;
+const CROSSFADE_MS = 800;
 const MUTE_FADE_MS = 220;
+const CACHE_LIMIT = 2;
 const MIN_GAIN = 0.0001;
-
-function makeSoftNoise(context) {
-  const seconds = 8;
-  const frameCount = Math.ceil(context.sampleRate * seconds);
-  const buffer = context.createBuffer(1, frameCount, context.sampleRate);
-  const samples = buffer.getChannelData(0);
-  let seed = 0x4d454d4f;
-  let lowFrequency = 0;
-  const edgeFrames = Math.ceil(context.sampleRate * 0.12);
-
-  for (let index = 0; index < frameCount; index += 1) {
-    seed ^= seed << 13;
-    seed ^= seed >>> 17;
-    seed ^= seed << 5;
-    const white = ((seed >>> 0) / 4294967295) * 2 - 1;
-    lowFrequency += (white - lowFrequency) * 0.085;
-    const edge = Math.min(1, index / edgeFrames, (frameCount - 1 - index) / edgeFrames);
-    samples[index] = Math.max(-1, Math.min(1, lowFrequency * 5.5)) * Math.max(0, edge);
-  }
-
-  return buffer;
-}
+const PLAYBACK_GAIN = 0.24;
 
 function holdGainAtNow(gain, now) {
+  if (typeof gain.cancelAndHoldAtTime === 'function') {
+    gain.cancelAndHoldAtTime(now);
+    return;
+  }
+  const value = Math.max(MIN_GAIN, gain.value);
   gain.cancelScheduledValues(now);
-  if (typeof gain.cancelAndHoldAtTime === 'function') gain.cancelAndHoldAtTime(now);
-  else gain.setValueAtTime(Math.max(MIN_GAIN, gain.value), now);
+  gain.setValueAtTime(value, now);
 }
 
-/**
- * Local interaction-only sound generator. It deliberately does not load the
- * unreviewed Freesound shortlist; its output is labelled as synthetic demo audio.
- */
 export class SoundOrbitAudioController {
   constructor(audioContextRef) {
     this.audioContextRef = audioContextRef;
     this.enabled = false;
-    this.noiseBuffer = null;
     this.activeVoice = null;
     this.retiringVoice = null;
     this.voices = new Set();
     this.voiceTimers = new Map();
-    this.pendingTransitionTimer = null;
+    this.decodedBuffers = new Map();
+    this.pendingLoads = new Map();
     this.transitionToken = 0;
   }
 
   getContext() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) throw new Error('Web Audio is not available in this browser.');
+    if (!AudioContextClass) throw new Error('Web Audio is unavailable in this browser.');
 
     let context = this.audioContextRef.current;
     if (!context || context.state === 'closed') {
@@ -76,71 +45,113 @@ export class SoundOrbitAudioController {
     const context = this.getContext();
     if (context.state === 'suspended') await context.resume();
     if (context.state !== 'running') throw new Error('The browser did not allow audio playback.');
-    this.noiseBuffer = this.noiseBuffer || makeSoftNoise(context);
+
     this.stopAllVoices();
+    this.invalidatePendingLoads();
     this.enabled = true;
   }
 
   preview(sceneId) {
-    if (!this.enabled) return false;
-    return this.transition(sceneId, FADE_IN_MS);
+    return this.transition(sceneId, CROSSFADE_MS);
   }
 
   commit(sceneId) {
-    if (!this.enabled) return false;
-    return this.transition(sceneId, FADE_IN_MS);
+    return this.transition(sceneId, CROSSFADE_MS);
   }
 
   restoreCommitted(sceneId) {
-    if (!this.enabled || !sceneId) return false;
-    return this.transition(sceneId, FADE_IN_MS);
+    if (!sceneId) return Promise.resolve(false);
+    return this.transition(sceneId, CROSSFADE_MS);
   }
 
-  transition(sceneId, fadeMs) {
-    const preset = PRESETS[sceneId];
+  async transition(sceneId, fadeMs) {
+    if (!this.enabled) return false;
+    const track = SOUND_ORBIT_TRACKS[sceneId];
     const context = this.audioContextRef.current;
-    if (!preset || !context || context.state !== 'running' || !this.noiseBuffer) return false;
+    if (!track || !context || context.state !== 'running') return false;
 
     const token = ++this.transitionToken;
-    if (this.pendingTransitionTimer !== null) {
-      window.clearTimeout(this.pendingTransitionTimer);
-      this.pendingTransitionTimer = null;
-    }
     if (this.activeVoice?.sceneId === sceneId) return true;
+    this.cancelPendingLoadsExcept(track.trackId);
 
-    if (this.retiringVoice) {
-      const retiringPreset = PRESETS[this.activeVoice?.sceneId];
-      const now = context.currentTime;
-      if (retiringPreset && this.activeVoice) {
-        holdGainAtNow(this.activeVoice.gain.gain, now);
-        this.activeVoice.gain.gain.linearRampToValueAtTime(retiringPreset.level, now + 0.1);
-      }
-      this.fadeAndRelease(this.retiringVoice, 90);
-      this.pendingTransitionTimer = window.setTimeout(() => {
-        this.pendingTransitionTimer = null;
-        if (token !== this.transitionToken || !this.enabled) return;
-        this.startTransition(sceneId, fadeMs);
-      }, 140);
-      return true;
+    let buffer;
+    try {
+      buffer = await this.loadBuffer(track, context);
+    } catch (error) {
+      if (token !== this.transitionToken || !this.enabled) return false;
+      this.fadeActiveOnError(MUTE_FADE_MS);
+      throw new Error(`Unable to load the ${track.label} recording.`, { cause: error });
     }
 
-    this.startTransition(sceneId, fadeMs);
-    return true;
+    if (token !== this.transitionToken || !this.enabled || context.state !== 'running') return false;
+    return this.startTransition(sceneId, track, buffer, fadeMs, context);
   }
 
-  startTransition(sceneId, fadeMs) {
-    const preset = PRESETS[sceneId];
-    const context = this.audioContextRef.current;
-    if (!preset || !context || context.state !== 'running' || !this.noiseBuffer) return false;
+  loadBuffer(track, context) {
+    if (this.decodedBuffers.has(track.trackId)) {
+      const cached = this.decodedBuffers.get(track.trackId);
+      this.decodedBuffers.delete(track.trackId);
+      this.decodedBuffers.set(track.trackId, cached);
+      return Promise.resolve(cached);
+    }
+
+    const pending = this.pendingLoads.get(track.trackId);
+    if (pending) return pending.promise;
+
+    const abortController = new AbortController();
+    const request = { abortController, promise: null };
+    request.promise = (async () => {
+      const response = await fetch(track.src, { signal: abortController.signal, cache: 'force-cache' });
+      if (!response.ok) throw new Error(`Audio request failed (${response.status}).`);
+      const encodedAudio = await response.arrayBuffer();
+      const decoded = await context.decodeAudioData(encodedAudio.slice(0));
+      if (!abortController.signal.aborted && this.enabled) this.cacheBuffer(track.trackId, decoded);
+      return decoded;
+    })().finally(() => {
+      if (this.pendingLoads.get(track.trackId) === request) this.pendingLoads.delete(track.trackId);
+    });
+
+    this.pendingLoads.set(track.trackId, request);
+    return request.promise;
+  }
+
+  cacheBuffer(trackId, buffer) {
+    this.decodedBuffers.delete(trackId);
+    this.decodedBuffers.set(trackId, buffer);
+    while (this.decodedBuffers.size > CACHE_LIMIT) {
+      const oldestTrackId = this.decodedBuffers.keys().next().value;
+      this.decodedBuffers.delete(oldestTrackId);
+    }
+  }
+
+  cancelPendingLoadsExcept(trackId) {
+    for (const [pendingTrackId, pending] of this.pendingLoads) {
+      if (pendingTrackId === trackId) continue;
+      pending.abortController.abort();
+      this.pendingLoads.delete(pendingTrackId);
+    }
+  }
+
+  invalidatePendingLoads() {
+    for (const pending of this.pendingLoads.values()) pending.abortController.abort();
+    this.pendingLoads.clear();
+    this.decodedBuffers.clear();
+  }
+
+  startTransition(sceneId, track, buffer, fadeMs, context) {
+    if (this.activeVoice?.sceneId === sceneId) return true;
     this.releaseRetiringVoice();
+    for (const voice of this.voices) {
+      if (voice !== this.activeVoice) this.releaseVoice(voice);
+    }
+
     const now = context.currentTime;
     const duration = Math.max(0.12, fadeMs / 1000);
     const previous = this.activeVoice;
-    const next = this.createVoice(context, sceneId, preset);
+    const next = this.createVoice(context, sceneId, track, buffer);
     this.activeVoice = next;
-
     next.gain.gain.setValueAtTime(MIN_GAIN, now);
-    next.gain.gain.linearRampToValueAtTime(preset.level, now + duration);
+    next.gain.gain.linearRampToValueAtTime(PLAYBACK_GAIN, now + duration);
     next.source.start(now + 0.015);
 
     if (previous) {
@@ -151,41 +162,36 @@ export class SoundOrbitAudioController {
         if (this.retiringVoice === previous) this.retiringVoice = null;
       });
     }
-
     return true;
   }
 
-  createVoice(context, sceneId, preset) {
+  createVoice(context, sceneId, track, buffer) {
     const source = context.createBufferSource();
-    const highpass = context.createBiquadFilter();
-    const lowpass = context.createBiquadFilter();
     const gain = context.createGain();
-
-    source.buffer = this.noiseBuffer;
+    source.buffer = buffer;
     source.loop = true;
-    source.playbackRate.setValueAtTime(preset.rate, context.currentTime);
-    highpass.type = 'highpass';
-    highpass.frequency.setValueAtTime(preset.highpass, context.currentTime);
-    highpass.Q.setValueAtTime(0.32, context.currentTime);
-    lowpass.type = 'lowpass';
-    lowpass.frequency.setValueAtTime(preset.lowpass, context.currentTime);
-    lowpass.Q.setValueAtTime(0.24, context.currentTime);
     gain.gain.setValueAtTime(MIN_GAIN, context.currentTime);
-    source.connect(highpass).connect(lowpass).connect(gain).connect(context.destination);
+    source.connect(gain).connect(context.destination);
 
-    const voice = { sceneId, source, highpass, lowpass, gain };
+    const voice = { sceneId, trackId: track.trackId, source, gain };
     this.voices.add(voice);
+    source.onended = () => this.releaseVoice(voice);
     return voice;
   }
 
   disable(fadeMs = MUTE_FADE_MS) {
     this.enabled = false;
     this.transitionToken += 1;
-    if (this.pendingTransitionTimer !== null) {
-      window.clearTimeout(this.pendingTransitionTimer);
-      this.pendingTransitionTimer = null;
-    }
-    const current = [this.activeVoice, this.retiringVoice].filter(Boolean);
+    this.invalidatePendingLoads();
+
+    const current = [...this.voices];
+    this.activeVoice = null;
+    this.retiringVoice = null;
+    current.forEach((voice) => this.fadeAndRelease(voice, fadeMs));
+  }
+
+  fadeActiveOnError(fadeMs) {
+    const current = [...this.voices];
     this.activeVoice = null;
     this.retiringVoice = null;
     current.forEach((voice) => this.fadeAndRelease(voice, fadeMs));
@@ -193,7 +199,7 @@ export class SoundOrbitAudioController {
 
   fadeAndRelease(voice, fadeMs) {
     const context = this.audioContextRef.current;
-    if (!context || context.state === 'closed' || !this.voices.has(voice)) {
+    if (!context || context.state === 'closed' || !this.voices.has(voice) || fadeMs <= 0) {
       this.releaseVoice(voice);
       return;
     }
@@ -224,9 +230,10 @@ export class SoundOrbitAudioController {
   releaseVoice(voice) {
     if (!voice || !this.voices.has(voice)) return;
     this.clearVoiceTimer(voice);
+    voice.source.onended = null;
     try { voice.source.stop(); } catch { /* The source may have stopped already. */ }
-    [voice.source, voice.highpass, voice.lowpass, voice.gain].forEach((node) => {
-      try { node.disconnect(); } catch { /* A disconnected node is already released. */ }
+    [voice.source, voice.gain].forEach((node) => {
+      try { node.disconnect(); } catch { /* The node may already be disconnected. */ }
     });
     this.voices.delete(voice);
     if (this.activeVoice === voice) this.activeVoice = null;
@@ -239,17 +246,12 @@ export class SoundOrbitAudioController {
 
   stopAllVoices() {
     this.transitionToken += 1;
-    if (this.pendingTransitionTimer !== null) {
-      window.clearTimeout(this.pendingTransitionTimer);
-      this.pendingTransitionTimer = null;
-    }
     [...this.voices].forEach((voice) => this.releaseVoice(voice));
     this.activeVoice = null;
     this.retiringVoice = null;
   }
 
   dispose() {
-    this.enabled = false;
-    this.stopAllVoices();
+    this.disable(0);
   }
 }

@@ -1,0 +1,266 @@
+[
+  {
+    "sceneId": "canopy-rest",
+    "trackId": "shade-birds",
+    "src": "/zine/audio/shade-birds.mp3",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Gentle_breeze_and_birds_singing.ogg",
+    "sourceFile": "Gentle breeze and birds singing.ogg",
+    "creator": "ezwa",
+    "license": "Public domain, released by the author through PDSounds",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Gentle_breeze_and_birds_singing.ogg",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "399c31051dfe42f5f5af4bb2334b16aee9263ceaf594158654fa6f06d036d483",
+    "processedSha256": "7da342721480fdc734d7d6588699712b593cbabaabc68f0051415ba61b1a64de",
+    "sourceDurationSeconds": 32.548571,
+    "durationSeconds": 30.5,
+    "sizeBytes": 427930,
+    "editNotes": "Trimmed as a calm park-air excerpt, seam-shaped, and encoded as 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -22.3,
+      "truePeakDbfs": -5.3,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "cloud-meadow",
+    "trackId": "meadow-breeze",
+    "src": "/zine/audio/meadow-breeze.mp3",
+    "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+    "sourceFile": "Nature Sounds Pack/Ambient/AmbientNatureOutside.wav",
+    "creator": "AntoineMax",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "947c9971d1d833e0dd36ac16e56248d82c440807695d4367d2caf92949192091",
+    "processedSha256": "f402bc14ac1d573f5422dd9079e5e174ff13460bdbaf53b7c773733446e21980",
+    "sourceDurationSeconds": 10,
+    "durationSeconds": 28,
+    "sizeBytes": 392871,
+    "editNotes": "Three meadow-air passes are joined with one-second crossfades, loudness-normalized, and edge-faded; measured -20.7 LUFS integrated and -2.6 dBFS true peak. Encoded at 112 kbps.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -20.7,
+      "truePeakDbfs": -2.6,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "rolling-flowers",
+    "trackId": "flower-bee",
+    "src": "/zine/audio/flower-bee.mp3",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hummel_bee.ogg",
+    "sourceFile": "Hummel bee.ogg",
+    "creator": "soerena",
+    "license": "Public domain, released by the author through PDSounds",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Hummel_bee.ogg",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "974ca8a9e31a92a6d606b9d5d9077dda64cc925ecb9aa3280323b847388eec8c",
+    "processedSha256": "52c0ee6d3c737c5fdb87a57baa423ca057aabfaf1199783a757863c8d305bf97",
+    "sourceDurationSeconds": 44.068571,
+    "durationSeconds": 30,
+    "sizeBytes": 420981,
+    "editNotes": "Trimmed to the close flower-foraging bee recording, seam-shaped, and encoded as 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -18.4,
+      "truePeakDbfs": -2.3,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "wildflower-hill",
+    "trackId": "hill-birds",
+    "src": "/zine/audio/hill-birds.mp3",
+    "sourceUrl": "https://opengameart.org/content/ambient-bird-sounds",
+    "sourceFile": "birds-isaiah658.ogg",
+    "creator": "isaiah658",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "359e4e3f9da9d75aac64cede511c7e3ef8b461f9d9f8c230f8f80e44c4b3e35f",
+    "processedSha256": "3f3bf20d68d479a184014bd82ff5ba42ba12e7b0fbf27f4924c146c6ed66a030",
+    "sourceDurationSeconds": 30.68825,
+    "durationSeconds": 30,
+    "sizeBytes": 420981,
+    "editNotes": "Trimmed to 30 seconds with short edge fades, loudness-normalized to bring the quiet bird recording into the scene level range, and encoded at 112 kbps. Measured -19.7 LUFS integrated and -2.5 dBFS true peak.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -19.7,
+      "truePeakDbfs": -2.5,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "lambs-in-the-field",
+    "trackId": "pasture-sheep",
+    "src": "/zine/audio/pasture-sheep.mp3",
+    "sourceUrl": "https://opengameart.org/content/sheep-baa",
+    "sourceFile": "sheep_baa.ogg",
+    "creator": "mikewest (recording); AntumDeluge (upload)",
+    "license": "CC0 1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "88618dd49eaadaeea8950a613e75588cccecb39b699e289004dd56d1f3aef9de",
+    "processedSha256": "1449df878bf9a0abbf7fd6bd250ec8c5de5fb494750add83065a2b38317411b3",
+    "sourceDurationSeconds": 0.872404,
+    "durationSeconds": 28,
+    "sizeBytes": 392871,
+    "additionalSources": [
+      {
+        "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+        "sourceFile": "Nature Sounds Pack/Ambient/AmbientNatureOutside.wav",
+        "creator": "AntoineMax",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "downloadDate": "2026-11-24",
+        "sourceSha256": "947c9971d1d833e0dd36ac16e56248d82c440807695d4367d2caf92949192091",
+        "sourceDurationSeconds": 10
+      }
+    ],
+    "editNotes": "One sheep call appears at 1.4 seconds over a three-pass outdoor bed joined with one-second crossfades; the result is loudness-normalized and edge-faded. Measured -21.4 LUFS integrated and -2.5 dBFS true peak; 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -21.4,
+      "truePeakDbfs": -2.5,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "clover-light",
+    "trackId": "clover-leaves",
+    "src": "/zine/audio/clover-leaves.mp3",
+    "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+    "sourceFile": "Nature Sounds Pack/Foliage/Foliage03.wav",
+    "creator": "AntoineMax",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "75a72bf1bfa8c9c3a944777c30c746df8e9c561d5609f87eca16ec16ce9b010b",
+    "processedSha256": "f1d2b316d204a8b10bd33ed0c1a64ddef318ba21d9cdb2d7427cd9d743dfab55",
+    "sourceDurationSeconds": 0.629456,
+    "durationSeconds": 28,
+    "sizeBytes": 392871,
+    "additionalSources": [
+      {
+        "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+        "sourceFile": "Nature Sounds Pack/Foliage/Foliage06.wav",
+        "creator": "AntoineMax",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "downloadDate": "2026-11-24",
+        "sourceSha256": "487c948d031bb0903796b131d4acd1fa0dd26f87b2ac2f8916140445b570da85",
+        "sourceDurationSeconds": 0.92
+      },
+      {
+        "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+        "sourceFile": "Nature Sounds Pack/Ambient/AmbientNatureOutside.wav",
+        "creator": "AntoineMax",
+        "license": "CC BY 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "downloadDate": "2026-11-24",
+        "sourceSha256": "947c9971d1d833e0dd36ac16e56248d82c440807695d4367d2caf92949192091",
+        "sourceDurationSeconds": 10
+      }
+    ],
+    "editNotes": "Two short foliage details appear at 7 and 19.5 seconds over a three-pass outdoor bed joined with one-second crossfades; loudness-normalized and edge-faded. Measured -20.5 LUFS integrated and -2.4 dBFS true peak; 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -20.5,
+      "truePeakDbfs": -2.4,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "star-tree",
+    "trackId": "evening-tree",
+    "src": "/zine/audio/evening-tree.mp3",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Country_night_noise.ogg",
+    "sourceFile": "Country night noise.ogg",
+    "creator": "HC",
+    "license": "Public domain, released by the author through PDSounds",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Country_night_noise.ogg",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "91bc76aced09a35ab8fa422c032c3e07fc4fc319e70fdf1c90c5d502c7d83716",
+    "processedSha256": "046e619827b667cbd5f04b3492a457e9253ba304b2b3432ac7c98a10e50e1f72",
+    "sourceDurationSeconds": 33.828571,
+    "durationSeconds": 30.5,
+    "sizeBytes": 427930,
+    "editNotes": "Trimmed from the quiet village night ambience, seam-shaped, and encoded as 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -22.1,
+      "truePeakDbfs": -5.4,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "misty-forest",
+    "trackId": "forest-mist",
+    "src": "/zine/audio/forest-mist.mp3",
+    "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+    "sourceFile": "Nature Sounds Pack/Ambient/AmbientNatureNightRainy.wav",
+    "creator": "AntoineMax",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "4a3e2d79a8210ebad1c082e9bff70086ef9abd725fa128d9bf103c8d4c6ae8b3",
+    "processedSha256": "16a3180624a89f059fd69f00d65d3406ab1c76f89985026cece3900d8260a429",
+    "sourceDurationSeconds": 14,
+    "durationSeconds": 27,
+    "sizeBytes": 378974,
+    "editNotes": "Two rainy-night ambience passes are joined with a one-second crossfade, loudness-normalized, and edge-faded. Measured -20.4 LUFS integrated and -3.0 dBFS true peak; 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -20.4,
+      "truePeakDbfs": -3,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "flower-pond",
+    "trackId": "pond-stream",
+    "src": "/zine/audio/pond-stream.mp3",
+    "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+    "sourceFile": "Nature Sounds Pack/Stream/StreamAndBirds03.wav",
+    "creator": "AntoineMax",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "086401b6fa2919fd9beb82c7da88c60230bcee26371b7ddc1b7e5372cf17dc79",
+    "processedSha256": "fbb124400295e0721db1b7ccbb800440cef67bdb7e52083d729b9945c9b532e5",
+    "sourceDurationSeconds": 10,
+    "durationSeconds": 28,
+    "sizeBytes": 392871,
+    "editNotes": "Three stream-and-bird passes are joined with one-second crossfades, loudness-normalized, and edge-faded. Measured -20.9 LUFS integrated and -1.7 dBFS true peak; 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -20.9,
+      "truePeakDbfs": -1.7,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  },
+  {
+    "sceneId": "apple-tree",
+    "trackId": "orchard-birds",
+    "src": "/zine/audio/orchard-birds.mp3",
+    "sourceUrl": "https://opengameart.org/content/nature-sounds-pack",
+    "sourceFile": "Nature Sounds Pack/Ambient/AmbientNatureBirdsWater01.wav",
+    "creator": "AntoineMax",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "downloadDate": "2026-11-24",
+    "sourceSha256": "32a7cae709c576d2aeec3ae8dfbe3c5359505506a065d828aba12bf20d5f8dbc",
+    "processedSha256": "2cf46cf17a573a6a5fc84641f2824cb55cb17aa841691f9dfb16dd07e5369f70",
+    "sourceDurationSeconds": 10,
+    "durationSeconds": 28,
+    "sizeBytes": 392871,
+    "editNotes": "Three birds-and-water ambience passes are joined with one-second crossfades, loudness-normalized, and edge-faded. Measured -21.1 LUFS integrated and -4.6 dBFS true peak; 112 kbps MP3.",
+    "reviewStatus": "local-preview",
+    "levelAudit": {
+      "integratedLufs": -21.1,
+      "truePeakDbfs": -4.6,
+      "analyzer": "FFmpeg ebur128=peak=true"
+    }
+  }
+]

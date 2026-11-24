@@ -53,7 +53,7 @@ export class BubbleRenderer {
     this.frameCount = 0;
     this.verifiedFirstFrame = false;
     this.dpr = 1; this.renderWidth = 1; this.renderHeight = 1;
-    this.bubbleData = new Float32Array(40); this.deformData = new Float32Array(40);
+    this.bubbleData = new Float32Array(64); this.deformData = new Float32Array(64);
     this.loaders = scenes.map((s, i) => this.loadImage(s.image, i));
   }
   loadImage(src, index) {
