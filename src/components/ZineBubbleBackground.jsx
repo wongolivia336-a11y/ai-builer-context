@@ -166,8 +166,9 @@ export default function ZineBubbleBackground({ hostRef, sceneIndex, autoPlay, on
             node.style.opacity = '0'
             return
           }
-          const squashX = 1 + bubble.squash * .55 + bubble.bendX / 450
-          const squashY = 1 - bubble.squash * .38 - bubble.bendY / 600
+          const breathing = reducedMotion ? 1 : 1 + Math.sin(world.time * .48 + bubble.phase) * .025
+          const squashX = (1 + bubble.squash * .55 + bubble.bendX / 450) * breathing
+          const squashY = (1 - bubble.squash * .38 - bubble.bendY / 600) * breathing
           node.style.width = (bubble.r * 2) + 'px'
           node.style.height = (bubble.r * 2) + 'px'
           node.style.transform = 'translate3d(' + (bubble.x - bubble.r) + 'px, ' + (bubble.y - bubble.r) + 'px, 0) scale(' + squashX + ', ' + squashY + ')'

@@ -118,6 +118,19 @@ const PAGE_LAYOUTS = [
   },
 ]
 
+const PAGE_BACKDROPS = [
+  'city-dusk.png',
+  'city-street.png',
+  'park-river.png',
+  'market.png',
+  'city-dusk.png',
+  'park-river.png',
+  'city-dusk.png',
+  'park-river.png',
+  'city-street.png',
+  'city-dusk.png',
+]
+
 const loadImage = (src) => new Promise((resolve, reject) => {
   const image = new Image()
   image.onload = () => resolve(image)
@@ -152,8 +165,18 @@ function tornPath(context, x, y, width, height, seed, roughness = 6) {
   context.closePath()
 }
 
-function drawPaperBase(context, paperImage, index) {
-  context.fillStyle = '#fcfcfa'
+function drawPaperBase(context, paperImage, sceneryImage, index) {
+  context.fillStyle = '#f2eee2'
+  context.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT)
+  context.save()
+  if ('filter' in context) {
+    context.filter = 'blur(34px) saturate(.62) brightness(1.08)'
+    context.globalAlpha = .48
+  } else context.globalAlpha = .18
+  coverImage(context, sceneryImage, -72, -72, PAGE_WIDTH + 144, PAGE_HEIGHT + 144)
+  context.restore()
+
+  context.fillStyle = 'rgba(247, 244, 233, .52)'
   context.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT)
   context.save()
   context.globalAlpha = .115
@@ -509,7 +532,8 @@ function drawPage(index, page, images, stickerByName) {
   canvas.height = PAGE_HEIGHT
   const context = canvas.getContext('2d', { alpha: false })
   const layout = PAGE_LAYOUTS[index]
-  drawPaperBase(context, images.paperStock, index)
+  const scenicImage = images['field:' + PAGE_BACKDROPS[index]]
+  drawPaperBase(context, images.paperStock, scenicImage, index)
 
   layout.photos.forEach((item, photoIndex) => drawPhotoScrap(context, images['field:' + item.src], item, index * 113 + photoIndex * 31))
   drawMarks(context, layout.marks, index)
