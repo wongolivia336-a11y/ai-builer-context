@@ -2445,6 +2445,7 @@ function App() {
       <header className="demo-header"><span className="wordmark">MEMO Garden</span></header>
       <div className="demo-stage">
         {showAudiencePreview && <AudiencePreview page={page} selected={selected} captured={captured} capturedBubble={capturedBubble} playing={playing} emitting={deviceEmitting} recording={recording} recordingEnergy={recordingEnergy} recordingForm={recordingForm} published={published} bubbles={bubbles} roamPhase={roamPhase} />}
+        {/* Keep the phone shell as the replacement point for the upcoming app UI and motion refresh. */}
         <div className="phone-column" ref={phoneColumnRef}>
           <Phone width={398} frame="android" island={false} status={false} time="20:31" className="demo-phone" wallpaper="linear-gradient(180deg, #eff6fc, #cbdff1 48%, #eaf1f5)">
           {page === 'home' && <HomeScreen bubbles={bubbles} playing={playing} emitting={deviceEmitting} onPageChange={requestPageChange} poppedId={poppedId} onBubblePop={popBubble} onOpenLeaderboard={() => setLeaderboardOpen(true)} />}
