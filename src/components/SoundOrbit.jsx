@@ -46,8 +46,12 @@ export default function SoundOrbit({
   onRotationChange,
 }) {
   const audioRef = useRef(null)
+  const orbitSurfaceRef = useRef(null)
   const wedgeRefs = useRef([])
   const previewTimerRef = useRef(null)
+  const wheelPreviewRef = useRef(null)
+  const wheelRotationRef = useRef(0)
+  const wheelHandlerRef = useRef(null)
   const commitTimersRef = useRef([])
   const intentRef = useRef(0)
   const unlockTokenRef = useRef(0)
@@ -56,11 +60,17 @@ export default function SoundOrbit({
   currentSceneIndexRef.current = sceneIndex
   const [hoverIndex, setHoverIndex] = useState(null)
   const [focusIndex, setFocusIndex] = useState(null)
+  const [wheelPreviewIndex, setWheelPreviewIndex] = useState(null)
+  const [wheelRotation, setWheelRotation] = useState(0)
+  const [wheelEngaged, setWheelEngaged] = useState(false)
   const [armState, setArmState] = useState('parked')
   const [soundState, setSoundState] = useState('off')
   const [rotationEnabled, setRotationEnabled] = useState(!motionReduced)
-  const intentIndex = hoverIndex ?? focusIndex
+  const intentIndex = wheelPreviewIndex ?? hoverIndex ?? focusIndex
   const selectedIndex = intentIndex ?? sceneIndex
+  const photoCardVisible = intentIndex !== null
+    || pendingCommitRef.current === selectedIndex
+    || (soundState === 'on' && committedSceneIndex === selectedIndex)
 
   if (!audioRef.current) audioRef.current = new SoundOrbitAudioController(audioContextRef)
 
@@ -72,11 +82,18 @@ export default function SoundOrbit({
     return pendingIndex
   }
 
+  const clearWheelState = () => {
+    wheelPreviewRef.current = null
+    setWheelPreviewIndex(null)
+    setWheelEngaged(false)
+  }
+
   const muteSound = (fadeMs = 220) => {
     unlockTokenRef.current += 1
     intentRef.current += 1
     window.clearTimeout(previewTimerRef.current)
     previewTimerRef.current = null
+    clearWheelState()
     const pendingIndex = clearCommitSequence()
     setHoverIndex(null)
     setFocusIndex(null)
@@ -113,6 +130,58 @@ export default function SoundOrbit({
     }, 300)
   }
 
+  const finishWheelPreview = () => {
+    setWheelEngaged(false)
+    if (wheelPreviewRef.current === null) return
+    clearWheelState()
+    cancelAudioPreview()
+    setHoverIndex(null)
+    setFocusIndex(null)
+    currentSceneIndexRef.current = restoreSceneIndex
+    onRestore?.()
+    if (soundState === 'on') audioRef.current?.restoreCommitted(BUBBLE_SCENES[restoreSceneIndex].id)
+  }
+
+  const handleWheel = (event) => {
+    if (motionReduced) return
+    const rawDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX
+    if (!rawDelta) return
+    event.preventDefault()
+    setWheelEngaged(true)
+    const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1
+    const delta = rawDelta * scale
+    const previousRotation = wheelRotationRef.current
+    const nextRotation = previousRotation + delta * .36
+    const crossedSectors = Math.trunc(nextRotation / 36) - Math.trunc(previousRotation / 36)
+    let nextIndex = wheelPreviewRef.current ?? hoverIndex ?? focusIndex ?? sceneIndex
+    if (crossedSectors) nextIndex = wrapIndex(nextIndex + crossedSectors)
+
+    wheelRotationRef.current = nextRotation
+    setWheelRotation(nextRotation)
+    if (wheelPreviewRef.current === null) {
+      cancelAudioPreview()
+      setHoverIndex(null)
+      setFocusIndex(null)
+    }
+    if (wheelPreviewRef.current !== nextIndex) {
+      wheelPreviewRef.current = nextIndex
+      setWheelPreviewIndex(nextIndex)
+      currentSceneIndexRef.current = nextIndex
+      onPreview?.(nextIndex)
+      scheduleAudioPreview(nextIndex)
+    }
+  }
+
+  wheelHandlerRef.current = handleWheel
+
+  useEffect(() => {
+    const surface = orbitSurfaceRef.current
+    if (!surface) return undefined
+    const onWheel = (event) => wheelHandlerRef.current?.(event)
+    surface.addEventListener('wheel', onWheel, { passive: false })
+    return () => surface.removeEventListener('wheel', onWheel)
+  }, [])
+
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden' && soundState !== 'off') {
@@ -131,6 +200,7 @@ export default function SoundOrbit({
   }, [])
 
   const restorePreview = () => {
+    if (wheelPreviewRef.current !== null) return
     cancelAudioPreview()
     setHoverIndex(null)
     setFocusIndex(null)
@@ -141,6 +211,7 @@ export default function SoundOrbit({
 
   const startPreview = (index, pointerType) => {
     if (pointerType === 'touch') return
+    if (wheelPreviewRef.current !== null) clearWheelState()
     setHoverIndex(index)
     currentSceneIndexRef.current = index
     onPreview?.(index)
@@ -148,6 +219,7 @@ export default function SoundOrbit({
   }
 
   const commitScene = (index) => {
+    clearWheelState()
     cancelAudioPreview()
     commitTimersRef.current.forEach(window.clearTimeout)
     commitTimersRef.current = []
@@ -237,12 +309,16 @@ export default function SoundOrbit({
 
   return (
     <section className="sound-orbit" aria-label="声音唱片与照片选择">
-      <div className="sound-orbit-visual">
+      <div
+        className="sound-orbit-visual"
+        ref={orbitSurfaceRef}
+        onPointerLeave={finishWheelPreview}
+      >
         <svg
           className="sound-orbit-disc"
           viewBox="0 0 310 180"
           role="group"
-          aria-label="十张照片构成的唱片环；使用方向键预览，回车或空格确定"
+          aria-label="十张照片构成的唱片环；滚动或使用方向键预览，回车或空格确定"
         >
           <defs>
             <linearGradient id="sound-orbit-metal" x1="0" y1="0" x2="1" y2="1">
@@ -257,7 +333,8 @@ export default function SoundOrbit({
               </clipPath>
             ))}
           </defs>
-          <g className={'sound-orbit-record' + (rotationEnabled && !motionReduced ? ' is-rotating' : '') + (intentIndex !== null ? ' is-paused' : '')}>
+          <g className={'sound-orbit-record' + (rotationEnabled && !motionReduced ? ' is-rotating' : '') + (intentIndex !== null || wheelEngaged ? ' is-paused' : '')}>
+          <g transform={`rotate(${wheelRotation} ${CX} ${CY})`}>
           <circle cx={CX} cy={CY} r="85" fill="rgba(7, 14, 12, .56)" stroke="rgba(240, 245, 231, .58)" strokeWidth="1.2" />
           {[78, 73, 68].map((radius) => <circle key={radius} cx={CX} cy={CY} r={radius} fill="none" stroke="rgba(245, 244, 225, .12)" strokeWidth=".7" />)}
           {BUBBLE_SCENES.map((item, index) => {
@@ -309,6 +386,7 @@ export default function SoundOrbit({
           <text x={CX} y="88" textAnchor="middle" className="sound-orbit-label-main">MEMO</text>
           <text x={CX} y="101" textAnchor="middle" className="sound-orbit-label-small">GARDEN · 33⅓</text>
           </g>
+          </g>
           <g className={'sound-orbit-tonearm is-' + armState} aria-hidden="true">
             <circle cx="242" cy="19" r="10" fill="rgba(12,18,17,.8)" stroke="rgba(232,238,224,.66)" strokeWidth="1.3" />
             <circle cx="242" cy="19" r="3.2" fill="#cbd2c8" />
@@ -318,7 +396,12 @@ export default function SoundOrbit({
             <path d="M158 92 L155 97" fill="none" stroke="#f3e8c9" strokeWidth="1.1" strokeLinecap="round" />
           </g>
         </svg>
-        <div className="sound-orbit-photo-card" aria-live="polite">
+        <div
+          className={'sound-orbit-photo-card' + (photoCardVisible ? ' is-visible' : '')}
+          aria-live="polite"
+          aria-hidden={!photoCardVisible}
+        >
+          <img key={selectedIndex} src={BUBBLE_SCENES[selectedIndex].image} alt="" />
           <span>{String(selectedIndex + 1).padStart(2, '0')} / {String(BUBBLE_SCENES.length).padStart(2, '0')}</span>
           <strong>{BUBBLE_SCENES[selectedIndex].name}</strong>
         </div>

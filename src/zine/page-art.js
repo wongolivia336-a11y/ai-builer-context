@@ -6,14 +6,31 @@ const FIELD = '/zine/assets/field/'
 const STICKERS = '/zine/assets/stickers/'
 const PAPER_STOCK = '/zine/assets/paper-stock.png'
 const PAPER_SCRAPS = '/zine/assets/collage/torn-paper-sheet-v1.png'
-const TITLE_FAMILY = '"Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "PingFang SC", sans-serif'
-const BODY_FAMILY = '"Microsoft YaHei", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif'
-const CUT_TITLE_FACES = [
-  '"Microsoft YaHei UI", "Microsoft YaHei", sans-serif',
-  '"SimHei", "Microsoft YaHei", sans-serif',
-  '"SimSun", "Songti SC", serif',
-]
+const TITLE_FAMILY = '"MEMO Marker"'
+const BODY_FAMILY = '"MEMO WenKai"'
+const ENGLISH_FAMILY = '"MEMO Special Elite"'
 const PAPER_SCRAP_CELL = 512
+const FONT_FACES = [
+  ['MEMO Marker', '/zine/fonts/lxgw-marker-gothic-v1.012-subset.ttf'],
+  ['MEMO WenKai', '/zine/fonts/lxgw-wenkai-gb-v1.530-subset.ttf'],
+  ['MEMO Special Elite', '/zine/fonts/SpecialElite-Regular.ttf'],
+]
+const CLOSING_PUNCTUATION = /[，。！？；：、）」』】》,.!?;:]/u
+let fontLoadPromise
+
+function loadZineFonts() {
+  if (!fontLoadPromise) {
+    fontLoadPromise = Promise.all(FONT_FACES.map(([family, source]) => (
+      new FontFace(family, `url("${source}")`, { style: 'normal', weight: '400' }).load()
+    )))
+      .then((faces) => faces.forEach((face) => document.fonts.add(face)))
+      .catch((error) => {
+        fontLoadPromise = undefined
+        throw error
+      })
+  }
+  return fontLoadPromise
+}
 
 const PAGE_LAYOUTS = [
   {
@@ -273,157 +290,157 @@ function addSticker(context, image, item) {
   context.restore()
 }
 
-function wrapText(context, text, maxWidth, font) {
+function wrapCollageText(context, text, maxWidth, font, size, tilePadRatio = .16, gapRatio = .055) {
   context.font = font
   const lines = []
-  let line = ''
+  let line = []
+  let lineWidth = 0
   for (const character of [...text]) {
-    const next = line + character
-    if (line && context.measureText(next).width > maxWidth) {
-      lines.push(line.trimEnd())
-      line = character.trimStart()
-    } else line = next
+    if (character === '\n') {
+      if (line.length) lines.push(line)
+      line = []
+      lineWidth = 0
+      continue
+    }
+    const isSpace = /\s/u.test(character)
+    const glyphWidth = context.measureText(character).width
+    const tileWidth = isSpace ? 0 : glyphWidth + Math.max(3, size * tilePadRatio)
+    const advance = isSpace ? Math.max(glyphWidth, size * .3) : tileWidth + size * gapRatio
+    const mustWrap = line.length > 0 && lineWidth + advance > maxWidth
+    if (mustWrap && !CLOSING_PUNCTUATION.test(character)) {
+      lines.push(line)
+      line = []
+      lineWidth = 0
+    }
+    if (isSpace && line.length === 0) continue
+    line.push({ character, glyphWidth, tileWidth, advance, isSpace })
+    lineWidth += advance
+    if (mustWrap && CLOSING_PUNCTUATION.test(character)) {
+      lines.push(line)
+      line = []
+      lineWidth = 0
+    }
   }
-  if (line) lines.push(line.trimEnd())
+  if (line.length) lines.push(line)
   return lines
 }
 
-function wrapTitle(context, title, width, size, cutLetters = false) {
-  const font = `800 ${size}px ${TITLE_FAMILY}`
-  context.font = font
-  const rows = []
-  let current = ''
-  let currentWidth = 0
-  for (const character of [...title]) {
-    const characterWidth = context.measureText(character).width + (cutLetters ? 34 : 0)
-    if (current && currentWidth + characterWidth > width) {
-      rows.push(current)
-      current = character
-      currentWidth = characterWidth
-    } else {
-      current += character
-      currentWidth += characterWidth
-    }
-  }
-  if (current) rows.push(current)
-  return { rows, font }
+function collageLineWidth(line) {
+  return line.reduce((width, glyph) => width + glyph.advance, 0)
+}
+
+function drawCollageLines(context, lines, options) {
+  const {
+    x, y, size, lineHeight, font, paperScraps, seed, palette,
+    tileHeightRatio = 1.14, paperAlpha = .9, inkAlpha = .97,
+  } = options
+  const random = seededRandom(seed)
+  let glyphIndex = 0
+  lines.forEach((line, rowIndex) => {
+    let cursorX = x
+    line.forEach((glyph) => {
+      if (glyph.isSpace) {
+        cursorX += glyph.advance
+        return
+      }
+      const tileHeight = size * tileHeightRatio
+      const tilt = (random() - .5) * .15
+      const yJitter = (random() - .5) * Math.min(7, size * .12)
+      context.save()
+      drawPaperScrap(context, paperScraps, (seed + glyphIndex * 2 + rowIndex * 3) % 6, cursorX, y + rowIndex * lineHeight + yJitter, glyph.tileWidth, tileHeight, tilt, paperAlpha)
+      context.translate(cursorX + glyph.tileWidth / 2, y + rowIndex * lineHeight + tileHeight / 2 + yJitter)
+      context.rotate(tilt * .2)
+      context.font = font
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+      if (glyphIndex % 5 === 2) {
+        context.globalAlpha = .16
+        context.fillStyle = '#a95443'
+        context.fillText(glyph.character, 1.4, 1)
+      }
+      context.globalAlpha = inkAlpha
+      context.fillStyle = palette[glyphIndex % palette.length]
+      context.fillText(glyph.character, 0, 0)
+      context.restore()
+      cursorX += glyph.advance
+      glyphIndex += 1
+    })
+  })
+  return y + lines.length * lineHeight
 }
 
 function drawCutLetterTitle(context, title, layout, index, paperScraps) {
-  const { rows } = wrapTitle(context, title, layout.width, layout.size, true)
-  const random = seededRandom(index * 17 + 71)
-  const palette = ['#202a24', '#293b49', '#803e35', '#455b45']
-  let rowY = layout.y
-  rows.forEach((row, rowIndex) => {
-    let cursorX = layout.x
-    for (const [charIndex, character] of [...row].entries()) {
-      const face = CUT_TITLE_FACES[(index + rowIndex + charIndex) % CUT_TITLE_FACES.length]
-      const fontSize = layout.size * (.93 + random() * .12)
-      const fontWeight = face.includes('SimSun') ? 700 : (random() > .48 ? 900 : 800)
-      const font = `${fontWeight} ${fontSize}px ${face}`
-      context.font = font
-      const glyphWidth = context.measureText(character).width
-      const tileWidth = glyphWidth + 15 + random() * 14
-      const tileHeight = layout.size * (.98 + random() * .16)
-      const tilt = (random() - .5) * .18
-      const yJitter = (random() - .5) * 8
-      context.save()
-      drawPaperScrap(context, paperScraps, (index + charIndex * 2 + rowIndex) % 6, cursorX - 4, rowY + yJitter - 5, tileWidth + 8, tileHeight + 10, tilt, .9)
-      context.translate(cursorX + tileWidth / 2, rowY + tileHeight / 2 + yJitter)
-      context.rotate(tilt * .22)
-      if ((charIndex + rowIndex) % 3 === 1) {
-        context.globalAlpha = .2
-        context.fillStyle = '#a95443'
-        context.font = font
-        context.textAlign = 'center'
-        context.textBaseline = 'middle'
-        context.fillText(character, 1.8, 1.1)
-      }
-      context.globalAlpha = .97
-      context.fillStyle = palette[(index + charIndex + rowIndex) % palette.length]
-      context.textAlign = 'center'
-      context.textBaseline = 'middle'
-      context.font = font
-      context.fillText(character, 0, 0)
-      context.restore()
-      cursorX += tileWidth + (random() > .56 ? 1 : 5)
-    }
-    rowY += layout.size * 1.19
+  const font = '400 ' + layout.size + 'px ' + TITLE_FAMILY
+  const lines = wrapCollageText(context, title, layout.width - 18, font, layout.size, .18, .055)
+  const lineHeight = layout.size * 1.22
+  const width = Math.min(layout.width, Math.max(...lines.map(collageLineWidth)) + 12)
+  const height = lines.length * lineHeight + 6
+  if (layout.style === 'banner') {
+    drawPaperPatch(context, layout.x - 8, layout.y - 8, width + 14, height + 12, index * 53 + 9, '#fffefa', layout.angle || -.01, 7)
+  }
+  return drawCollageLines(context, lines, {
+    x: layout.x,
+    y: layout.y,
+    size: layout.size,
+    lineHeight,
+    font,
+    paperScraps,
+    seed: index * 17 + 71,
+    palette: ['#202a24', '#293b49', '#803e35', '#455b45'],
+    tileHeightRatio: 1.08,
   })
-  return rowY
 }
 
 function drawTitle(context, page, layout, index, paperScraps) {
-  const { rows, font } = wrapTitle(context, page.title, layout.width - 24, layout.size, layout.style === 'cut')
-  const lineHeight = layout.size * 1.25
-  let titleBottom
-  if (layout.style === 'cut') {
-    titleBottom = drawCutLetterTitle(context, page.title, layout, index, paperScraps)
-  } else {
-    const widths = rows.map((row) => {
-      context.font = font
-      return context.measureText(row).width
-    })
-    const patchWidth = Math.min(layout.width, Math.max(...widths) + 46)
-    const patchHeight = rows.length * lineHeight + 32
-    if (layout.style === 'banner') drawPaperPatch(context, layout.x - 10, layout.y - 10, patchWidth, patchHeight, index * 53 + 9, '#fffefa', layout.angle || -.01, 7)
-    context.save()
-    if (layout.angle) {
-      context.translate(layout.x + patchWidth / 2, layout.y + patchHeight / 2)
-      context.rotate(layout.angle)
-      context.translate(-(layout.x + patchWidth / 2), -(layout.y + patchHeight / 2))
-    }
-    context.font = font
-    context.textAlign = 'left'
-    context.textBaseline = 'top'
-    context.fillStyle = '#202a24'
-    rows.forEach((row, lineIndex) => {
-      const y = layout.y + 3 + lineIndex * lineHeight
-      if ((index + lineIndex) % 2 === 0) {
-        context.globalAlpha = .18
-        context.fillStyle = '#a95443'
-        context.fillText(row, layout.x + 13.5, y + .8)
-        context.globalAlpha = 1
-        context.fillStyle = '#202a24'
-      }
-      context.fillText(row, layout.x + 12, y)
-    })
-    context.restore()
-    titleBottom = layout.y + rows.length * lineHeight
-  }
-
+  const titleBottom = drawCutLetterTitle(context, page.title, layout, index, paperScraps)
   if (page.english) {
-    context.save()
-    context.font = 'italic 22px Georgia, "Times New Roman", serif'
-    context.fillStyle = '#5f7566'
-    context.textAlign = 'left'
-    context.textBaseline = 'top'
-    context.fillText(page.english, layout.x + 8, titleBottom + 4, layout.width - 20)
-    context.restore()
+    const size = 22
+    const font = '400 ' + size + 'px ' + ENGLISH_FAMILY
+    const lines = wrapCollageText(context, page.english, layout.width - 24, font, size, .2, .09)
+    drawCollageLines(context, lines, {
+      x: layout.x + 8,
+      y: titleBottom + 3,
+      size,
+      lineHeight: size * 1.28,
+      font,
+      paperScraps,
+      seed: index * 29 + 19,
+      palette: ['#405b49', '#536d5b', '#744d49'],
+      tileHeightRatio: 1.04,
+      paperAlpha: .82,
+      inkAlpha: .92,
+    })
   }
 }
 
-function drawBody(context, page, layout, index) {
-  const paddingX = 34
-  const paddingY = 28
-  const font = `${layout.size}px ${BODY_FAMILY}`
-  const lines = wrapText(context, page.mainCopy, layout.width - paddingX * 2, font)
-  const lineHeight = layout.size * 1.55
+function drawBody(context, page, layout, index, paperScraps) {
+  const paddingX = 28
+  const paddingY = 24
+  const font = '400 ' + layout.size + 'px ' + BODY_FAMILY
+  const lines = wrapCollageText(context, page.mainCopy, layout.width - paddingX * 2, font, layout.size, .13, .045)
+  const lineHeight = layout.size * 1.42
   const height = Math.max(100, paddingY * 2 + lines.length * lineHeight)
 
   drawPaperPatch(context, layout.x, layout.y, layout.width, height, index * 101 + 23, layout.color || '#fffefa', layout.angle || 0, 6)
   context.save()
   context.translate(layout.x + layout.width / 2, layout.y + height / 2)
   context.rotate(layout.angle || 0)
-  context.font = font
-  context.textAlign = 'left'
-  context.textBaseline = 'top'
-  context.fillStyle = '#26352b'
-  lines.forEach((line, lineIndex) => context.fillText(line, -layout.width / 2 + paddingX, -height / 2 + paddingY + lineIndex * lineHeight))
+  drawCollageLines(context, lines, {
+    x: -layout.width / 2 + paddingX,
+    y: -height / 2 + paddingY,
+    size: layout.size,
+    lineHeight,
+    font,
+    paperScraps,
+    seed: index * 103 + 29,
+    palette: ['#26352b', '#2e3a32', '#4d493c', '#3c5148'],
+    tileHeightRatio: 1.12,
+    paperAlpha: .88,
+    inkAlpha: .96,
+  })
   context.restore()
 }
-
-function drawMarks(context, style, index) {
+function drawMarks(context, style, index, paperScraps) {
   const random = seededRandom(index * 37 + 401)
   context.save()
   context.strokeStyle = 'rgba(43, 90, 65, .72)'
@@ -478,14 +495,26 @@ function drawMarks(context, style, index) {
       context.save()
       context.translate(note.x, note.y)
       context.rotate((i % 2 ? -.04 : .035))
-      context.font = '24px ' + TITLE_FAMILY
-      const width = context.measureText(note.text).width + 32
+      const size = 24
+      const font = '400 ' + size + 'px ' + TITLE_FAMILY
+      const lines = wrapCollageText(context, note.text, 180, font, size, .16, .05)
+      const width = Math.max(...lines.map(collageLineWidth)) + 18
       tornPath(context, -8, -27, width, 44, index * 71 + i, 4)
       context.fillStyle = ['#edf4ea', '#f3e9ec', '#eff0f7'][i]
       context.fill()
-      context.fillStyle = '#3c5545'
-      context.textBaseline = 'middle'
-      context.fillText(note.text, 8, -1)
+      drawCollageLines(context, lines, {
+        x: 1,
+        y: -18,
+        size,
+        lineHeight: 27,
+        font,
+        paperScraps,
+        seed: index * 71 + i * 11,
+        palette: ['#3c5545', '#4c4c46', '#684a4b'],
+        tileHeightRatio: 1,
+        paperAlpha: .78,
+        inkAlpha: .95,
+      })
       context.restore()
     })
   } else if (style === 'handwritten') {
@@ -499,9 +528,24 @@ function drawMarks(context, style, index) {
     context.lineTo(764, 914)
     context.lineTo(746, 923)
     context.stroke()
-    context.font = '25px "Microsoft YaHei", sans-serif'
-    context.fillStyle = '#6d846f'
-    context.fillText('留在这里', 476, 975)
+    const size = 25
+    const font = '400 ' + size + 'px ' + TITLE_FAMILY
+    const note = '留在这里'
+    const lines = wrapCollageText(context, note, 240, font, size, .16, .05)
+    drawPaperPatch(context, 464, 949, Math.max(...lines.map(collageLineWidth)) + 22, 42, index * 83 + 5, '#f0f0df', -.025, 4)
+    drawCollageLines(context, lines, {
+      x: 476,
+      y: 956,
+      size,
+      lineHeight: 29,
+      font,
+      paperScraps,
+      seed: index * 97 + 3,
+      palette: ['#49634f', '#6d846f', '#425a58'],
+      tileHeightRatio: 1,
+      paperAlpha: .82,
+      inkAlpha: .95,
+    })
   } else if (style === 'time') {
     context.setLineDash([3, 14])
     context.beginPath()
@@ -536,10 +580,10 @@ function drawPage(index, page, images, stickerByName) {
   drawPaperBase(context, images.paperStock, scenicImage, index)
 
   layout.photos.forEach((item, photoIndex) => drawPhotoScrap(context, images['field:' + item.src], item, index * 113 + photoIndex * 31))
-  drawMarks(context, layout.marks, index)
+  drawMarks(context, layout.marks, index, images.paperScraps)
   layout.stickers.forEach((item) => addSticker(context, stickerByName[item.id], item))
   drawTitle(context, page, layout.title, index, images.paperScraps)
-  drawBody(context, page, layout.body, index)
+  drawBody(context, page, layout.body, index, images.paperScraps)
 
   return {
     src: canvas,
@@ -549,6 +593,7 @@ function drawPage(index, page, images, stickerByName) {
 }
 
 export async function createPages() {
+  await loadZineFonts()
   const stickerNames = [...new Set(ZINE_PAGES.flatMap((page) => page.assetIds))]
   const fieldNames = [...new Set(PAGE_LAYOUTS.flatMap((layout) => layout.photos.map((photo) => photo.src)))]
   const sources = [

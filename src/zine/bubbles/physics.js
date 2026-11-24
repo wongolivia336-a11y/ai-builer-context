@@ -9,12 +9,12 @@ const TAU = Math.PI * 2;
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const seed = n => (Math.sin(n * 127.1 + 11.7) * 43758.5453) % 1;
 const rand = n => Math.abs(seed(n));
-const DESKTOP_RADIUS_BANDS = [.036, .072, .048, .096, .042, .082, .112, .039, .088, .060];
+const DESKTOP_RADIUS_BANDS = [.050, .092, .064, .11, .046, .081, .125, .044, .096, .058, .115, .072, .10, .054];
 const bubbleRadius = (width, height, index) => {
   const base = Math.min(width, height);
   return width < 680
     ? clamp(base * (0.049 + rand(index + 3) * 0.042), 26, 53)
-    : clamp(base * (DESKTOP_RADIUS_BANDS[index % DESKTOP_RADIUS_BANDS.length] + rand(index + 101) * .008), 28, 98);
+      : clamp(base * (DESKTOP_RADIUS_BANDS[index % DESKTOP_RADIUS_BANDS.length] + rand(index + 101) * .01), 28, 112);
 };
 
 export class BubbleWorld {

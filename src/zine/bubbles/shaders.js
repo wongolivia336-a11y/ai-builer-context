@@ -26,8 +26,8 @@ uniform vec2 uResolution;
 uniform float uBlend;
 uniform float uTime;
 uniform int uBubbleCount;
-uniform vec4 uBubbles[10]; // x, y, radius, type (physical pixels, bottom-left origin)
-uniform vec4 uDeforms[10]; // squash, offsetX, offsetY, phase
+uniform vec4 uBubbles[16]; // x, y, radius, type (physical pixels, bottom-left origin)
+uniform vec4 uDeforms[16]; // squash, offsetX, offsetY, phase
 
 vec2 coverUv(vec2 uv, vec2 size) {
   float frameAR = uResolution.x / max(uResolution.y, 1.0);
@@ -66,7 +66,7 @@ void main() {
   vec3 col = photo(uv);
   // Very subtle image finish; keep photo readable.
   col = mix(col, vec3(.96, .93, 1.0), .018);
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 16; ++i) {
     if (i >= uBubbleCount) break;
     vec4 b = uBubbles[i];
     vec4 k = uDeforms[i];

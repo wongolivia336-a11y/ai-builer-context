@@ -13,6 +13,7 @@
   position: relative;
   width: 100%;
   height: 180px;
+  overscroll-behavior: contain;
 }
 
 .sound-orbit-disc {
@@ -47,21 +48,41 @@
 .sound-orbit-photo-card {
   position: absolute;
   left: 174px;
-  top: 113px;
+  top: 78px;
   min-width: 104px;
   max-width: 130px;
   display: grid;
-  gap: 3px;
-  padding: 7px 9px;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 7px 8px 8px;
   border: 1px solid rgba(255, 255, 255, .2);
   border-radius: 8px;
   color: #fff;
   background: rgba(12, 23, 18, .56);
   -webkit-backdrop-filter: blur(10px) saturate(112%);
   backdrop-filter: blur(10px) saturate(112%);
-  opacity: .94;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(7px) scale(.985);
+  transition: opacity 240ms ease, transform 300ms cubic-bezier(.2,.75,.25,1), visibility 0s linear 300ms;
   pointer-events: none;
 }
+.sound-orbit-photo-card.is-visible {
+  opacity: .96;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
+.sound-orbit-photo-card img {
+  width: 100%;
+  height: 52px;
+  display: block;
+  object-fit: cover;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 4px;
+  animation: sound-orbit-thumb-in 340ms ease both;
+}
+@keyframes sound-orbit-thumb-in { from { opacity: .25; } to { opacity: 1; } }
 .sound-orbit-photo-card span { color: rgba(255,255,255,.72); font-size: 9px; font-variant-numeric: tabular-nums; letter-spacing: .05em; }
 .sound-orbit-photo-card strong { overflow: hidden; font-size: 11px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -105,7 +126,8 @@
   }
   .sound-orbit-visual,
   .sound-orbit-disc { height: 160px; }
-  .sound-orbit-photo-card { left: 158px; top: 101px; max-width: min(128px, calc(100vw - 190px)); }
+  .sound-orbit-photo-card { left: 158px; top: 62px; max-width: min(128px, calc(100vw - 190px)); }
+  .sound-orbit-photo-card img { height: 44px; }
   .sound-orbit-controls { min-height: 29px; gap: 5px; padding-left: 2px; }
   .sound-orbit-control { min-height: 27px; padding-inline: 7px; font-size: 9px; }
   .sound-orbit-demo-note { font-size: 8px; }
@@ -113,7 +135,7 @@
 
 @media (max-width: 390px) {
   .sound-orbit { width: min(284px, calc(100vw - 22px)); }
-  .sound-orbit-photo-card { left: 151px; max-width: min(122px, calc(100vw - 183px)); padding: 6px 7px; }
+  .sound-orbit-photo-card { left: 151px; top: 62px; max-width: min(122px, calc(100vw - 183px)); padding: 6px 7px; }
   .sound-orbit-demo-note { max-width: 92px; }
 }
 
