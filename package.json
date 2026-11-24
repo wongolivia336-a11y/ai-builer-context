@@ -11,6 +11,7 @@
     "build": "vite build",
     "test:sound-orbit-audio": "node --test scripts/verify-sound-orbit-audio.test.mjs scripts/sound-orbit-audio.test.mjs",
     "check:sound-orbit-audio": "npm run test:sound-orbit-audio && node scripts/verify-sound-orbit-audio.mjs",
+    "test:physical-portal": "node --test scripts/physical-portal.test.mjs",
     "test:zine-collage-assets": "node --test scripts/verify-zine-collage-assets.test.mjs",
     "check:zine-collage-assets": "npm run test:zine-collage-assets && node scripts/verify-zine-collage-assets.mjs"
   },

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { LeafThrough } from 'leafthrough';
 import { createPages } from '../zine/page-art.js';
 import { BUBBLE_SCENES } from '../zine/bubble-scenes.js';
@@ -64,7 +64,7 @@ const getPageLabel = ({ page, visiblePages = [], pageCount }) => {
   return `${String(visiblePages[0] + 1).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}`;
 };
 
-export default function ZineLanding({ onEnterExperience }) {
+export default function ZineLanding({ onEnterExperience, onOpenMakingOf, onPreloadMakingOf, surfaceRef }) {
   const landingElement = useRef(null);
   const magazineElement = useRef(null);
   const magazineRef = useRef(null);
@@ -78,6 +78,10 @@ export default function ZineLanding({ onEnterExperience }) {
   const [committedSceneIndex, setCommittedSceneIndex] = useState(null);
   const [sceneAutoPlay, setSceneAutoPlay] = useState(true);
   const [motionReduced, setMotionReduced] = useState(false);
+  const setLandingRef = useCallback((node) => {
+    landingElement.current = node;
+    if (surfaceRef) surfaceRef.current = node;
+  }, [surfaceRef]);
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -193,7 +197,7 @@ export default function ZineLanding({ onEnterExperience }) {
   };
 
   return (
-    <div className="zine-landing" ref={landingElement}>
+    <div className="zine-landing" ref={setLandingRef}>
       <ZineBubbleBackground
         hostRef={landingElement}
         sceneIndex={activeSceneIndex}
@@ -221,6 +225,23 @@ export default function ZineLanding({ onEnterExperience }) {
             </button>
           </div>
         </header>
+
+        <button
+          className="zine-portal-trigger"
+          data-physical-portal-trigger
+          type="button"
+          aria-label="进入制作过程球形空间"
+          title="制作过程"
+          onPointerEnter={onPreloadMakingOf}
+          onFocus={onPreloadMakingOf}
+          onClick={(event) => {
+            const bounds = event.currentTarget.querySelector('.zine-portal-bubble').getBoundingClientRect();
+            onOpenMakingOf?.({ x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2, radius: bounds.width / 2 });
+          }}
+        >
+          <span className="zine-portal-bubble" aria-hidden="true"><i /><b /></span>
+          <span className="zine-portal-trigger-label" aria-hidden="true">MAKING OF</span>
+        </button>
 
         <SoundOrbit
           sceneIndex={activeSceneIndex}
