@@ -229,72 +229,6 @@
 .zine-print-edition { display: none; }
 .zine-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-.zine-scene-carousel {
-  position: relative;
-  z-index: 8;
-  flex: 0 1 310px;
-  min-width: 0;
-  margin-left: 18px;
-  align-self: center;
-  pointer-events: auto;
-}
-
-.zine-scene-dial {
-  min-height: 54px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 7px;
-  border: 1px solid var(--control-edge);
-  border-radius: 12px;
-  color: #fff;
-  background: rgba(12,23,18,.55);
-  box-shadow: 0 2px 10px rgba(2,10,7,.18);
-  -webkit-backdrop-filter: blur(12px) saturate(112%);
-  backdrop-filter: blur(12px) saturate(112%);
-}
-
-.zine-scene-preview,
-.zine-scene-arrow,
-.zine-scene-autoplay { appearance: none; flex: none; border: 0; color: #fff; background: transparent; cursor: pointer; }
-.zine-scene-preview { position: relative; width: 42px; height: 42px; overflow: hidden; border-radius: 8px; padding: 0; }
-.zine-scene-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.zine-scene-preview span { position: absolute; right: 2px; bottom: 2px; padding: 1px 4px; border-radius: 3px; color: #fff; background: rgba(7,15,11,.72); font-size: 9px; font-variant-numeric: tabular-nums; }
-.zine-scene-label { min-width: 0; flex: 1; display: grid; gap: 2px; padding-inline: 3px; line-height: 1.2; }
-.zine-scene-label span { color: rgba(255,255,255,.72); font-size: 9px; font-variant-numeric: tabular-nums; }
-.zine-scene-label strong { overflow: hidden; color: #fff; font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-.zine-scene-arrow,
-.zine-scene-autoplay { width: 28px; height: 32px; border-radius: 7px; font-size: 19px; line-height: 1; }
-.zine-scene-arrow:hover,
-.zine-scene-autoplay:hover:not(:disabled) { background: rgba(255,255,255,.12); }
-.zine-scene-autoplay { width: 30px; font-size: 13px; }
-.zine-scene-autoplay:disabled { color: rgba(255,255,255,.42); cursor: default; }
-.zine-scene-carousel button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-.zine-scene-picker {
-  position: absolute;
-  z-index: 12;
-  top: calc(100% + 8px);
-  left: 0;
-  width: min(330px, calc(100vw - 24px));
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
-  padding: 8px;
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 12px;
-  background: rgba(12,23,18,.9);
-  box-shadow: 0 8px 26px rgba(1,8,5,.24);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-}
-
-.zine-scene-option { position: relative; min-width: 0; aspect-ratio: 1.2; overflow: hidden; border: 1px solid rgba(255,255,255,.16); border-radius: 6px; padding: 0; color: #fff; background: #26372e; cursor: pointer; }
-.zine-scene-option img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 180ms ease; }
-.zine-scene-option span { position: absolute; inset: auto 0 0; overflow: hidden; padding: 10px 3px 3px; background: linear-gradient(transparent, rgba(4,10,7,.72)); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
-.zine-scene-option.is-current { outline: 2px solid var(--accent); outline-offset: -2px; }
-.zine-scene-option:hover img { transform: scale(1.04); }
-
 @media (max-width: 760px) {
   .zine-reader-shell { grid-template-rows: 180px minmax(0, 1fr) 0; padding-inline: max(10px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-right)); }
   .zine-reader-topbar { gap: 10px; }
@@ -309,7 +243,6 @@
   .zine-top-actions .zine-glass-button { min-height: 36px; flex: 0 1 auto; min-width: 0; padding-inline: 9px; font-size: 10px; white-space: nowrap; }
   .zine-experience-button { max-width: clamp(120px, calc(100vw - 220px), 190px); }
   .zine-experience-label { overflow: hidden; text-overflow: ellipsis; }
-  .zine-scene-carousel { position: fixed; top: max(116px, calc(env(safe-area-inset-top) + 116px)); left: max(12px, env(safe-area-inset-left)); width: min(310px, calc(100vw - 24px)); margin: 0; }
   .zine-book-stage { width: 100%; height: min(78dvh, 176vw); }
   .zine-magazine { width: min(142vw, 620px); height: 100%; transform: translateX(-18%); }
   .zine-magazine.zine-cover-view { transform: translateX(-23.5%); }
@@ -346,8 +279,6 @@
   .zine-product-copy { font-size: 9px; line-height: 1.25; }
   .zine-product-copy-compact { display: block; }
   .zine-product-copy-full { display: none; }
-  .zine-scene-carousel { top: max(88px, calc(env(safe-area-inset-top) + 88px)); }
-  .zine-scene-dial { min-height: 46px; }
 }
 
 .zine-magazine:has([data-plain]) {

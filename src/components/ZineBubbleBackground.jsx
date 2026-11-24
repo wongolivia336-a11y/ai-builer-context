@@ -5,7 +5,7 @@ import { BubbleWorld } from '../zine/bubbles/physics.js'
 import { BubbleRenderer } from '../zine/bubbles/renderer.js'
 import './ZineBubbleBackground.css'
 
-const BLOCKED_SELECTOR = 'button, a, input, textarea, select, .zine-magazine, .zine-book-stage, .zine-reader-controls, .zine-top-actions, .zine-scene-carousel'
+const BLOCKED_SELECTOR = 'button, a, input, textarea, select, .zine-magazine, .zine-book-stage, .zine-reader-controls, .zine-top-actions, .sound-orbit'
 
 export default function ZineBubbleBackground({ hostRef, sceneIndex, autoPlay, onSceneChange }) {
   const layerRef = useRef(null)
