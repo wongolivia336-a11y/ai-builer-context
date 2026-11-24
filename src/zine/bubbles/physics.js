@@ -1,3 +1,5 @@
+import { SETTINGS } from './config.js';
+
 /**
  * Original, zero-dependency 2D bubble choreography.
  * This is a visually motivated approximation, NOT a fluid solver or precise soft-body simulation.
@@ -7,9 +9,16 @@ const TAU = Math.PI * 2;
 const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
 const seed = n => (Math.sin(n * 127.1 + 11.7) * 43758.5453) % 1;
 const rand = n => Math.abs(seed(n));
+const DESKTOP_RADIUS_BANDS = [.036, .072, .048, .096, .042, .082, .112, .039, .088, .060];
+const bubbleRadius = (width, height, index) => {
+  const base = Math.min(width, height);
+  return width < 680
+    ? clamp(base * (0.049 + rand(index + 3) * 0.042), 26, 53)
+    : clamp(base * (DESKTOP_RADIUS_BANDS[index % DESKTOP_RADIUS_BANDS.length] + rand(index + 101) * .008), 28, 98);
+};
 
 export class BubbleWorld {
-  constructor(width, height, count = 8) {
+  constructor(width, height, count = SETTINGS.desktopBubbleCount) {
     this.width = width;
     this.height = height;
     this.pointer = { x: -1000, y: -1000, active: false, down: false, lastX: 0, lastY: 0, vx: 0, vy: 0 };
@@ -24,10 +33,9 @@ export class BubbleWorld {
     if (this.bubbles.length > count) this.bubbles.length = count;
     while (this.bubbles.length < count) {
       const i = this.bubbles.length;
-      const base = Math.min(this.width, this.height);
-      const r = clamp(base * (0.049 + rand(i + 3) * 0.042), 26, this.width < 680 ? 53 : 78);
+      const r = bubbleRadius(this.width, this.height, i);
       this.bubbles.push({
-        id: i, type: 0, r,
+        id: i, type: i % 5, r,
         x: this.width * (.13 + .73 * rand(i + 17)),
         y: this.height * (.24 + .60 * rand(i + 41)),
         vx: (rand(i + 21) - .5) * 54, vy: (rand(i + 12) - .5) * 42,
@@ -39,13 +47,18 @@ export class BubbleWorld {
 
   resize(width, height) {
     const sx = width / this.width, sy = height / this.height;
+    const crossedLayoutBreakpoint = (this.width < 680) !== (width < 680);
     for (const b of this.bubbles) {
+      if (crossedLayoutBreakpoint) {
+        b.r = bubbleRadius(width, height, b.id);
+        b.mass = Math.max(.5, b.r / 47);
+      }
       b.x = clamp(b.x * sx, b.r, width - b.r);
       b.y = clamp(b.y * sy, b.r, height - b.r);
     }
     this.width = width;
     this.height = height;
-    this.setCount(width < 680 ? 5 : 8);
+    this.setCount(width < 680 ? SETTINGS.mobileBubbleCount : SETTINGS.desktopBubbleCount);
   }
 
   movePointer(x, y) {
@@ -127,7 +140,7 @@ export class BubbleWorld {
       if (Math.abs(b.vx) > 180) b.vx = Math.sign(b.vx) * 180;
       if (Math.abs(b.vy) > 180) b.vy = Math.sign(b.vy) * 180;
     }
-    // Pairwise lightweight collision, enough for 8 bubbles; normals approx circles even for jelly silhouettes.
+    // Pairwise lightweight collision; normals approximate circles even for jelly silhouettes.
     for (let i = 0; i < this.bubbles.length; i++) for (let j = i + 1; j < this.bubbles.length; j++) {
       const a = this.bubbles[i], b = this.bubbles[j];
       if (this.grab?.body === a || this.grab?.body === b) continue;

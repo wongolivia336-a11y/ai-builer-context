@@ -3,7 +3,7 @@ import { LeafThrough } from 'leafthrough';
 import { createPages } from '../zine/page-art.js';
 import { BUBBLE_SCENES } from '../zine/bubble-scenes.js';
 import ZineBubbleBackground from './ZineBubbleBackground.jsx';
-import ZineSceneCarousel from './ZineSceneCarousel.jsx';
+import SoundOrbit from './SoundOrbit.jsx';
 import './ZineLanding.css';
 
 const INITIAL_READOUT = { page: 0, visiblePages: [], pageCount: 10 };
@@ -74,6 +74,8 @@ export default function ZineLanding({ onEnterExperience }) {
   const [readout, setReadout] = useState(INITIAL_READOUT);
   const [printPages, setPrintPages] = useState([]);
   const [sceneIndex, setSceneIndex] = useState(0);
+  const [previewSceneIndex, setPreviewSceneIndex] = useState(null);
+  const [committedSceneIndex, setCommittedSceneIndex] = useState(null);
   const [sceneAutoPlay, setSceneAutoPlay] = useState(true);
   const [motionReduced, setMotionReduced] = useState(false);
 
@@ -181,28 +183,35 @@ export default function ZineLanding({ onEnterExperience }) {
   }, []);
 
   const progress = Math.max(0, Math.min(100, ((readout.page + 1) / readout.pageCount) * 100));
-  const selectScene = (index) => setSceneIndex((index + BUBBLE_SCENES.length) % BUBBLE_SCENES.length);
+  const activeSceneIndex = previewSceneIndex ?? committedSceneIndex ?? sceneIndex;
+  const commitScene = (index) => {
+    const nextIndex = (index + BUBBLE_SCENES.length) % BUBBLE_SCENES.length;
+    setSceneIndex(nextIndex);
+    setCommittedSceneIndex(nextIndex);
+    setPreviewSceneIndex(null);
+    setSceneAutoPlay(false);
+  };
 
   return (
     <div className="zine-landing" ref={landingElement}>
       <ZineBubbleBackground
         hostRef={landingElement}
-        sceneIndex={sceneIndex}
-        autoPlay={sceneAutoPlay && !motionReduced}
+        sceneIndex={activeSceneIndex}
+        autoPlay={sceneAutoPlay && !motionReduced && previewSceneIndex === null && committedSceneIndex === null}
         onSceneChange={setSceneIndex}
       />
       <div className="zine-reader-shell">
         <header className="zine-reader-topbar">
-          <button className="zine-brand" type="button" onClick={() => magazineRef.current?.goTo(0)} aria-label="回到小志封面">
-            <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
-          </button>
-          <ZineSceneCarousel
-            sceneIndex={sceneIndex}
-            autoPlay={sceneAutoPlay && !motionReduced}
-            motionReduced={motionReduced}
-            onSelect={selectScene}
-            onAutoPlayChange={setSceneAutoPlay}
-          />
+          <div className="zine-brand-block">
+            <button className="zine-brand" type="button" onClick={() => magazineRef.current?.goTo(0)} aria-label="回到小志封面">
+              <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
+            </button>
+            <section className="zine-product-intro" aria-label="MEMO Garden 产品概念">
+              <p className="zine-product-kicker">MEMO · AI 声景漫游 <span>产品概念</span></p>
+              <p className="zine-product-copy zine-product-copy-full">一款 Dreamcore 手机外设，陪你重新听见日常：沿街拾起带着地点的声音泡泡，AI 为它们整理成听觉手账；也把一句话留给后来的人。</p>
+              <p className="zine-product-copy zine-product-copy-compact">沿街发现地点声音泡泡，听见他人留下的片刻，也留一句给后来的人。</p>
+            </section>
+          </div>
           <div className="zine-top-actions">
             <button className="zine-glass-button zine-print-button" type="button" aria-label="打印小志" onClick={() => window.print()}>
               <span className="zine-print-label">打印小志</span>
@@ -212,6 +221,21 @@ export default function ZineLanding({ onEnterExperience }) {
             </button>
           </div>
         </header>
+
+        <SoundOrbit
+          sceneIndex={activeSceneIndex}
+          committedSceneIndex={committedSceneIndex}
+          restoreSceneIndex={committedSceneIndex ?? sceneIndex}
+          motionReduced={motionReduced}
+          audioContextRef={audioContextRef}
+          onPreview={setPreviewSceneIndex}
+          onRestore={() => setPreviewSceneIndex(null)}
+          onCommit={commitScene}
+          onRotationChange={(enabled, soundEnabled) => {
+            setSceneAutoPlay(enabled && !soundEnabled);
+            if (enabled && !soundEnabled) setCommittedSceneIndex(null);
+          }}
+        />
 
         <main className="zine-reader-main">
           <div className="zine-book-stage">

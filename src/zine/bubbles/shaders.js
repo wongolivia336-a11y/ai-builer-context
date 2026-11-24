@@ -78,7 +78,8 @@ void main() {
     p.y *= 1.0 - k.x * .52 - wobble;
     float angle = atan(p.y, p.x);
     float radius = shapeRadius(angle, b.w);
-    float dist = length(p) / max(.15, radius);
+    float breathing = 1.0 + sin(uTime * .48 + k.w) * .025;
+    float dist = length(p) / max(.15, radius * breathing);
     if (dist > 1.10) continue;
     float inside = 1.0 - smoothstep(.974, 1.009, dist);
     float edge = smoothstep(.65, .997, dist) * inside;
