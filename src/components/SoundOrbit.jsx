@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BUBBLE_SCENES } from '../zine/bubble-scenes.js'
+import { SOUND_ORBIT_TRACKS } from '../zine/sound-orbit-tracks.js'
 import { SoundOrbitAudioController } from '../zine/sound-orbit-audio.js'
 import './SoundOrbit.css'
 
@@ -55,6 +56,7 @@ export default function SoundOrbit({
   const commitTimersRef = useRef([])
   const intentRef = useRef(0)
   const unlockTokenRef = useRef(0)
+  const audioRequestRef = useRef(0)
   const currentSceneIndexRef = useRef(sceneIndex)
   const pendingCommitRef = useRef(null)
   currentSceneIndexRef.current = sceneIndex
@@ -66,15 +68,35 @@ export default function SoundOrbit({
   const [lockedSceneIndex, setLockedSceneIndex] = useState(null)
   const [armState, setArmState] = useState('parked')
   const [soundState, setSoundState] = useState('off')
+  const [audioLoading, setAudioLoading] = useState(false)
+  const [audioError, setAudioError] = useState('')
   const [rotationEnabled, setRotationEnabled] = useState(!motionReduced)
   const intentIndex = wheelPreviewIndex ?? hoverIndex ?? focusIndex
   const selectedIndex = intentIndex ?? sceneIndex
   const photoCardVisible = intentIndex !== null
     || pendingCommitRef.current === selectedIndex
     || lockedSceneIndex === selectedIndex
-    || (soundState === 'on' && committedSceneIndex === selectedIndex)
+    || committedSceneIndex === selectedIndex
 
   if (!audioRef.current) audioRef.current = new SoundOrbitAudioController(audioContextRef)
+
+  const playAudioAction = (action, index, fadeMs) => {
+    const request = ++audioRequestRef.current
+    setAudioLoading(true)
+    setAudioError('')
+    Promise.resolve(audioRef.current?.[action](BUBBLE_SCENES[index].id, fadeMs))
+      .then((started) => {
+        if (audioRequestRef.current !== request) return
+        setAudioLoading(false)
+        if (started === false) setAudioError('这段录音未能开始播放，请重新开启声音后再试。')
+      })
+      .catch((error) => {
+        if (audioRequestRef.current !== request) return
+        console.info('Sound Orbit could not load this scene recording.', error)
+        setAudioLoading(false)
+        setAudioError('声景载入失败，可继续选图。')
+      })
+  }
 
   const clearCommitSequence = () => {
     commitTimersRef.current.forEach(window.clearTimeout)
@@ -92,6 +114,9 @@ export default function SoundOrbit({
 
   const muteSound = (fadeMs = 220) => {
     unlockTokenRef.current += 1
+    audioRequestRef.current += 1
+    setAudioLoading(false)
+    setAudioError('')
     intentRef.current += 1
     window.clearTimeout(previewTimerRef.current)
     previewTimerRef.current = null
@@ -128,7 +153,7 @@ export default function SoundOrbit({
     const intent = ++intentRef.current
     previewTimerRef.current = window.setTimeout(() => {
       previewTimerRef.current = null
-      if (intentRef.current === intent && soundState === 'on') audioRef.current?.preview(BUBBLE_SCENES[index].id)
+      if (intentRef.current === intent && soundState === 'on') playAudioAction('preview', index)
     }, 300)
   }
 
@@ -141,7 +166,7 @@ export default function SoundOrbit({
     setFocusIndex(null)
     currentSceneIndexRef.current = restoreSceneIndex
     onRestore?.()
-    if (soundState === 'on') audioRef.current?.restoreCommitted(BUBBLE_SCENES[restoreSceneIndex].id)
+    if (soundState === 'on') playAudioAction('restoreCommitted', restoreSceneIndex)
   }
 
   const handleWheel = (event) => {
@@ -208,7 +233,7 @@ export default function SoundOrbit({
     setFocusIndex(null)
     currentSceneIndexRef.current = restoreSceneIndex
     onRestore?.()
-    if (soundState === 'on') audioRef.current?.restoreCommitted(BUBBLE_SCENES[restoreSceneIndex].id)
+    if (soundState === 'on') playAudioAction('restoreCommitted', restoreSceneIndex)
   }
 
   const startPreview = (index, pointerType) => {
@@ -247,7 +272,7 @@ export default function SoundOrbit({
       pendingCommitRef.current = null
       setArmState('lowered')
       onCommit?.(index)
-      audioRef.current?.commit(BUBBLE_SCENES[index].id)
+      playAudioAction('commit', index)
     }, COMMIT_LIFT_MS + COMMIT_SEEK_MS + COMMIT_DROP_MS)
     commitTimersRef.current = [seekTimer, lowerTimer, finishTimer]
   }
@@ -270,7 +295,7 @@ export default function SoundOrbit({
       setSoundState('on')
       setArmState('lowered')
       setLockedSceneIndex(selectedIndex)
-      audioRef.current?.commit(BUBBLE_SCENES[selectedIndex].id)
+      playAudioAction('commit', selectedIndex)
       onCommit?.(selectedIndex)
     } catch (error) {
       console.info('Sound Orbit audio is unavailable in this browser.', error)
@@ -278,6 +303,8 @@ export default function SoundOrbit({
         audioRef.current?.disable(0)
         setSoundState('off')
         setArmState('parked')
+        setAudioLoading(false)
+        setAudioError('浏览器未能开启声音，请重试。')
       }
     }
   }
@@ -408,6 +435,7 @@ export default function SoundOrbit({
           <img key={selectedIndex} src={BUBBLE_SCENES[selectedIndex].image} alt="" />
           <span>{String(selectedIndex + 1).padStart(2, '0')} / {String(BUBBLE_SCENES.length).padStart(2, '0')}</span>
           <strong>{BUBBLE_SCENES[selectedIndex].name}</strong>
+          <small>声音 · {SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}</small>
         </div>
       </div>
       <div className="sound-orbit-controls">
@@ -426,13 +454,19 @@ export default function SoundOrbit({
           className={'sound-orbit-control sound-orbit-sound-control' + (soundState === 'on' ? ' is-on' : '')}
           type="button"
           onClick={toggleSound}
-          aria-label={soundState === 'on' ? '关闭十种场景声景' : soundState === 'unlocking' ? '正在开启声音，点击取消' : '开启十种合成场景声景'}
+          aria-label={soundState === 'on' ? '关闭十种场景录音' : soundState === 'unlocking' ? '正在开启声音，点击取消' : '开启十种场景录音'}
           aria-pressed={soundState === 'on'}
         >
           <span aria-hidden="true">{soundState === 'on' ? '♫' : '♪'}</span>
           <span>{soundState === 'unlocking' ? '开启中' : soundState === 'on' ? '声音开' : '声音关'}</span>
         </button>
-        <span className="sound-orbit-demo-note">十种声景 · 轻声试听</span>
+        <span className="sound-orbit-demo-note" role="status" aria-live="polite">
+          {audioError || (audioLoading || soundState === 'unlocking'
+            ? '正在载入这段声景…'
+            : soundState === 'on'
+              ? `正在试听：${SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}`
+              : '十段录音 · 悬停试听')}
+        </span>
       </div>
     </section>
   )

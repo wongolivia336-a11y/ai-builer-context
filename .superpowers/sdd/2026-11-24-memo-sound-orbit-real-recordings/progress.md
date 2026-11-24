@@ -1,0 +1,20 @@
+# SDD ledger — plan: docs/superpowers/plans/2026-11-24-memo-sound-orbit-real-recordings.md
+
+Setup: executing inline on codex/memo-garden-design-fixes-20261120 at BASE 77786c87e80a068ab393bce39fd3368c641ff269. Existing untracked design/spec files predate implementation and will be preserved.
+Ruling: Referenced test-driven-development, verification-before-completion, using-git-worktrees, and script helpers are unavailable in the installed skill roots; proceed under the user's explicit authorization to bypass the unavailable skill gate. Use the approved plan's asset-integrity script and requested build/manual regressions as verification.
+Pre-flight: Task 1 produces source/provenance-backed local recordings; Task 2 consumes scene IDs and processed paths — keep exact scene ID mapping in manifest and provenance. Task 3 consumes Task 2 manifest and assets — same src file paths and track IDs. Task 4 consumes Task 1 source audit and Task 3 UI behavior — copy must report genuine recordings. The user's latest authorization permits the requested repair round to be pushed after checks; keep each track marked `local-preview` until listening is confirmed.
+Task 1: in progress — rechecking pages/licenses; acquire and prepare actual recordings.
+
+Task 1: source review confirms the selected pages list creator releases, CC0, or CC BY 4.0; PDSounds direct endpoints now serve a 114-byte parked-page redirect, so sources will be acquired from the verified Wikimedia Commons uploads instead. User 429 retry-after is being respected. Current candidate map: canopy wind/birds; cloud meadow breeze/birds; flower meadow bee; hillside birdsong; sheep field; rain on leaves; country night; forest ambience; swale stream; garden birds.
+Task 2: wrote asset/mapping validator tests first (RED: validator module absent), implemented the checker, and observed 4/4 pass for complete mapping, missing scene, duplicate track ID, missing file, and hash mismatch.
+Task 3: in progress — scene-keyed lazy loader and crossfade controller; no product audio assets are marked approved.
+
+Audio Task 1–2: completed ten local scene-keyed MP3 previews and source records in `public/zine/audio/provenance.json`; the licensing/source digest is in `docs/superpowers/specs/2026-11-24-memo-sound-orbit-audio-provenance.md`. All files are marked `local-preview`. The checker validates ten exact scene IDs, source and output hashes, measured file sizes, durations, and integrated loudness; total audio is 4,041,151 bytes. Audio tests: 10/10 pass. Tracks 05, 06, 08, 09, and 10 were rebuilt after the user's first listening pass found them near-silent; all tracks now measure from -22.3 to -18.4 LUFS.
+
+Audio Task 3: completed the local track map and retained the existing Web Audio controller with bounded loading, crossfade and mute cleanup. The photo card stays visible for a committed scene while muted; reduced-motion rules cover card and thumbnail animation.
+
+Zine addendum: the user approved the scrapbook design and plan on 2026-11-24. Added 11 optimized supplied photos and three transparent hand-drawn PNGs under `public/zine/assets/scrapbook/`; enlarged clock crops, tightened the mixed-size contact sheet, and added image details to the paired-time spread. Asset/layout tests: 4/4 pass; all 14 collage assets resolve.
+
+Local Vite preview is running at `http://127.0.0.1:4177/`. Desktop screenshots of spreads 02–03, 06–07, and 08–09 were inspected at 1440×900. `npm run build` passes with the existing 1.24 MB main-chunk advisory. The user's feedback authorizes a push after the requested audio and Zine corrections and regression checks; leave PR #13 open.
+
+User feedback (2026-11-24): tracks 05, 06, 08, 09, and 10 were inaudible in the user's local audition, while the other five were audible. Repair and re-audition these exact outputs. The user also requested denser Zine photo compositions, larger clock masks, blurred underlays with varied close-up scraps, and several transparent hand-drawn PNG stickers. This iteration is authorized to update PR #13 after those corrections and regression checks.
