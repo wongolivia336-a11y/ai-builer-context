@@ -151,6 +151,7 @@
   isolation:isolate;
   touch-action:none;
 }
+html.native-ar-active,html.native-ar-active body,html.native-ar-active .image-ar-overlay { background:transparent; }
 .image-ar-host,.image-ar-host video,.image-ar-host canvas {
   position:absolute;
   inset:0;

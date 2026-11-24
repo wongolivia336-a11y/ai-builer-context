@@ -2440,7 +2440,7 @@ function App() {
   }
 
   return (
-    <main className="demo-canvas">
+    <main className={`demo-canvas${window.location.origin === 'https://appassets.androidplatform.net' && page === 'home' ? ' android-home' : ''}`}>
       <div className="ambient ambient-left" /><div className="ambient ambient-right" />
       <header className="demo-header"><span className="wordmark">MEMO Garden</span></header>
       <div className="demo-stage">

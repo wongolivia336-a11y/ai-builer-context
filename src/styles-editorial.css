@@ -1799,6 +1799,37 @@ body { background: var(--pop-paper); color: var(--pop-ink); }
   .record-preview { transition:none; }
 }
 
+/* Android WebView treatment from the v0.2.26 app preview. */
+.android-home .gallery-home :is(.gallery-kicker,.device-pill,.gallery-filter,.tab-glass,.tab-liquid-indicator,.filter-liquid-indicator),
+.android-home > .device-launcher,
+.android-home .sheet-backdrop,
+.android-home .leader-sheet {
+  -webkit-backdrop-filter:none;
+  backdrop-filter:none;
+}
+.android-home .gallery-home :is(.gallery-kicker,.device-pill,.gallery-filter) { background:#f8f9f4e6; }
+.android-home .gallery-home .tab-glass { background:linear-gradient(130deg,#edf6d5,#e0ecce 50%,#f0f4db); }
+.android-home .gallery-home::after { filter:none; background:radial-gradient(#faeae03b,#0000 70%); }
+.android-home .bubble-body,
+.android-home .bubble-body .home-bubble,
+.android-home .bubble-body .home-bubble :is(.bubble-silhouette,.bubble-silhouette-rim),
+.android-home .bubble-body.is-highlighted .bubble-filter-lasso path { filter:none; }
+.android-home .bubble-body { will-change:transform; transition:opacity .24s ease; }
+.android-home .bubble-body .home-bubble { will-change:auto; transition:none; }
+.android-home .bubble-body .home-bubble:active { transform:scale(.96); }
+.android-home .bubble-body.is-highlighted .bubble-filter-lasso,
+.android-home .bubble-body.is-highlighted .bubble-filter-lasso path { stroke-dashoffset:0; animation:none; }
+.android-home .bubble-body.is-popped .home-bubble { opacity:0; pointer-events:none; animation:.27s ease-out both android-bubble-pop; }
+@keyframes android-bubble-pop {
+  0% { opacity:1; transform:scale(1); }
+  30% { opacity:.85; transform:scale(1.055,.93); }
+  to { opacity:0; transform:scale(.72); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .android-home .bubble-body { will-change:auto; }
+  .android-home .bubble-body.is-popped .home-bubble { animation:none; }
+}
+
 /* Co-create: make the recording lever the visible continuation of the breathing bubble. */
 .app-create .create-record-link { position:relative; z-index:2; display:block; flex:none; width:2px; height:26px; margin-top:-17px; margin-bottom:-1px; border-radius:999px; background:linear-gradient(180deg,rgba(217,240,77,0),rgba(155,181,102,.56) 42%,rgba(155,181,102,.12)); }
 .app-create .create-record-link i { position:absolute; top:-1px; left:50%; width:7px; height:7px; border:1px solid rgba(255,255,255,.92); border-radius:50%; background:var(--pop-lime); box-shadow:0 0 0 3px rgba(217,240,77,.18); transform:translateX(-50%); }
