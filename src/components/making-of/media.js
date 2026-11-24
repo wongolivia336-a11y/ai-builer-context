@@ -1,11 +1,11 @@
 const MEDIA_ROOT = '/making-of/media';
 
 export const MAKING_OF_STAGES = [
-  { id: 'THEME', label: '泡泡 × 声音', shortLabel: '泡泡', slots: 6, band: [-1.43, -0.87] },
+  { id: 'THEME', label: '泡泡 × 声音', shortLabel: '泡泡', slots: 6, band: [-Math.PI / 2, -0.87] },
   { id: 'FIELD', label: '户外收集', shortLabel: '户外', slots: 9, band: [-0.82, -0.32] },
   { id: 'FORM', label: '造型探索', shortLabel: '造型', slots: 11, band: [-0.27, 0.27] },
   { id: 'ODDITY', label: '怪趣与 IP', shortLabel: '怪趣', slots: 9, band: [0.32, 0.82] },
-  { id: 'DELIVERY', label: '物料与收敛', shortLabel: '交付', slots: 6, band: [0.87, 1.43] },
+  { id: 'DELIVERY', label: '物料与收敛', shortLabel: '交付', slots: 6, band: [0.87, Math.PI / 2] },
 ];
 
 const image = ({ id, stage, file, title, note, role = 'artifact', alt = title, source = '用户提供的项目过程素材', credit = 'MEMO Garden 项目资料' }) => {

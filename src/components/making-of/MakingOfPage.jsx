@@ -35,10 +35,10 @@ function drawSphereGlass(ctx, centerX, centerY, radius) {
   ctx.clip();
 
   const filmWash = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-  filmWash.addColorStop(0, 'rgba(255,255,255,.16)');
-  filmWash.addColorStop(.36, 'rgba(243,255,255,.025)');
-  filmWash.addColorStop(.72, 'rgba(223,207,255,.045)');
-  filmWash.addColorStop(1, 'rgba(255,255,255,.12)');
+  filmWash.addColorStop(0, 'rgba(255,255,255,.08)');
+  filmWash.addColorStop(.36, 'rgba(243,255,255,.015)');
+  filmWash.addColorStop(.72, 'rgba(223,207,255,.025)');
+  filmWash.addColorStop(1, 'rgba(255,255,255,.06)');
   ctx.fillStyle = filmWash;
   ctx.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
 
@@ -50,8 +50,8 @@ function drawSphereGlass(ctx, centerX, centerY, radius) {
     centerY - radius * .45,
     radius * .68,
   );
-  softReflection.addColorStop(0, 'rgba(255,255,255,.34)');
-  softReflection.addColorStop(.18, 'rgba(255,255,255,.13)');
+  softReflection.addColorStop(0, 'rgba(255,255,255,.22)');
+  softReflection.addColorStop(.18, 'rgba(255,255,255,.08)');
   softReflection.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = softReflection;
   ctx.fillRect(centerX - radius, centerY - radius, radius * 2, radius * 2);
@@ -150,9 +150,18 @@ function getStageItems(stageId) {
   return MAKING_OF_MEDIA.filter((item) => item.stage === stageId);
 }
 
-function getStagePage(stageItems, slotCount, page) {
-  const start = page * slotCount;
-  return stageItems.slice(start, start + slotCount);
+function getStagePage(stageItems, maxSlotCount, page) {
+  const pageCount = Math.max(1, Math.ceil(stageItems.length / maxSlotCount));
+  const baseSize = Math.floor(stageItems.length / pageCount);
+  const largerPages = stageItems.length % pageCount;
+  let start = 0;
+
+  for (let index = 0; index < page; index += 1) {
+    start += baseSize + (index < largerPages ? 1 : 0);
+  }
+
+  const pageSize = baseSize + (page < largerPages ? 1 : 0);
+  return stageItems.slice(start, start + pageSize);
 }
 
 function shuffleItems(items) {
@@ -216,6 +225,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
   const [reducedMotion, setReducedMotion] = useState(false);
   const [paused, setPaused] = useState(false);
   const [mobileView, setMobileView] = useState('sphere');
+  const [textureStatus, setTextureStatus] = useState('loading');
   const [mobileLayout, setMobileLayout] = useState(() => window.matchMedia('(max-width: 760px), (max-height: 600px) and (orientation: landscape) and (max-width: 1000px)').matches);
   const setPortalSurfaceRef = useCallback((node) => {
     if (surfaceRef) surfaceRef.current = node;
@@ -255,14 +265,16 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     pauseRef.current = paused || reducedMotion;
   }, [paused, reducedMotion]);
 
-  const orbitItems = useMemo(() => MAKING_OF_STAGES.flatMap((stage, stageIndex) => (
-    getStagePage(randomizedStageItems[stageIndex], stage.slots, stagePages[stageIndex]).map((item, slot) => ({
+  const orbitItems = useMemo(() => MAKING_OF_STAGES.flatMap((stage, stageIndex) => {
+    const pageItems = getStagePage(randomizedStageItems[stageIndex], stage.slots, stagePages[stageIndex]);
+    return pageItems.map((item, slot) => ({
       ...item,
       stageIndex,
       slot,
+      slotCount: pageItems.length,
       image: null,
-    }))
-  )), [randomizedStageItems, stagePages]);
+    }));
+  }), [randomizedStageItems, stagePages]);
 
   const textureItems = useMemo(() => orbitItems.map((item) => {
     const textureSrc = item.poster || item.src;
@@ -275,6 +287,48 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     }
     return { ...item, image };
   }), [orbitItems]);
+
+  useEffect(() => {
+    if (!textureItems.length) {
+      setTextureStatus('ready');
+      return undefined;
+    }
+
+    let cancelled = false;
+    const cleanups = [];
+    const allComplete = textureItems.every(({ image }) => image.complete);
+    if (!allComplete) setTextureStatus('loading');
+
+    const imageLoads = textureItems.map(({ image }) => new Promise((resolve) => {
+      if (image.complete) {
+        resolve(Boolean(image.naturalWidth));
+        return;
+      }
+
+      const finish = (loaded) => {
+        image.removeEventListener('load', onLoad);
+        image.removeEventListener('error', onError);
+        resolve(loaded);
+      };
+      const onLoad = () => finish(true);
+      const onError = () => finish(false);
+      image.addEventListener('load', onLoad, { once: true });
+      image.addEventListener('error', onError, { once: true });
+      cleanups.push(() => {
+        image.removeEventListener('load', onLoad);
+        image.removeEventListener('error', onError);
+      });
+    }));
+
+    Promise.all(imageLoads).then((loadedImages) => {
+      if (!cancelled) setTextureStatus(loadedImages.every(Boolean) ? 'ready' : 'error');
+    });
+
+    return () => {
+      cancelled = true;
+      cleanups.forEach((cleanup) => cleanup());
+    };
+  }, [textureItems]);
 
   const activeItem = selectedId ? MAKING_OF_MEDIA.find((item) => item.id === selectedId) : null;
   const activeStage = MAKING_OF_STAGES[activeStageIndex];
@@ -408,8 +462,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
 
       const patches = [];
       for (const item of textureItems) {
-        const stage = MAKING_OF_STAGES[item.stageIndex];
-        const span = (Math.PI * 2) / stage.slots;
+        const span = (Math.PI * 2) / item.slotCount;
         const longitude = angleRef.current + stageOffsets[item.stageIndex] + item.slot * span;
         const band = SPHERE_BANDS[item.stageIndex];
         const center = projectPoint(longitude, (band[0] + band[1]) / 2, radius, centerX, centerY, tiltRef.current, distance);
@@ -453,7 +506,26 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         ctx.clip();
 
         const image = item.image;
-        if (image?.complete && image.naturalWidth) {
+        const hasImage = image?.complete && image.naturalWidth;
+        if (!hasImage) {
+          const placeholder = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+          placeholder.addColorStop(0, '#e4f0ea');
+          placeholder.addColorStop(1, '#e8e0f0');
+          ctx.fillStyle = placeholder;
+          ctx.fillRect(0, 0, width, height);
+          ctx.save();
+          ctx.globalAlpha *= 0.18;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          for (let offset = -height; offset < width; offset += 24) {
+            ctx.beginPath();
+            ctx.moveTo(offset, 0);
+            ctx.lineTo(offset + height, height);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        if (hasImage) {
           const imageWidth = image.naturalWidth;
           const imageHeight = image.naturalHeight;
           for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
@@ -641,6 +713,11 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         onPointerLeave={clearWhenLeaving}
         onKeyDown={handleCanvasKeyDown}
       />
+      {textureStatus !== 'ready' && mobileView === 'sphere' && (
+        <div className={`making-of-media-status is-${textureStatus}`} role="status" aria-live="polite">
+          {textureStatus === 'loading' ? '正在把照片和视频贴进球面…' : '有几段影像暂时没有载入'}
+        </div>
+      )}
 
       <header className="making-of-header">
         <div className="making-of-brand-block zine-brand-block">
