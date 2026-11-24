@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MAKING_OF_MEDIA, MAKING_OF_ROLE_LABELS, MAKING_OF_STAGES } from './media';
 import { getMakingOfGeometry } from './galleryGeometry.js';
+import { MAKING_OF_EPILOGUE, MAKING_OF_MARGIN_NOTE, MAKING_OF_PROLOGUE, MAKING_OF_STAGE_NOTES } from './narrative.js';
 import './MakingOfPage.css';
 
 const STAGE_LABELS = MAKING_OF_STAGES.map((stage) => stage.label);
 const SPHERE_BANDS = MAKING_OF_STAGES.map((stage) => stage.band);
+const STAGE_DIFFUSE_COLORS = ['#f6b7d2', '#a4dce1', '#b8dfbb', '#c9b8e7', '#f1d891'];
+const MAKING_OF_STORY = [MAKING_OF_PROLOGUE, ...MAKING_OF_STAGE_NOTES, MAKING_OF_EPILOGUE];
 
 function projectPoint(longitude, latitude, radius, centerX, centerY, tilt, distance) {
   const x = radius * Math.cos(latitude) * Math.sin(longitude);
@@ -89,6 +92,8 @@ function describeVideoError(video) {
 
 export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive = false, portalPhase = 'idle' }) {
   const canvasRef = useRef(null);
+  const storyRef = useRef(null);
+  const storySectionsRef = useRef({});
   const videoRef = useRef(null);
   const imageCacheRef = useRef(new Map());
   const polygonsRef = useRef([]);
@@ -177,6 +182,21 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     setMediaError('');
   }, []);
 
+  const scrollToStory = useCallback((storyId) => {
+    const container = storyRef.current;
+    const section = storySectionsRef.current[storyId];
+    if (!container || !section) return;
+    const top = container.scrollTop + section.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    container.scrollTo({
+      top: Math.max(0, top),
+      behavior: reducedMotion ? 'auto' : 'smooth',
+    });
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    scrollToStory(MAKING_OF_STAGES[0].id);
+  }, [scrollToStory]);
+
   const selectItem = useCallback((item, { hovered = false } = {}) => {
     if (!item) {
       clearSelection();
@@ -185,20 +205,22 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     const stageIndex = item.stageIndex ?? MAKING_OF_STAGES.findIndex((stage) => stage.id === item.stage);
     setActiveStageIndex(stageIndex);
     activeStageIndexRef.current = stageIndex;
+    scrollToStory(item.stage);
     setSelectedId(item.id);
     selectedIdRef.current = item.id;
     setPointerOverMedia(hovered && item.kind === 'video');
     setPlaybackRequested(false);
     setMediaError('');
-  }, [clearSelection]);
+  }, [clearSelection, scrollToStory]);
 
   const selectStage = useCallback((index) => {
     const stage = MAKING_OF_STAGES[index];
     if (!stage) return;
     setActiveStageIndex(index);
     activeStageIndexRef.current = index;
+    scrollToStory(stage.id);
     clearSelection();
-  }, [clearSelection]);
+  }, [clearSelection, scrollToStory]);
 
   const advanceStage = useCallback((direction) => {
     const nextIndex = (activeStageIndexRef.current + direction + MAKING_OF_STAGES.length) % MAKING_OF_STAGES.length;
@@ -329,8 +351,9 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         ctx.save();
         const stageIsActive = item.stageIndex === activeStageIndexRef.current;
         const itemIsSelected = selectedIdRef.current === item.id;
-        ctx.globalAlpha = stageIsActive ? (selectedIdRef.current && !itemIsSelected ? 0.76 : 1) : 0.23;
-        ctx.filter = stageIsActive ? 'none' : 'grayscale(1) saturate(.12) brightness(.76)';
+        const stageColor = STAGE_DIFFUSE_COLORS[item.stageIndex];
+        ctx.globalAlpha = stageIsActive ? (selectedIdRef.current && !itemIsSelected ? 0.84 : 1) : 0.58;
+        ctx.filter = 'none';
         tracePolygon(ctx, polygon);
         ctx.fillStyle = '#d6eef6';
         ctx.fill();
@@ -364,12 +387,28 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         sheen.addColorStop(1, '#edc8ff60');
         ctx.fillStyle = sheen;
         ctx.fillRect(centerX - radius * 2, centerY - radius * 2, radius * 4, radius * 4);
+        ctx.globalAlpha = stageIsActive ? 0.035 : 0.1;
+        ctx.fillStyle = stageColor;
+        ctx.fillRect(centerX - radius * 2, centerY - radius * 2, radius * 4, radius * 4);
         ctx.restore();
 
+        ctx.save();
+        ctx.globalAlpha = stageIsActive ? 0.18 : 0.34;
+        ctx.shadowColor = stageColor;
+        ctx.shadowBlur = stageIsActive ? 7 : 12;
+        ctx.strokeStyle = stageColor;
+        ctx.lineWidth = stageIsActive ? 2 : 2.4;
         tracePolygon(ctx, polygon);
-        ctx.strokeStyle = itemIsSelected ? '#ffffff' : stageIsActive ? '#f4fff2d0' : '#e6faff45';
-        ctx.lineWidth = itemIsSelected ? 3 : stageIsActive ? 1.8 : 1.1;
         ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = stageIsActive ? 1 : 0.64;
+        tracePolygon(ctx, polygon);
+        ctx.strokeStyle = itemIsSelected ? '#ffffff' : stageIsActive ? '#f4fff2d0' : `${stageColor}a0`;
+        ctx.lineWidth = itemIsSelected ? 3 : stageIsActive ? 1.8 : 1;
+        ctx.stroke();
+        ctx.restore();
         polygonsRef.current.push({ item, polygon });
       }
       animationFrame = window.requestAnimationFrame(draw);
@@ -500,8 +539,12 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
 
       <header className="making-of-header">
         <button type="button" className="making-of-brand" onClick={onReturnToZine} aria-label="返回 MEMO Garden 小志">
-          <span>MEMO Garden</span><i aria-hidden="true">✳</i>
+          <img src="/zine/assets/memo-garden-bubble-wordmark.png" alt="MEMO Garden" />
         </button>
+        <div className="making-of-brand-intro">
+          <p className="making-of-brand-kicker">MEMO · AI 声景漫游 <span>产品概念</span></p>
+          <p>一款 Dreamcore 手机外设，陪你重新听见日常：沿街拾起带着地点的声音泡泡，AI 为它们整理成听觉手账；也把一句话留给后来的人。</p>
+        </div>
         <div className="making-of-header-actions">
           <button
             type="button"
@@ -521,12 +564,36 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         </div>
       </header>
 
-      <section className="making-of-intro" aria-labelledby="making-of-title">
-        <p className="making-of-eyebrow">FIELD NOTES · NO. 01 / 2026</p>
-        <h1 id="making-of-title">一颗泡泡的<br />旅行</h1>
-        <p className="making-of-intro-copy">我们以为要走远一点，才会遇见值得记住的事。</p>
-        <p className="making-of-intro-detail">后来才发现，街角一阵风，也足以让时间停一下。<br /><br />街角留言 · 2026年11月23日 22:34</p>
-      </section>
+      <aside className="making-of-journal" aria-label="MEMO Garden 制作手账">
+        <div className="making-of-journal-cover">
+          <p className="making-of-eyebrow">FIELD NOTES <span>· NO. 01 / 2026</span></p>
+          <p className="making-of-margin-note">{MAKING_OF_MARGIN_NOTE}</p>
+        </div>
+        <div className="making-of-story" ref={storyRef} aria-label="制作过程叙事">
+          {MAKING_OF_STORY.map((entry) => {
+            const isStage = MAKING_OF_STAGE_NOTES.some((note) => note.id === entry.id);
+            const isActive = entry.id === activeStage.id;
+            return (
+              <article
+                className={`making-of-story-entry${isActive ? ' is-active' : ''}${isStage ? '' : ' is-bookend'}`}
+                key={entry.id || entry.title}
+                ref={(node) => {
+                  if (entry.id) storySectionsRef.current[entry.id] = node;
+                }}
+                aria-current={isActive ? 'location' : undefined}
+              >
+                <header className="making-of-story-entry-head">
+                  <span>{entry.number ? `${entry.number} / ${entry.label}` : entry.kicker}</span>
+                  <h2>{entry.title}</h2>
+                </header>
+                <div className="making-of-story-paragraphs">
+                  {entry.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </aside>
 
       <nav className="making-of-rail" aria-label="项目过程阶段">
         {MAKING_OF_STAGES.map((stage, index) => (
