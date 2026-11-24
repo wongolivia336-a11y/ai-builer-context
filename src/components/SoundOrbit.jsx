@@ -456,8 +456,14 @@ export default function SoundOrbit({
           {audioError || (audioLoading || soundState === 'unlocking'
             ? '正在载入这段声景…'
             : soundState === 'on'
-              ? `正在试听：${SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}`
-              : '十段录音 · 悬停试听')}
+              ? <>
+                <span className="sound-orbit-demo-note-desktop">正在试听：{SOUND_ORBIT_TRACKS[BUBBLE_SCENES[selectedIndex].id].label}</span>
+                <span className="sound-orbit-demo-note-touch">轻点唱片切换声景</span>
+              </>
+              : <>
+                <span className="sound-orbit-demo-note-desktop">十段录音 · 悬停试听</span>
+                <span className="sound-orbit-demo-note-touch">先开启声音，再轻点唱片</span>
+              </>)}
         </span>
       </div>
     </section>
