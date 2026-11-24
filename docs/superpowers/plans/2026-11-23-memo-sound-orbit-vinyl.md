@@ -72,5 +72,5 @@
 
 ### Task 5: Publish after local preview approval
 
-- [ ] Create a reversible commit, preserve all existing commits, push the current branch with a normal fast-forward, and update the open follow-up PR #12. Do not merge.
-- [ ] Verify the PR head SHA, open state, changed-files scope, and preview links.
+- [x] Create a reversible commit, preserve all existing commits, push the current branch with a normal fast-forward, and update the open follow-up PR #12. Do not merge.
+- [x] Verify the PR head SHA, open state, changed-files scope, and preview links.

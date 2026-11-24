@@ -10,13 +10,13 @@ The wordmark, product copy, ten photo files, full-screen bubbles, stars, forest,
 
 ## Verification
 
-- `npm run build` succeeds.
+- `npm run build` succeeds. Vite retains the existing 1.22 MB main-chunk advisory; Sound Orbit adds no dependency.
 - Manual browser pass at 1440×900, 768×900, 390×844, and 375×812.
 - Verified hover preview timing, background restore, click sequence, rapid scene changes with at most two active audio sources, mute and release, keyboard selection, touch selection, and reduced-motion mode.
-- No browser console errors during the interaction pass.
+- No browser console errors during the interaction pass. Idle JS heap measured 53.5→54.1 MB over three seconds on desktop.
 
 ## Preview
 
 Local preview: http://127.0.0.1:4175/
 
-The preview build is ready for the requested GitHub update.
+The local preview and evidence were reviewed. [PR #12](https://github.com/wongolivia336-a11y/ai-builer-context/pull/12) is open for review.
