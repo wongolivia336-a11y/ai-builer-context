@@ -66,11 +66,25 @@ function getStageItems(stageId) {
 }
 
 function getStagePage(stageItems, slotCount, page) {
-  if (!stageItems.length) return [];
   const start = page * slotCount;
-  const slice = stageItems.slice(start, start + slotCount);
-  const currentItems = slice.length ? slice : stageItems.slice(0, slotCount);
-  return Array.from({ length: slotCount }, (_, index) => currentItems[index % currentItems.length]);
+  return stageItems.slice(start, start + slotCount);
+}
+
+function shuffleItems(items) {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+  return shuffled;
+}
+
+function describeVideoError(video) {
+  const code = video?.error?.code;
+  if (code === 2) return '视频读取中断，请重试播放。';
+  if (code === 3) return '视频解码失败，请刷新页面后重试。';
+  if (code === 4) return '当前浏览器无法识别这段视频格式。';
+  return '视频暂时无法播放，请稍后重试。';
 }
 
 export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive = false, portalPhase = 'idle' }) {
@@ -82,15 +96,19 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
   const angleRef = useRef(0.2);
   const tiltRef = useRef(-0.13);
   const velocityRef = useRef(0);
+  const activeStageIndexRef = useRef(0);
+  const wheelAccumulatorRef = useRef(0);
   const pauseRef = useRef(false);
   const selectedIdRef = useRef(null);
   const portalPhaseRef = useRef(portalPhase);
   portalPhaseRef.current = portalPhase;
   const [stagePages, setStagePages] = useState(() => MAKING_OF_STAGES.map(() => 0));
+  const [randomizedStageItems] = useState(() => MAKING_OF_STAGES.map((stage) => shuffleItems(getStageItems(stage.id))));
   const [activeStageIndex, setActiveStageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
   const [pointerOverMedia, setPointerOverMedia] = useState(false);
   const [playbackRequested, setPlaybackRequested] = useState(false);
+  const [mediaError, setMediaError] = useState('');
   const [reducedMotion, setReducedMotion] = useState(false);
   const [paused, setPaused] = useState(false);
   const setPortalSurfaceRef = useCallback((node) => {
@@ -124,13 +142,13 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
   }, [paused, reducedMotion]);
 
   const orbitItems = useMemo(() => MAKING_OF_STAGES.flatMap((stage, stageIndex) => (
-    getStagePage(getStageItems(stage.id), stage.slots, stagePages[stageIndex]).map((item, slot) => ({
+    getStagePage(randomizedStageItems[stageIndex], stage.slots, stagePages[stageIndex]).map((item, slot) => ({
       ...item,
       stageIndex,
       slot,
       image: null,
     }))
-  )), [stagePages]);
+  )), [randomizedStageItems, stagePages]);
 
   const textureItems = useMemo(() => orbitItems.map((item) => {
     const textureSrc = item.poster || item.src;
@@ -146,7 +164,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
 
   const activeItem = selectedId ? MAKING_OF_MEDIA.find((item) => item.id === selectedId) : null;
   const activeStage = MAKING_OF_STAGES[activeStageIndex];
-  const activeStageItems = getStageItems(activeStage.id);
+  const activeStageItems = randomizedStageItems[activeStageIndex];
   const activePageCount = Math.max(1, Math.ceil(activeStageItems.length / activeStage.slots));
   const activePage = stagePages[activeStageIndex];
   const shouldPlayVideo = activeItem?.kind === 'video' && (pointerOverMedia || playbackRequested);
@@ -156,6 +174,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     selectedIdRef.current = null;
     setPointerOverMedia(false);
     setPlaybackRequested(false);
+    setMediaError('');
   }, []);
 
   const selectItem = useCallback((item, { hovered = false } = {}) => {
@@ -163,20 +182,58 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       clearSelection();
       return;
     }
-    setActiveStageIndex(item.stageIndex ?? MAKING_OF_STAGES.findIndex((stage) => stage.id === item.stage));
+    const stageIndex = item.stageIndex ?? MAKING_OF_STAGES.findIndex((stage) => stage.id === item.stage);
+    setActiveStageIndex(stageIndex);
+    activeStageIndexRef.current = stageIndex;
     setSelectedId(item.id);
     selectedIdRef.current = item.id;
     setPointerOverMedia(hovered && item.kind === 'video');
     setPlaybackRequested(false);
+    setMediaError('');
   }, [clearSelection]);
 
-  const selectStage = useCallback((index, hovered = false) => {
+  const selectStage = useCallback((index) => {
     const stage = MAKING_OF_STAGES[index];
     if (!stage) return;
     setActiveStageIndex(index);
-    const first = getStagePage(getStageItems(stage.id), stage.slots, stagePages[index])[0];
-    if (first) selectItem(first, { hovered });
-  }, [selectItem, stagePages]);
+    activeStageIndexRef.current = index;
+    clearSelection();
+  }, [clearSelection]);
+
+  const advanceStage = useCallback((direction) => {
+    const nextIndex = (activeStageIndexRef.current + direction + MAKING_OF_STAGES.length) % MAKING_OF_STAGES.length;
+    selectStage(nextIndex);
+    angleRef.current += direction * 0.22;
+    if (!pauseRef.current) velocityRef.current += direction * 0.52;
+  }, [selectStage]);
+
+  const handleCanvasWheel = useCallback((event) => {
+    const canvas = canvasRef.current;
+    if (!canvas || event.deltaY === 0) return;
+    const bounds = canvas.getBoundingClientRect();
+    const geometry = getMakingOfGeometry(bounds.width, bounds.height);
+    const x = event.clientX - bounds.left - geometry.centerX;
+    const y = event.clientY - bounds.top - geometry.centerY;
+    if ((x * x) + (y * y) > (geometry.radius * geometry.radius * 1.08)) return;
+
+    event.preventDefault();
+    const delta = event.deltaMode === 1 ? event.deltaY * 16
+      : event.deltaMode === 2 ? event.deltaY * bounds.height
+        : event.deltaY;
+    wheelAccumulatorRef.current += delta;
+    const step = Math.trunc(wheelAccumulatorRef.current / 72);
+    if (!step) return;
+    wheelAccumulatorRef.current -= step * 72;
+    const limitedSteps = Math.max(-2, Math.min(2, step));
+    for (let index = 0; index < Math.abs(limitedSteps); index += 1) advanceStage(Math.sign(limitedSteps));
+  }, [advanceStage]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    canvas.addEventListener('wheel', handleCanvasWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleCanvasWheel);
+  }, [handleCanvasWheel]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -213,10 +270,11 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       const dt = Math.min(0.04, Math.max(0, (time - lastTime) / 1000));
       lastTime = time;
       if (!pauseRef.current && !dragRef.current) {
-        angleRef.current += velocityRef.current * dt;
+        angleRef.current += (0.035 + velocityRef.current) * dt;
         velocityRef.current *= Math.exp(-5 * dt);
         for (let stageIndex = 0; stageIndex < MAKING_OF_STAGES.length; stageIndex += 1) {
-          stageOffsets[stageIndex] += dt * (selectedIdRef.current ? 0.025 : 0.11 + stageIndex * 0.014);
+          const drift = stageIndex === activeStageIndexRef.current ? 0.035 : 0.065;
+          stageOffsets[stageIndex] += dt * (selectedIdRef.current ? 0.016 : drift);
         }
       }
 
@@ -269,7 +327,10 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
           ...grid.slice(1, rows).reverse().map((row) => row[0]),
         ];
         ctx.save();
-        ctx.globalAlpha = selectedIdRef.current && selectedIdRef.current !== item.id ? 0.27 : 1;
+        const stageIsActive = item.stageIndex === activeStageIndexRef.current;
+        const itemIsSelected = selectedIdRef.current === item.id;
+        ctx.globalAlpha = stageIsActive ? (selectedIdRef.current && !itemIsSelected ? 0.76 : 1) : 0.23;
+        ctx.filter = stageIsActive ? 'none' : 'grayscale(1) saturate(.12) brightness(.76)';
         tracePolygon(ctx, polygon);
         ctx.fillStyle = '#d6eef6';
         ctx.fill();
@@ -306,8 +367,8 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         ctx.restore();
 
         tracePolygon(ctx, polygon);
-        ctx.strokeStyle = selectedIdRef.current === item.id ? '#ffffff' : '#e6faffb0';
-        ctx.lineWidth = selectedIdRef.current === item.id ? 3 : 1.6;
+        ctx.strokeStyle = itemIsSelected ? '#ffffff' : stageIsActive ? '#f4fff2d0' : '#e6faff45';
+        ctx.lineWidth = itemIsSelected ? 3 : stageIsActive ? 1.8 : 1.1;
         ctx.stroke();
         polygonsRef.current.push({ item, polygon });
       }
@@ -327,7 +388,13 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
   useEffect(() => {
     if (!shouldPlayVideo || !videoRef.current) return undefined;
     const element = videoRef.current;
-    element.play().catch(() => {});
+    element.play().catch((error) => {
+      if (error.name === 'NotAllowedError') {
+        setMediaError('浏览器拦截了自动播放，请按播放器的播放键继续。');
+        return;
+      }
+      setMediaError(describeVideoError(element));
+    });
     return () => {
       element.pause();
       element.removeAttribute('src');
@@ -394,25 +461,20 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
     }
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       event.preventDefault();
-      const direction = event.key === 'ArrowLeft' ? -1 : 1;
-      angleRef.current += direction * 0.2;
-      const currentIndex = orbitItems.findIndex((item) => item.id === selectedIdRef.current);
-      const nextIndex = (currentIndex + direction + orbitItems.length) % orbitItems.length;
-      if (orbitItems[nextIndex]) selectItem(orbitItems[nextIndex]);
+      advanceStage(event.key === 'ArrowLeft' ? -1 : 1);
       return;
     }
     if ((event.key === 'Enter' || event.key === ' ') && activeItem?.kind === 'video') {
       event.preventDefault();
       setPlaybackRequested(true);
     }
-  }, [activeItem?.kind, clearSelection, orbitItems, selectItem]);
+  }, [activeItem?.kind, advanceStage, clearSelection]);
 
   const changePage = (direction) => {
     const nextPage = Math.max(0, Math.min(activePageCount - 1, activePage + direction));
     if (nextPage === activePage) return;
     setStagePages((pages) => pages.map((page, index) => (index === activeStageIndex ? nextPage : page)));
-    const nextItem = getStagePage(activeStageItems, activeStage.slots, nextPage)[0];
-    if (nextItem) selectItem(nextItem);
+    clearSelection();
   };
 
   const clearWhenLeaving = (event) => {
@@ -425,8 +487,8 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       <canvas
         ref={canvasRef}
         className="making-of-canvas"
-        role="img"
-        aria-label="MEMO Garden 项目过程球体。可拖动旋转，使用方向键浏览素材，悬停或点按查看。"
+        role="application"
+        aria-label="MEMO Garden 项目过程球体。球内滚轮或方向键切换五个阶段，拖动旋转，悬停或点按球面照片查看。"
         tabIndex={0}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
@@ -443,7 +505,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
         <div className="making-of-header-actions">
           <button
             type="button"
-            className="making-of-header-button"
+            className="making-of-header-button zine-glass-button"
             onClick={() => setPaused((value) => !value)}
             aria-pressed={paused || reducedMotion}
             aria-label={paused || reducedMotion ? '继续自动旋转' : '暂停自动旋转'}
@@ -451,7 +513,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
             <span className="making-of-button-label-full">{paused || reducedMotion ? '▷ 继续旋转' : 'Ⅱ 暂停'}</span>
             <span className="making-of-button-label-short" aria-hidden="true">{paused || reducedMotion ? '▷' : 'Ⅱ'}</span>
           </button>
-          <button type="button" className="making-of-header-button making-of-return" onClick={onReturnToZine}>
+          <button type="button" className="making-of-header-button making-of-return zine-glass-button" onClick={onReturnToZine}>
             <span className="making-of-button-label-full">返回小志</span>
             <span className="making-of-button-label-short">小志</span>
             <span aria-hidden="true">↗</span>
@@ -460,10 +522,10 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       </header>
 
       <section className="making-of-intro" aria-labelledby="making-of-title">
-        <p className="making-of-eyebrow">MAKING OF / 01—05</p>
-        <h1 id="making-of-title">little things<br />in orbit.</h1>
-        <p className="making-of-intro-copy">一颗泡泡的诞生</p>
-        <p className="making-of-intro-detail">从声音灵感，到手绘、打样和交互页面。</p>
+        <p className="making-of-eyebrow">FIELD NOTES · NO. 01 / 2026</p>
+        <h1 id="making-of-title">一颗泡泡的<br />旅行</h1>
+        <p className="making-of-intro-copy">我们以为要走远一点，才会遇见值得记住的事。</p>
+        <p className="making-of-intro-detail">后来才发现，街角一阵风，也足以让时间停一下。<br /><br />街角留言 · 2026年11月23日 22:34</p>
       </section>
 
       <nav className="making-of-rail" aria-label="项目过程阶段">
@@ -473,7 +535,7 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
             key={stage.id}
             className={activeStageIndex === index ? 'is-active' : ''}
             aria-current={activeStageIndex === index ? 'step' : undefined}
-            onPointerEnter={() => selectStage(index, true)}
+            onPointerEnter={() => selectStage(index)}
             onPointerLeave={clearWhenLeaving}
             onFocus={() => selectStage(index)}
             onBlur={clearWhenLeaving}
@@ -511,8 +573,11 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
                   loop
                   playsInline
                   autoPlay
-                  preload="auto"
+                  controls
+                  preload="metadata"
                   aria-label={activeItem.alt}
+                  onError={(event) => setMediaError(describeVideoError(event.currentTarget))}
+                  onLoadedData={() => setMediaError('')}
                 />
               ) : (
                 <img src={activeItem.poster || activeItem.src} alt={activeItem.alt} />
@@ -527,8 +592,9 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
               <strong>{activeItem.title}</strong>
               <span className="making-of-caption-note">{activeItem.note}</span>
               <span className="making-of-caption-source">{activeItem.credit}</span>
+              {mediaError && <span className="making-of-media-error" role="status">{mediaError}</span>}
               {activeItem.kind === 'video' && !shouldPlayVideo && (
-                <button type="button" className="making-of-play-button" onClick={() => setPlaybackRequested(true)}>
+                <button type="button" className="making-of-play-button zine-glass-button" onClick={() => setPlaybackRequested(true)}>
                   播放这段记录 <span aria-hidden="true">▶</span>
                 </button>
               )}
@@ -538,18 +604,18 @@ export default function MakingOfPage({ onReturnToZine, surfaceRef, portalActive 
       )}
 
       <footer className="making-of-footer">
-        <span className="making-of-footer-hint">HOVER TO DISCOVER · DRAG TO SPIN</span>
+        <span className="making-of-footer-hint">滚轮切换分层 · 拖动转球 · 静静自转</span>
         <div className="making-of-pagination" aria-label={`${activeStage.label}，第 ${activePage + 1} / ${activePageCount} 页`}>
-          <button type="button" onClick={() => changePage(-1)} disabled={activePage === 0} aria-label="查看本阶段上一组素材">←</button>
+          <button type="button" className="zine-glass-button" onClick={() => changePage(-1)} disabled={activePage === 0} aria-label="查看本阶段上一组素材">←</button>
           <span>{String(activePage + 1).padStart(2, '0')} <i>/</i> {String(activePageCount).padStart(2, '0')}</span>
           <span className="making-of-page-rule"><i style={{ width: `${((activePage + 1) / activePageCount) * 100}%` }} /></span>
-          <button type="button" onClick={() => changePage(1)} disabled={activePage >= activePageCount - 1} aria-label="查看本阶段下一组素材">→</button>
+          <button type="button" className="zine-glass-button" onClick={() => changePage(1)} disabled={activePage >= activePageCount - 1} aria-label="查看本阶段下一组素材">→</button>
         </div>
         <span className="making-of-footer-note">灵感与参考 / 概念探索 / 项目过程记录</span>
       </footer>
 
       <p className="making-of-live-status" aria-live="polite" aria-atomic="true">
-        {activeItem ? `${activeItem.title}；${STAGE_LABELS[activeStageIndex]}，${MAKING_OF_ROLE_LABELS[activeItem.role]}` : '悬停或点按球体上的素材以查看详情。'}
+        {activeItem ? `${activeItem.title}；${STAGE_LABELS[activeStageIndex]}，${MAKING_OF_ROLE_LABELS[activeItem.role]}` : `${STAGE_LABELS[activeStageIndex]}；滚轮切换分层，拖动旋转，悬停或点按查看素材。`}
       </p>
     </main>
   );
