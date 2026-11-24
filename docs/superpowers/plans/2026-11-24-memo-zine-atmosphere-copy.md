@@ -67,5 +67,5 @@
 - [x] Compare current scene URLs and assets to `HEAD`; confirm no original photo or sticker file changed.
 - [x] Capture before/after desktop and mobile screenshots and a desktop interaction recording.
 - [x] Record the copy, bubble counts, checks, and build advisory in `docs/BUILD_IN_PUBLIC.md`.
-- [ ] Create a reversible commit, push the current branch normally, and update open PR #12 without merging.
-- [ ] Confirm the PR head matches local HEAD and remains open.
+- [x] Create a reversible commit, push the current branch normally, and update open PR #12 without merging.
+- [x] Confirm the PR head matches local HEAD and remains open.
