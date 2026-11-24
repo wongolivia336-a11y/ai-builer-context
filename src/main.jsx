@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createPortal } from 'react-dom';
 import { gsap } from 'gsap';
@@ -7,6 +7,7 @@ import LandingPage from './components/LandingPage';
 import CapsuleWaterProgress from './components/CapsuleWaterProgress';
 import { Phone } from './kit/phone';
 import ZineLanding from './components/ZineLanding';
+import PhysicalPortal from './components/physical-portal/PortalVisual.jsx';
 import streetBackground from './assets/user-kit/roam-night-portrait.webp';
 import landscapeStreetBackground from './assets/user-kit/roam-night-landscape.webp';
 import createBackground from './assets/user-kit/create-open-sky.webp';
@@ -19,9 +20,42 @@ import './styles-editorial.css';
 
 const DeviceViewer = lazy(() => import('./DeviceViewer'));
 const MotionLab = lazy(() => import('./components/MotionLab'));
+let makingOfImport;
+function preloadMakingOf() {
+  makingOfImport ||= import('./components/making-of/MakingOfPage').catch((error) => {
+    makingOfImport = null;
+    throw error;
+  });
+  return makingOfImport;
+}
+const MakingOfPage = lazy(preloadMakingOf);
+
+class MakingOfLoadBoundary extends React.Component {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onError?.();
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    if (this.props.portalActive) return <div className="making-of-portal-loading" aria-hidden="true" />;
+    return (
+      <main className="making-of-load-error" role="alert">
+        <p>项目过程暂时无法载入。</p>
+        <button type="button" onClick={this.props.onReturn}>返回小志</button>
+      </main>
+    );
+  }
+}
 
 const initialScreen = new URLSearchParams(location.search).get('screen');
 const initialPreview = new URLSearchParams(location.search).get('preview');
+const initialMakingOf = window.location.pathname.replace(/\/+$/, '') === '/making-of';
 
 function Bubble({ size, className = '', label, onClick, onPointerDown, onPointerUp, onPointerCancel, onContextMenu, style = {}, bubble }) {
   return (
@@ -1744,23 +1778,98 @@ function AudiencePreview({ page, selected, captured, capturedBubble, playing, em
 
 function App() {
   const [page, setPage] = useState(() => ['home', 'roam', 'create'].includes(initialScreen) ? initialScreen : 'home');
-  const [showZineLanding, setShowZineLanding] = useState(() => !['home', 'roam', 'create'].includes(initialScreen));
+  const [showMakingOf, setShowMakingOf] = useState(initialMakingOf);
+  const [showZineLanding, setShowZineLanding] = useState(() => !initialMakingOf && !['home', 'roam', 'create'].includes(initialScreen));
   const [motionPreview, setMotionPreview] = useState(initialPreview === 'motion');
+  const [portalPhase, setPortalPhase] = useState('idle');
+  const portalRef = useRef(null);
+  const portalPhaseRef = useRef('idle');
+  const portalEnteredRef = useRef(false);
+  const pendingPortalExitRef = useRef(false);
+  const pendingPortalResumeRef = useRef(false);
+  const restorePortalFocusRef = useRef(false);
+  const zineSurfaceRef = useRef(null);
+  const makingOfSurfaceRef = useRef(null);
   const phoneColumnRef = useRef(null);
   const previousPageRef = useRef(page);
+
+  const handlePortalPhaseChange = useCallback((nextPhase) => {
+    portalPhaseRef.current = nextPhase;
+    setPortalPhase(nextPhase);
+    if (nextPhase === 'inside') {
+      setShowMakingOf(true);
+      setShowZineLanding(false);
+    } else if (nextPhase === 'idle' && portalEnteredRef.current) {
+      portalEnteredRef.current = false;
+      setShowMakingOf(false);
+      setShowZineLanding(true);
+      setPage('home');
+      restorePortalFocusRef.current = true;
+    }
+  }, []);
+
+  const handlePreloadMakingOf = useCallback(() => {
+    void preloadMakingOf().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const syncLandingRoute = () => {
       const params = new URLSearchParams(window.location.search);
       const route = params.get('screen');
       const nextPage = ['home', 'roam', 'create'].includes(route) ? route : null;
-      setShowZineLanding(nextPage === null);
+      const isMakingOf = window.location.pathname.replace(/\/+$/, '') === '/making-of';
+
+      if (portalEnteredRef.current && isMakingOf && portalPhaseRef.current === 'exit') {
+        setShowMakingOf(true);
+        setShowZineLanding(false);
+        setMotionPreview(false);
+        pendingPortalResumeRef.current = true;
+        return;
+      }
+      if (portalEnteredRef.current && !isMakingOf && portalPhaseRef.current !== 'idle') {
+        setShowMakingOf(true);
+        setShowZineLanding(true);
+        setMotionPreview(false);
+        if (portalPhaseRef.current !== 'exit') {
+          if (zineSurfaceRef.current) {
+            portalRef.current?.refreshGeometry();
+            portalRef.current?.exit();
+          } else {
+            pendingPortalExitRef.current = true;
+          }
+        }
+        return;
+      }
+
+      setShowMakingOf(isMakingOf);
+      setShowZineLanding(!isMakingOf && nextPage === null);
       setMotionPreview(params.get('preview') === 'motion');
       if (nextPage) setPage(nextPage);
     };
     window.addEventListener('popstate', syncLandingRoute);
     return () => window.removeEventListener('popstate', syncLandingRoute);
   }, []);
+
+  useLayoutEffect(() => {
+    portalRef.current?.syncSurfaceState();
+    if (pendingPortalExitRef.current && showZineLanding) {
+      pendingPortalExitRef.current = false;
+      portalRef.current?.refreshGeometry();
+      portalRef.current?.exit();
+    } else if (pendingPortalResumeRef.current && showMakingOf && !showZineLanding) {
+      pendingPortalResumeRef.current = false;
+      portalRef.current?.resumeInside();
+    }
+  }, [portalPhase, showMakingOf, showZineLanding]);
+
+  useEffect(() => {
+    if (!restorePortalFocusRef.current || !showZineLanding || portalPhase !== 'idle') return undefined;
+    restorePortalFocusRef.current = false;
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector('[data-physical-portal-trigger]')?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [portalPhase, showZineLanding]);
 
   useEffect(() => {
     const query = window.matchMedia('(min-width: 701px)');
@@ -2249,6 +2358,7 @@ function App() {
   const closeMotionLab = () => {
     window.history.replaceState({}, '', window.location.pathname);
     setMotionPreview(false);
+    setShowMakingOf(false);
     setShowZineLanding(true);
     setPage('home');
   };
@@ -2257,14 +2367,74 @@ function App() {
     const nextUrl = new URL(window.location.href);
     nextUrl.searchParams.set('screen', 'home');
     window.history.pushState({ screen: 'home' }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+    setShowMakingOf(false);
     setShowZineLanding(false);
     setPage('home');
+  };
+
+  const openMakingOf = (origin) => {
+    if (portalPhaseRef.current !== 'idle') return;
+    const entered = portalRef.current?.enter({ origin });
+    if (!entered) return;
+    portalEnteredRef.current = true;
+    window.history.pushState({ makingOf: true, physicalPortal: true }, '', '/making-of');
+    setShowMakingOf(true);
+    setShowZineLanding(portalPhaseRef.current !== 'inside');
+  };
+
+  const returnToZine = () => {
+    if (portalEnteredRef.current && portalPhaseRef.current !== 'idle') {
+      window.history.back();
+      return;
+    }
+    window.history.pushState({ zine: true }, '', '/');
+    setShowMakingOf(false);
+    setShowZineLanding(true);
+    setPage('home');
+  };
+
+  const handleMakingOfLoadError = () => {
+    if (portalEnteredRef.current && window.location.pathname.replace(/\/+$/, '') === '/making-of') {
+      window.history.back();
+    }
   };
 
   if (motionPreview) {
     return <Suspense fallback={<main className="motion-lab-loading" role="status">动效预览载入中</main>}><MotionLab onExit={closeMotionLab} /></Suspense>;
   }
-  if (showZineLanding) return <ZineLanding onEnterExperience={enterProductExperience} />;
+  if (showMakingOf || showZineLanding || portalPhase !== 'idle') {
+    const portalActive = portalPhase !== 'idle';
+    const makingOfFallback = portalActive
+      ? <div aria-hidden="true" style={{ position: 'fixed', zIndex: 120, inset: 0, pointerEvents: 'none', background: 'transparent' }} />
+      : <main role="status" style={{ position: 'fixed', zIndex: 120, inset: 0, display: 'grid', placeItems: 'center', color: '#31594e', background: '#f8fcff' }}>正在载入项目过程…</main>;
+
+    return (
+      <>
+        {showZineLanding && (
+          <ZineLanding
+            surfaceRef={zineSurfaceRef}
+            onEnterExperience={enterProductExperience}
+            onOpenMakingOf={openMakingOf}
+            onPreloadMakingOf={handlePreloadMakingOf}
+          />
+        )}
+        {showMakingOf && (
+          <MakingOfLoadBoundary portalActive={portalActive} onError={handleMakingOfLoadError} onReturn={returnToZine}>
+            <Suspense fallback={makingOfFallback}>
+              <MakingOfPage onReturnToZine={returnToZine} surfaceRef={makingOfSurfaceRef} portalActive={portalActive} portalPhase={portalPhase} />
+            </Suspense>
+          </MakingOfLoadBoundary>
+        )}
+        <PhysicalPortal
+          ref={portalRef}
+          homeSurfaceRef={zineSurfaceRef}
+          makingOfSurfaceRef={makingOfSurfaceRef}
+          onPhaseChange={handlePortalPhaseChange}
+          onRequestExit={returnToZine}
+        />
+      </>
+    );
+  }
   if (page === 'landing') {
     return <LandingPage onEnter={enterApp} onOpenMotionLab={openMotionLab} />;
   }
