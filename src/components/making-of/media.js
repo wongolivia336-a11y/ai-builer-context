@@ -91,6 +91,7 @@ const items = [
   image({ id: 'oddity-render-detail-board', stage: 'ODDITY', file: '5c98ad3512da684c3fc990f0d2650a96.webp', title: '色彩与细节设想', note: '外观板汇总颜色、材质与结构想法；图中尺寸和参数仅为视觉示意。', role: 'exploration', alt: '粉色与青色装置的概念设计板', source: '用户提供的概念探索图', credit: '概念渲染' }),
 
   image({ id: 'delivery-conference', stage: 'DELIVERY', file: '03c28979054e908960752bc44a174793.webp', title: '项目交流现场', note: '活动现场的观众与展陈记录。', alt: '项目活动现场观众照片' }),
+  image({ id: 'delivery-duck-audience', stage: 'DELIVERY', file: '730314f901c2e47ea2cc34bf55354e43.jpg', title: '小鸭也来听汇报', note: '台下坐满了人，小鸭在前排陪我们把这一页讲完。', alt: '一只毛绒小鸭玩偶出现在项目汇报现场，背景是观众席和演示屏' }),
   image({ id: 'delivery-presentation-screen', stage: 'DELIVERY', file: '3ddd8206f7f87a6de7e373d82868b9ec.webp', title: '方案汇报画面', note: '现场投影展示阶段性方案页面。', alt: '观众席前的方案汇报投影画面' }),
   image({ id: 'delivery-stage', stage: 'DELIVERY', file: '410f7c7e93387cf422d1f01c153d2da4.webp', title: '项目发布与展示', note: '展示活动中的大屏与现场记录。', alt: '活动现场的大屏和观众' }),
   image({ id: 'delivery-modeling-deck', stage: 'DELIVERY', file: '66d0684da35b4d4715a2e964fa78666b.webp', title: '界面方案汇报', note: '投影页并列展示移动端界面方案。', alt: '展示移动端应用界面的投影页' }),
@@ -109,6 +110,8 @@ const items = [
   video({ id: 'delivery-event-clip-one', stage: 'DELIVERY', file: '0f94320a079a1bd53c9493feab1e1898.mp4', poster: '0f94320a079a1bd53c9493feab1e1898.webp', title: '共创营现场', note: '短片记录现场交流与活动空间。', alt: '共创营活动空间中的交流视频' }),
   video({ id: 'delivery-event-clip-two', stage: 'DELIVERY', file: '40965c6f5c598213edfee69a7fc841c6.mp4', poster: '40965c6f5c598213edfee69a7fc841c6.webp', title: '项目汇报现场片段', note: '短片记录现场展示和讨论。', alt: '项目汇报现场的视频' }),
   video({ id: 'delivery-page-motion', stage: 'DELIVERY', file: '793e5734a6cb85f72a44c19bdd81d2b0.mp4', poster: '793e5734a6cb85f72a44c19bdd81d2b0.webp', title: '声景页面动效', note: '短片记录气泡与页面视觉的动态预览。', alt: '声景页面中泡泡视觉动效的视频' }),
+  video({ id: 'delivery-zine-pages-clip', stage: 'DELIVERY', file: '1cd0b07a9ef97c1dd0c299190406101c_raw.mp4', poster: '1cd0b07a9ef97c1dd0c299190406101c_raw.jpg', title: '小志页间漫游', note: '页面从封面翻到内页，像把那天的街景重新摊开。', alt: '浏览器中的 MEMO Garden 小志封面和内页翻动预览' }),
+  video({ id: 'delivery-soundscape-ui-clip', stage: 'DELIVERY', file: '8856436df0d60ba812a36e92eb313ece.mp4', poster: '8856436df0d60ba812a36e92eb313ece.jpg', title: '把声景装进一方屏幕', note: '手机界面里的泡泡、声音和小志入口慢慢显出来。', alt: '声景漫游手机界面的动态预览' }),
 ];
 
 export const MAKING_OF_MEDIA = items.map((item, index) => ({ ...item, sortOrder: index + 1 }));
